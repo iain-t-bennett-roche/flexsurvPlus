@@ -1,0 +1,8 @@
+pandoc: 2.9.2
+pkgdown: 1.5.1
+pkgdown_sha: ~
+articles:
+  Fitting_models_in_R: Fitting_models_in_R.html
+  Survival_analysis_theory: Survival_analysis_theory.html
+last_built: 2020-12-11T14:10Z
+

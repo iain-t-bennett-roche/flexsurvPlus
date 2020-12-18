@@ -1,0 +1,540 @@
+---
+title: "Fitting parametric survival models in R"
+author: "Roche"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+bibliography: references.bib
+csl: biomedicine.csl
+vignette: >
+  %\VignetteIndexEntryFitting parametric survival models in R}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 6
+)
+```
+
+<style type="text/css">
+
+body{ /* Normal  */
+      font-size: 14px;
+  }
+td {  /* Table  */
+  font-size: 10px;
+}
+h1.title {
+  font-size: 38px;
+}
+h1 { /* Header 1 */
+  font-size: 28px;
+  }
+h2 { /* Header 2 */
+    font-size: 22px;
+}
+h3 { /* Header 3 */
+  font-size: 18px;
+}
+code.r{ /* Code block */
+    font-size: 12px;
+}
+pre { /* Code block - determines code spacing between lines */
+    font-size: 14px;
+}
+</style>
+
+# Introduction
+Parametric survival models are often the preferred method of extrapolating
+survival data for use in economic models. The National Institute for Health and
+Care Excellence (NICE) Decision Support Unit (DSU) technical support document
+(TSD) 14 recommends that the Exponential, Weibull, Gompertz, log-logistic, log
+normal and Generalized Gamma parametric models should all be
+considered.[@latimer2011nice] More recently, NICE also discusses more flexible
+models in NICE DSU TSD 21, however, more these models are not in the scope of
+this package.[@rutherford2020nice] The Canadian Agency for Drugs and
+Technologies in Health (CADTH) additionally specifies that the Gamma
+distribution must also be considered. This document therefore details the
+characteristics of each of these distributions and demonstrates how the
+parameters from each distribution, outputted using the flexsurvPlus package, can be
+implemented within an economic model.[@cadth2020]
+
+The flexsurvPlus package allows the inclusion of a treatment effect in the following
+three ways:
+
+* Separate models - Models fitted to each treatment arm separately
+  
+*  Independent shape models - Models fitted to both/all treatment arms including
+a treatment covariate to model the effect of treatment on both the scale and
+shape parameter(s) of the distribution.
+    
+*  Common shape models - Models fitted to both/all treatment arms including a
+treatment covariate to model the effect of treatment on the scale parameter of
+the distribution. The shape parameter(s) of the distribution is common across
+treatments which reflects an assumption of proportional hazards or accelerated
+failure time between treatments depending on the distribution
+    
+This document details how to use the <tt>flexsurvPlus</tt> package to perform these models. A separate vignette; "Parametric survival analysis using the flexsurvPlus package: understanding the theory" details the theory behind the models.
+
+
+# Set up packages and data
+
+## Install packages
+
+The following packages are required to run this example:
+
+```{r setup}
+library(flexsurvPlus)
+library(tibble)
+library(dplyr)
+library(survival)
+library(survminer)
+library(tidyr)
+library(boot)
+
+
+blue = rgb(69, 185, 209, max=255)
+red = rgb(225, 55, 60, max=255)
+yellow = rgb(238, 224, 30, max=255)
+pink = rgb(211,78,147,max=255)
+Dblue = rgb(0,45,92,max=255)
+Dyellow = rgb(214, 200, 16, max=255)
+green = rgb(0,1,0)
+Dyellow = rgb(214, 200, 16, max=255)
+black<-rgb(0,0,0,max=255)
+grey1<-rgb(0,0,0,max=30)
+grey2<-rgb(10,10,10,max=30)
+grey3<-rgb(20,20,20,max=30)
+grey3_dup<-rgb(19,20,20,max=30)
+lightPink<-rgb(229,151,192,max=255)
+orange<-rgb(247,139,21,max=255)
+
+```
+
+## Read in the data
+
+To perform survival analyses, patient level data is required for the survival endpoints. 
+
+This example reads in a standard simulated data set
+(adtte) which is saved as a'.csv' file. There is no standard naming that is
+needed for this package however, there are some set variables that are needed:
+
+* Time - a numeric variable
+* Event - a binary variable (event=1, censor=0)
+* Treatment - a character variable with the name of the intervention treatment 
+
+The data must be in "wide" format such that there is one row per patient and columns for each endpoint separately.
+In this example, we use overall survival (OS) and progression-free survival (PFS). The reference treatment is also
+set at the end of this chunk of code.
+```{r}
+
+
+adtte <- read.csv(system.file("extdata", "adtte.csv", package = "flexsurvPlus", mustWork = TRUE))
+
+
+OS_data <- adtte %>%
+  filter(PARAMCD=="OS") %>%
+  mutate(ARM = as.factor(ARM)) %>%
+  rename(OS_days = AVAL,
+         OS_event = EVNT,
+         OS_cens = CNSR
+            ) %>%
+  select(-PARAMCD, -PARAM)
+
+# subset PFS data and rename
+PFS_data <- adtte %>%
+  filter(PARAMCD=="PFS") %>%
+  rename(PFS_days = AVAL,
+         PFS_event = EVNT,
+         PFS_cens = CNSR
+  ) %>%
+  select(-PARAMCD, -PARAM)
+
+analysis_data <- left_join(OS_data, PFS_data)
+
+names(analysis_data$ARM)
+analysis_data$ARM <- relevel(as.factor(analysis_data$ARM), ref="B")
+
+```
+
+# Exploratory analysis
+Before performing any statistical analysis, it is important to explore the data.
+
+Most importantly is a Kaplan-Meier plot and code to do this using <tt>ggsurvplot</tt> is presented below.
+
+
+```{r, warning=FALSE}
+
+km.est.OS <- survfit(Surv(OS_days, OS_event) ~ ARM , data = analysis_data, conf.type = 'plain')
+km.est.PFS <- survfit(Surv(PFS_days, PFS_event) ~ ARM , data = analysis_data, conf.type = 'plain')
+
+#KM_list <- list(OS = km.est.OS, PFS = km.est.PFS)
+
+KM_plot_OS <- ggsurvplot(km.est.OS, risk.table = TRUE, data = analysis_data,
+           break.time.by = 100,
+           conf.int = FALSE,
+           censor=FALSE,
+           legend.title = '',
+           xlab = paste0('Overall survival (Days)'),
+           size = 0.72,
+           xlim = c(0, 600))
+KM_plot_OS
+
+KM_plot_PFS <- ggsurvplot(km.est.PFS, risk.table = TRUE, data = analysis_data,
+           break.time.by = 100,
+           conf.int = FALSE,
+           censor=FALSE,
+           legend.title = '',
+           xlab = paste0('Progression-free survival (Days)'),
+           size = 0.72,
+           xlim = c(0, 600))
+KM_plot_PFS
+
+```
+
+# Fitting the models
+
+The <tt>runPSM</tt> function fits parametric survival models for multiple distributions using the <tt>flexsurv</tt> package (using the <tt>flexsurvPlus</tt> function <tt>fit_models</tt>),  manipulates the flexsurv objects to get the parameter estimates and AIC and BIC value (using the <tt>flexsurvPlus</tt> function <tt>get_params</tt>) and rearranges the parameter estimates such that they can easily be output to excel to calculate survival for both the intervention and reference treatment in an economic model.
+
+
+
+These functions can be used to estimate 3 types of model:
+
+* Separate models - Models fitted to each treatment arm separately
+  
+*  Independent shape models - Models fitted to both/all treatment arms including
+a treatment covariate to model the effect of treatment on both the scale and
+shape parameter(s) of the distribution.
+    
+*  Common shape models - Models fitted to both/all treatment arms including a
+treatment covariate to model the effect of treatment on the scale parameter of
+the distribution. The shape parameter(s) of the distribution is common across
+treatments which reflects an assumption of proportional hazards or accelerated
+failure time between treatments depending on the distribution
+
+
+Each type of model can be fitted with a multiple distributions. The distributions available for this package are:
+* Exponential ('exp')
+* Weibull ('weibull')
+* Gompertz ('gompertz')
+* Log-normal ('lnorm')
+* Log-logistic ('llogis')
+* Generalized gamma ('gengamma')
+* Gamma ('gamma')
+
+
+For more information on the different types of models, please see the survival analysis theory vignette included in the <tt>flexsurvPlus</tt> package.
+
+The inputs to the <tt>runPSM</tt> function are:
+*<tt>data</tt> - A data frame containing individual patient data for the relevant time to event outcomes
+*<tt>time_var</tt> - Name of time variable in 'data'. Variable must be numerical and >0.
+*<tt>event_var</tt> - Name of event variable in 'data'. Variable must be numerical and contain 1's to indicate an event and 0 to indicate a censor.
+*<tt>model.type</tt> - Character vector indicating the type of model formula provided. Permitted values are 'Common shape', 'Independent shape' or 'Separate' as per the models explained above.
+*<tt>strata_var</tt> - Name of stratification variable in "data". This is usually the treatment variable and must be categorical.
+*<tt>int_name</tt> - Character to indicate the name of the treatment of interest, must be a level of the "strata_var" column in "data", used for labelling the parameters.
+*<tt>ref_name </tt> - Character to indicate the name of the reference treatment, must be a level of the "strata_var" column in "data", used for labelling the parameters.
+
+More information about each function can be used by running the code ?runPSM.
+
+Example code for each type of model is presented below.
+
+
+## Separate models for each treatment
+
+These models have been fit using the <tt>runPSM</tt> function using the model.type="Separate" argument.
+
+```{r}
+psm_OS_separate <- runPSM(data=analysis_data,
+                          time_var="OS_days",
+                          event_var="OS_event",
+                          model.type="Separate",
+                          distr = c('exp',
+                                    'weibull',
+                                    'gompertz',
+                                    'lnorm',
+                                    'llogis',
+                                    'gengamma',
+                                    'gamma'),
+                          strata_var = "ARM",
+                          int_name="A",
+                          ref_name = "B")
+psm_OS_separate
+```
+
+## Independent shape models 
+
+These models are similar to the separate model for each treatment as they allow all parameters to vary by treatment, however it is performed using 1 model for 2 treatments, rather than 2 models as above. They have been fit using the <tt>runPSM</tt> function using the model.type="Independent shape" argument.
+
+
+```{r}
+psm_OS_ind_shape <- runPSM(data=analysis_data,
+                            time_var="OS_days",
+                            event_var="OS_event",
+                            model.type="Independent shape",
+                            distr = c( 'weibull',
+                            'gompertz',
+                            'lnorm',
+                            'llogis',
+                            'gengamma',
+                            'gamma'),
+                            strata_var = "ARM",
+                            int_name="A",
+                            ref_name = "B")
+
+psm_OS_ind_shape
+
+```
+
+
+## Fit common shape models
+These models have been fit using the <tt>runPSM</tt> function using  the model.type="Common shape" argument.
+
+
+```{r}
+psm_OS_common_shape <- runPSM(data=analysis_data,
+                     time_var="OS_days",
+                     event_var="OS_event",
+                     model.type="Common shape",
+                     distr = c('exp',
+                               'weibull',
+                               'gompertz',
+                               'lnorm',
+                               'llogis',
+                               'gengamma',
+                               'gamma'),
+                     strata_var = "ARM",
+                     int_name="A",
+                     ref_name = "B")
+psm_OS_common_shape
+```
+
+
+## Output parameters to excel
+
+Once all the models have been fit, they can be combined to output to excel such that there is 1 row per model.
+
+```{r}
+parameters_all <- full_join(psm_OS_ind_shape$parameters, psm_OS_common_shape$parameters) %>%
+  full_join(psm_OS_separate$parameters) %>%
+# Add meta data to add in details of analysis
+  mutate(Study_name = "Study ABC",
+          Datacut = "Final",
+         Population = "ITT",
+         Endpoint = "OS",
+         Endpoint_def = "NA") %>%
+  #reorder columns
+  select("Model", "Intervention name", "Reference name",
+         Study_name, Datacut, Population, Endpoint, Endpoint_def,
+         starts_with("exp"), starts_with("weibull"), starts_with("gompertz"), starts_with("lnorm"),
+         starts_with("llogis"), starts_with("gengamma"), starts_with("gamma")) %>%
+  arrange(Model)
+
+parameters_all
+
+#write.csv(parameters_all, "developing R code/params OS.csv")
+
+```
+
+# Estimate survival from the models and plot the curves
+
+Survival at a given time can be estimated using the <tt>get_curvefits</tt> function as shown below for treatment-effect models. 
+
+This can be used to cross check survival in excel models.  The example is given below for the treatment-effect models.
+
+
+```{r}
+# Landmark survival
+
+curvefits_TEM_OS_landmark <- get_curvefits(models = psm_OS_common_shape$models,
+                                           time = c(0, 100, 200, 300))
+curvefits_df_TEM_OS_landmark <- bind_rows(curvefits_TEM_OS_landmark$curvefits, .id = "Dist")  %>%
+  pivot_wider(names_from  = c(Dist, ARM), values_from  = est) %>%
+  as.data.frame()
+curvefits_df_TEM_OS_landmark
+```
+
+
+
+The <tt>get_curvefits</tt> function can also be used to generate the data required to plot the survival curves, overlaid on top of the KM plot.
+The time argument should reflect how long you want to the extrapolate for and the unit of time is the same as the input data (in this example, days).
+
+ The <tt>ggsurvplot</tt> function from the <tt>survminer</tt> package has been used to show how the survival curves can be plotted.
+
+```{r}
+
+# Create data set for plots
+curvefits_TEM_OS <- get_curvefits(models = psm_OS_common_shape$models,
+                                  time = seq(from=0, to = 500, by = 10))
+
+# format data ready for the plot
+curvefits_df_TEM_OS <- bind_rows(curvefits_TEM_OS$curvefits, .id = "Dist") %>%
+  pivot_wider(names_from  = c(ARM), values_from  = c(est))
+
+analysis_data_TrtA <- filter(analysis_data, ARM=="A")
+analysis_data_TrtB <- filter(analysis_data, ARM=="B")
+
+# Get KM estimates
+km.est.OS.TrtA <- survfit(Surv(OS_days, OS_event) ~ 1 , data = analysis_data_TrtA, conf.type = 'plain')
+km.est.OS.TrtB <- survfit(Surv(OS_days, OS_event) ~ 1 , data = analysis_data_TrtB, conf.type = 'plain')
+
+
+# Plot survival curves for arm A
+plot.OS.A <- ggsurvplot(km.est.OS.TrtA,
+                        combine = TRUE,
+                        censor = FALSE,
+                        risk.table = TRUE,
+                        conf.int = FALSE,
+                        break.x.by = 100,
+                        xlim = c(0, 500),
+                        xlab = "Time (days)",
+                        size = 0.72,
+                        linetype = c(6,6,6,6, 1, 6, 6,6,6),
+                        title  =  'Kaplan-Meier of OS with standard distribution overlays',
+                        legend.title = '',
+                        legend.labs = c("KM"),
+                        surv.median.line = 'hv',
+                        palette = c(rgb(0,0,0,max=30)),
+                        risk.table.y.text.col = F
+)
+
+
+plot.OS.A$plot <- plot.OS.A$plot +
+  geom_line(aes(x = time, y = Int,
+                colour = Dist,
+                linetype = Dist),
+            size = 0.72,
+            data = curvefits_df_TEM_OS) +
+  scale_color_manual(values = c(blue, pink, Dyellow, orange, grey1, lightPink, red, Dblue))
+
+plot.OS.A
+
+# Plot survival curves for arm B
+plot.OS.B <- ggsurvplot(km.est.OS.TrtB,
+                        combine = TRUE,
+                        censor = FALSE,
+                        risk.table = TRUE,
+                        conf.int = FALSE,
+                        break.x.by = 100,
+                        xlim = c(0, 500),
+                        xlab = "Time (days)",
+                        size = 0.72,
+                        linetype = c(6,6,6,6, 1, 6, 6,6,6),
+                        title  =  'Kaplan-Meier of OS with standard distribution overlays',
+                        legend.title = '',
+                        legend.labs = c("KM"),
+                        surv.median.line = 'hv',
+                        palette = c(rgb(0,0,0,max=30)),
+                        risk.table.y.text.col = F
+)
+
+
+plot.OS.B$plot <- plot.OS.B$plot +
+  geom_line(aes(x = time, y = Ref,
+                colour = Dist,
+                linetype = Dist),
+            size = 0.72,
+            data = curvefits_df_TEM_OS) +
+  scale_color_manual(values = c(blue, pink, Dyellow, orange, grey1, lightPink, red, Dblue))
+
+plot.OS.B
+
+```
+
+# Bootstrapping
+
+Bootstrapping has been used to estimate the uncertainty of the parameters from the survival models for multiple endpoints at once to preserve the correlation between endpoints. In this example we have used OS and PFS.
+
+Bootstrapping involves:
+
+1. Sampling, with replacement, from all patients
+2. Estimating all specified parametric survival models
+
+
+This procedure is repeated multiple times to obtain a distribution of parameters.
+For this example, bootstrap estimates of the parameters were calculated using the
+<tt>boot</tt> package. An argument for the <tt>boot</tt> function is
+<tt>statistic</tt> which is a function which when applied to data returns a
+vector containing the statistic(s) of interest. The <tt>bootPSM</tt> function 
+in the <tt>flexsurvPlus</tt> package can be used for this purpose.
+
+The inputs for the <tt>bootPSM</tt> function are very similar to the <tt>runPSM</tt> function, however there are a few additional arguments:
+*<tt>endpoint1</tt> - Character to indicate the name of the first endpoint, used for labelling.
+*<tt>endpoint2</tt> - Character to indicate the name of the second endpoint, used for labelling.
+*<tt>time_var2</tt> - Name of time variable in 'data' of second endpoint. Variable must be numerical and >0.
+*<tt>event_var2</tt> - Name of event variable in 'data' of second endpoint. Variable must be numerical and contain 1's to indicate an event and 0 to indicate a censor
+*<tt>i</tt> - Index used to select a sample within <tt>boot</tt>
+
+
+```{r}
+set.seed(2358)
+n.sim <- 100
+PSM_bootstraps <- boot(
+                 statistic = bootPSM, # bootstrap the HR (defined in the MAIC package)
+                      R=n.sim, # number of bootstrap samples
+                      data=analysis_data,
+                      endpoint1 = "OS",
+                      endpoint2 = "PFS",
+                      time_var="OS_days",
+                      event_var="OS_event",
+                      time_var2="PFS_days",
+                      event_var2="PFS_event",
+                      model.type="Common shape",
+                      distr = c('exp',
+                                'weibull',
+                                'gompertz',
+                                'lnorm',
+                                'llogis',
+                                'gengamma',
+                                'gamma'),
+                      strata_var = "ARM",
+                      int_name="A",
+                      ref_name = "B"
+)
+
+
+PSM_boot_data <- as.data.frame(PSM_bootstraps$t)
+colnames(PSM_boot_data) <- rownames(t(as.data.frame(PSM_bootstraps$t0)))
+head(PSM_boot_data)
+
+```
+
+The primary use of the bootstrap samples is to be used in probabilistic sensitivity analyses in economic models. Some basic statistics and diagnostics plots (histograms) can be used to summarise the bootstrap estimates and are presented below. 
+
+```{r}
+# Summary of bootstrap values ----------------------------------------------
+#Re-format the data
+boot_gathered <- PSM_boot_data %>%
+  gather(key = 'parameter', value = 'value')
+
+#calculate basic summary stats for all parameters
+boot_summ <- boot_gathered %>%
+  group_by(parameter) %>%
+  summarise(across(.cols = where(is.numeric),
+                   list(
+                     mean = ~mean(., na.rm = TRUE),
+                     sd = ~sd(., na.rm = TRUE),
+                     median = ~median(., na.rm = TRUE),
+                     min = ~min(., na.rm = TRUE),
+                     max = ~max(., na.rm = TRUE)
+                   )
+                   )) %>%
+  mutate(across(.cols = where(is.numeric), ~round(., 3)), .keep = 'unused')
+boot_summ
+#Density plots for each parameter to show distribution
+#Could also be individual plots instead of faceted
+p_boot_density <- ggplot(boot_gathered) +
+  geom_density(aes(value)) +
+  geom_vline(aes(xintercept = value_mean), boot_summ, colour = 'darkgreen') +
+  geom_vline(aes(xintercept = value_median), boot_summ, colour = 'blue') +
+  facet_wrap(~parameter, scales = 'free')
+
+print(p_boot_density)
+
+
+```
+
+#References
