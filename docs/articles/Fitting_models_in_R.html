@@ -72,14 +72,14 @@
 
       
 
-      </header><script src="Fitting_models_in_R_files/header-attrs-2.5/header-attrs.js"></script><script src="Fitting_models_in_R_files/accessible-code-block-0.0.1/empty-anchor.js"></script><link href="Fitting_models_in_R_files/anchor-sections-1.0/anchor-sections.css" rel="stylesheet">
+      </header><script src="Fitting_models_in_R_files/accessible-code-block-0.0.1/empty-anchor.js"></script><link href="Fitting_models_in_R_files/anchor-sections-1.0/anchor-sections.css" rel="stylesheet">
 <script src="Fitting_models_in_R_files/anchor-sections-1.0/anchor-sections.js"></script><div class="row">
   <div class="col-md-9 contents">
     <div class="page-header toc-ignore">
       <h1 data-toc-skip>Fitting parametric survival models in R</h1>
                         <h4 class="author">Roche</h4>
             
-            <h4 class="date">2020-12-11</h4>
+            <h4 class="date">2021-01-04</h4>
       
       
       <div class="hidden name"><code>Fitting_models_in_R.Rmd</code></div>
@@ -134,9 +134,10 @@ pre { /* Code block - determines code spacing between lines */
 <h2 class="hasAnchor">
 <a href="#install-packages" class="anchor"></a>Install packages</h2>
 <p>The following packages are required to run this example:</p>
-<div class="sourceCode" id="cb1"><html><body><pre class="r"><span class="fu"><a href="https://rdrr.io/r/base/library.html">library</a></span>(<span class="no">flexsurvPlus</span>)
-<span class="fu"><a href="https://rdrr.io/r/base/library.html">library</a></span>(<span class="no">tibble</span>)
-<span class="fu"><a href="https://rdrr.io/r/base/library.html">library</a></span>(<span class="no">dplyr</span>)
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va">flexsurvPlus</span><span class="op">)</span>
+<span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://tibble.tidyverse.org/">tibble</a></span><span class="op">)</span>
+<span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org">dplyr</a></span><span class="op">)</span>
 <span class="co">#&gt; </span>
 <span class="co">#&gt; Attaching package: 'dplyr'</span>
 <span class="co">#&gt; The following objects are masked from 'package:stats':</span>
@@ -145,12 +146,12 @@ pre { /* Code block - determines code spacing between lines */
 <span class="co">#&gt; The following objects are masked from 'package:base':</span>
 <span class="co">#&gt; </span>
 <span class="co">#&gt;     intersect, setdiff, setequal, union</span>
-<span class="fu"><a href="https://rdrr.io/r/base/library.html">library</a></span>(<span class="no">survival</span>)
-<span class="fu"><a href="https://rdrr.io/r/base/library.html">library</a></span>(<span class="no">survminer</span>)
+<span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/therneau/survival">survival</a></span><span class="op">)</span>
+<span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="http://www.sthda.com/english/rpkgs/survminer/">survminer</a></span><span class="op">)</span>
 <span class="co">#&gt; Loading required package: ggplot2</span>
 <span class="co">#&gt; Loading required package: ggpubr</span>
-<span class="fu"><a href="https://rdrr.io/r/base/library.html">library</a></span>(<span class="no">tidyr</span>)
-<span class="fu"><a href="https://rdrr.io/r/base/library.html">library</a></span>(<span class="no">boot</span>)
+<span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://tidyr.tidyverse.org">tidyr</a></span><span class="op">)</span>
+<span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va">boot</span><span class="op">)</span>
 <span class="co">#&gt; </span>
 <span class="co">#&gt; Attaching package: 'boot'</span>
 <span class="co">#&gt; The following object is masked from 'package:survival':</span>
@@ -158,21 +159,21 @@ pre { /* Code block - determines code spacing between lines */
 <span class="co">#&gt;     aml</span>
 
 
-<span class="no">blue</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/grDevices/rgb.html">rgb</a></span>(<span class="fl">69</span>, <span class="fl">185</span>, <span class="fl">209</span>, <span class="kw">max</span><span class="kw">=</span><span class="fl">255</span>)
-<span class="no">red</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/grDevices/rgb.html">rgb</a></span>(<span class="fl">225</span>, <span class="fl">55</span>, <span class="fl">60</span>, <span class="kw">max</span><span class="kw">=</span><span class="fl">255</span>)
-<span class="no">yellow</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/grDevices/rgb.html">rgb</a></span>(<span class="fl">238</span>, <span class="fl">224</span>, <span class="fl">30</span>, <span class="kw">max</span><span class="kw">=</span><span class="fl">255</span>)
-<span class="no">pink</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/grDevices/rgb.html">rgb</a></span>(<span class="fl">211</span>,<span class="fl">78</span>,<span class="fl">147</span>,<span class="kw">max</span><span class="kw">=</span><span class="fl">255</span>)
-<span class="no">Dblue</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/grDevices/rgb.html">rgb</a></span>(<span class="fl">0</span>,<span class="fl">45</span>,<span class="fl">92</span>,<span class="kw">max</span><span class="kw">=</span><span class="fl">255</span>)
-<span class="no">Dyellow</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/grDevices/rgb.html">rgb</a></span>(<span class="fl">214</span>, <span class="fl">200</span>, <span class="fl">16</span>, <span class="kw">max</span><span class="kw">=</span><span class="fl">255</span>)
-<span class="no">green</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/grDevices/rgb.html">rgb</a></span>(<span class="fl">0</span>,<span class="fl">1</span>,<span class="fl">0</span>)
-<span class="no">Dyellow</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/grDevices/rgb.html">rgb</a></span>(<span class="fl">214</span>, <span class="fl">200</span>, <span class="fl">16</span>, <span class="kw">max</span><span class="kw">=</span><span class="fl">255</span>)
-<span class="no">black</span><span class="kw">&lt;-</span><span class="fu"><a href="https://rdrr.io/r/grDevices/rgb.html">rgb</a></span>(<span class="fl">0</span>,<span class="fl">0</span>,<span class="fl">0</span>,<span class="kw">max</span><span class="kw">=</span><span class="fl">255</span>)
-<span class="no">grey1</span><span class="kw">&lt;-</span><span class="fu"><a href="https://rdrr.io/r/grDevices/rgb.html">rgb</a></span>(<span class="fl">0</span>,<span class="fl">0</span>,<span class="fl">0</span>,<span class="kw">max</span><span class="kw">=</span><span class="fl">30</span>)
-<span class="no">grey2</span><span class="kw">&lt;-</span><span class="fu"><a href="https://rdrr.io/r/grDevices/rgb.html">rgb</a></span>(<span class="fl">10</span>,<span class="fl">10</span>,<span class="fl">10</span>,<span class="kw">max</span><span class="kw">=</span><span class="fl">30</span>)
-<span class="no">grey3</span><span class="kw">&lt;-</span><span class="fu"><a href="https://rdrr.io/r/grDevices/rgb.html">rgb</a></span>(<span class="fl">20</span>,<span class="fl">20</span>,<span class="fl">20</span>,<span class="kw">max</span><span class="kw">=</span><span class="fl">30</span>)
-<span class="no">grey3_dup</span><span class="kw">&lt;-</span><span class="fu"><a href="https://rdrr.io/r/grDevices/rgb.html">rgb</a></span>(<span class="fl">19</span>,<span class="fl">20</span>,<span class="fl">20</span>,<span class="kw">max</span><span class="kw">=</span><span class="fl">30</span>)
-<span class="no">lightPink</span><span class="kw">&lt;-</span><span class="fu"><a href="https://rdrr.io/r/grDevices/rgb.html">rgb</a></span>(<span class="fl">229</span>,<span class="fl">151</span>,<span class="fl">192</span>,<span class="kw">max</span><span class="kw">=</span><span class="fl">255</span>)
-<span class="no">orange</span><span class="kw">&lt;-</span><span class="fu"><a href="https://rdrr.io/r/grDevices/rgb.html">rgb</a></span>(<span class="fl">247</span>,<span class="fl">139</span>,<span class="fl">21</span>,<span class="kw">max</span><span class="kw">=</span><span class="fl">255</span>)</pre></body></html></div>
+<span class="va">blue</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/grDevices/rgb.html">rgb</a></span><span class="op">(</span><span class="fl">69</span>, <span class="fl">185</span>, <span class="fl">209</span>, max<span class="op">=</span><span class="fl">255</span><span class="op">)</span>
+<span class="va">red</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/grDevices/rgb.html">rgb</a></span><span class="op">(</span><span class="fl">225</span>, <span class="fl">55</span>, <span class="fl">60</span>, max<span class="op">=</span><span class="fl">255</span><span class="op">)</span>
+<span class="va">yellow</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/grDevices/rgb.html">rgb</a></span><span class="op">(</span><span class="fl">238</span>, <span class="fl">224</span>, <span class="fl">30</span>, max<span class="op">=</span><span class="fl">255</span><span class="op">)</span>
+<span class="va">pink</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/grDevices/rgb.html">rgb</a></span><span class="op">(</span><span class="fl">211</span>,<span class="fl">78</span>,<span class="fl">147</span>,max<span class="op">=</span><span class="fl">255</span><span class="op">)</span>
+<span class="va">Dblue</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/grDevices/rgb.html">rgb</a></span><span class="op">(</span><span class="fl">0</span>,<span class="fl">45</span>,<span class="fl">92</span>,max<span class="op">=</span><span class="fl">255</span><span class="op">)</span>
+<span class="va">Dyellow</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/grDevices/rgb.html">rgb</a></span><span class="op">(</span><span class="fl">214</span>, <span class="fl">200</span>, <span class="fl">16</span>, max<span class="op">=</span><span class="fl">255</span><span class="op">)</span>
+<span class="va">green</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/grDevices/rgb.html">rgb</a></span><span class="op">(</span><span class="fl">0</span>,<span class="fl">1</span>,<span class="fl">0</span><span class="op">)</span>
+<span class="va">Dyellow</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/grDevices/rgb.html">rgb</a></span><span class="op">(</span><span class="fl">214</span>, <span class="fl">200</span>, <span class="fl">16</span>, max<span class="op">=</span><span class="fl">255</span><span class="op">)</span>
+<span class="va">black</span><span class="op">&lt;-</span><span class="fu"><a href="https://rdrr.io/r/grDevices/rgb.html">rgb</a></span><span class="op">(</span><span class="fl">0</span>,<span class="fl">0</span>,<span class="fl">0</span>,max<span class="op">=</span><span class="fl">255</span><span class="op">)</span>
+<span class="va">grey1</span><span class="op">&lt;-</span><span class="fu"><a href="https://rdrr.io/r/grDevices/rgb.html">rgb</a></span><span class="op">(</span><span class="fl">0</span>,<span class="fl">0</span>,<span class="fl">0</span>,max<span class="op">=</span><span class="fl">30</span><span class="op">)</span>
+<span class="va">grey2</span><span class="op">&lt;-</span><span class="fu"><a href="https://rdrr.io/r/grDevices/rgb.html">rgb</a></span><span class="op">(</span><span class="fl">10</span>,<span class="fl">10</span>,<span class="fl">10</span>,max<span class="op">=</span><span class="fl">30</span><span class="op">)</span>
+<span class="va">grey3</span><span class="op">&lt;-</span><span class="fu"><a href="https://rdrr.io/r/grDevices/rgb.html">rgb</a></span><span class="op">(</span><span class="fl">20</span>,<span class="fl">20</span>,<span class="fl">20</span>,max<span class="op">=</span><span class="fl">30</span><span class="op">)</span>
+<span class="va">grey3_dup</span><span class="op">&lt;-</span><span class="fu"><a href="https://rdrr.io/r/grDevices/rgb.html">rgb</a></span><span class="op">(</span><span class="fl">19</span>,<span class="fl">20</span>,<span class="fl">20</span>,max<span class="op">=</span><span class="fl">30</span><span class="op">)</span>
+<span class="va">lightPink</span><span class="op">&lt;-</span><span class="fu"><a href="https://rdrr.io/r/grDevices/rgb.html">rgb</a></span><span class="op">(</span><span class="fl">229</span>,<span class="fl">151</span>,<span class="fl">192</span>,max<span class="op">=</span><span class="fl">255</span><span class="op">)</span>
+<span class="va">orange</span><span class="op">&lt;-</span><span class="fu"><a href="https://rdrr.io/r/grDevices/rgb.html">rgb</a></span><span class="op">(</span><span class="fl">247</span>,<span class="fl">139</span>,<span class="fl">21</span>,max<span class="op">=</span><span class="fl">255</span><span class="op">)</span></code></pre></div>
 </div>
 <div id="read-in-the-data" class="section level2">
 <h2 class="hasAnchor">
@@ -185,35 +186,36 @@ pre { /* Code block - determines code spacing between lines */
 <li>Treatment - a character variable with the name of the intervention treatment</li>
 </ul>
 <p>The data must be in “wide” format such that there is one row per patient and columns for each endpoint separately. In this example, we use overall survival (OS) and progression-free survival (PFS). The reference treatment is also set at the end of this chunk of code.</p>
-<div class="sourceCode" id="cb2"><html><body><pre class="r">
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R">
 
-<span class="no">adtte</span> <span class="kw">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html">read.csv</a></span>(<span class="fu"><a href="https://rdrr.io/r/base/system.file.html">system.file</a></span>(<span class="st">"extdata"</span>, <span class="st">"adtte.csv"</span>, <span class="kw">package</span> <span class="kw">=</span> <span class="st">"flexsurvPlus"</span>, <span class="kw">mustWork</span> <span class="kw">=</span> <span class="fl">TRUE</span>))
+<span class="va">adtte</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html">read.csv</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/system.file.html">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"adtte.csv"</span>, package <span class="op">=</span> <span class="st">"flexsurvPlus"</span>, mustWork <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span>
 
 
-<span class="no">OS_data</span> <span class="kw">&lt;-</span> <span class="no">adtte</span> <span class="kw">%&gt;%</span>
-  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html">filter</a></span>(<span class="no">PARAMCD</span><span class="kw">==</span><span class="st">"OS"</span>) <span class="kw">%&gt;%</span>
-  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html">mutate</a></span>(<span class="kw">ARM</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html">as.factor</a></span>(<span class="no">ARM</span>)) <span class="kw">%&gt;%</span>
-  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/rename.html">rename</a></span>(<span class="kw">OS_days</span> <span class="kw">=</span> <span class="no">AVAL</span>,
-         <span class="kw">OS_event</span> <span class="kw">=</span> <span class="no">EVNT</span>,
-         <span class="kw">OS_cens</span> <span class="kw">=</span> <span class="no">CNSR</span>
-            ) <span class="kw">%&gt;%</span>
-  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html">select</a></span>(-<span class="no">PARAMCD</span>, -<span class="no">PARAM</span>)
+<span class="va">OS_data</span> <span class="op">&lt;-</span> <span class="va">adtte</span> <span class="op">%&gt;%</span>
+  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html">filter</a></span><span class="op">(</span><span class="va">PARAMCD</span><span class="op">==</span><span class="st">"OS"</span><span class="op">)</span> <span class="op">%&gt;%</span>
+  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html">mutate</a></span><span class="op">(</span>ARM <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html">as.factor</a></span><span class="op">(</span><span class="va">ARM</span><span class="op">)</span><span class="op">)</span> <span class="op">%&gt;%</span>
+  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/rename.html">rename</a></span><span class="op">(</span>OS_days <span class="op">=</span> <span class="va">AVAL</span>,
+         OS_event <span class="op">=</span> <span class="va">EVNT</span>,
+         OS_cens <span class="op">=</span> <span class="va">CNSR</span>
+            <span class="op">)</span> <span class="op">%&gt;%</span>
+  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html">select</a></span><span class="op">(</span><span class="op">-</span><span class="va">PARAMCD</span>, <span class="op">-</span><span class="va">PARAM</span><span class="op">)</span>
 
 <span class="co"># subset PFS data and rename</span>
-<span class="no">PFS_data</span> <span class="kw">&lt;-</span> <span class="no">adtte</span> <span class="kw">%&gt;%</span>
-  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html">filter</a></span>(<span class="no">PARAMCD</span><span class="kw">==</span><span class="st">"PFS"</span>) <span class="kw">%&gt;%</span>
-  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/rename.html">rename</a></span>(<span class="kw">PFS_days</span> <span class="kw">=</span> <span class="no">AVAL</span>,
-         <span class="kw">PFS_event</span> <span class="kw">=</span> <span class="no">EVNT</span>,
-         <span class="kw">PFS_cens</span> <span class="kw">=</span> <span class="no">CNSR</span>
-  ) <span class="kw">%&gt;%</span>
-  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html">select</a></span>(-<span class="no">PARAMCD</span>, -<span class="no">PARAM</span>)
+<span class="va">PFS_data</span> <span class="op">&lt;-</span> <span class="va">adtte</span> <span class="op">%&gt;%</span>
+  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html">filter</a></span><span class="op">(</span><span class="va">PARAMCD</span><span class="op">==</span><span class="st">"PFS"</span><span class="op">)</span> <span class="op">%&gt;%</span>
+  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/rename.html">rename</a></span><span class="op">(</span>PFS_days <span class="op">=</span> <span class="va">AVAL</span>,
+         PFS_event <span class="op">=</span> <span class="va">EVNT</span>,
+         PFS_cens <span class="op">=</span> <span class="va">CNSR</span>
+  <span class="op">)</span> <span class="op">%&gt;%</span>
+  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html">select</a></span><span class="op">(</span><span class="op">-</span><span class="va">PARAMCD</span>, <span class="op">-</span><span class="va">PARAM</span><span class="op">)</span>
 
-<span class="no">analysis_data</span> <span class="kw">&lt;-</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate-joins.html">left_join</a></span>(<span class="no">OS_data</span>, <span class="no">PFS_data</span>)
+<span class="va">analysis_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate-joins.html">left_join</a></span><span class="op">(</span><span class="va">OS_data</span>, <span class="va">PFS_data</span><span class="op">)</span>
 <span class="co">#&gt; Joining, by = c("USUBJID", "ARM", "AVALU")</span>
 
-<span class="fu"><a href="https://rdrr.io/r/base/names.html">names</a></span>(<span class="no">analysis_data</span>$<span class="no">ARM</span>)
+<span class="fu"><a href="https://rdrr.io/r/base/names.html">names</a></span><span class="op">(</span><span class="va">analysis_data</span><span class="op">$</span><span class="va">ARM</span><span class="op">)</span>
 <span class="co">#&gt; NULL</span>
-<span class="no">analysis_data</span>$<span class="no">ARM</span> <span class="kw">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/relevel.html">relevel</a></span>(<span class="fu"><a href="https://rdrr.io/r/base/factor.html">as.factor</a></span>(<span class="no">analysis_data</span>$<span class="no">ARM</span>), <span class="kw">ref</span><span class="kw">=</span><span class="st">"B"</span>)</pre></body></html></div>
+<span class="va">analysis_data</span><span class="op">$</span><span class="va">ARM</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/relevel.html">relevel</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/factor.html">as.factor</a></span><span class="op">(</span><span class="va">analysis_data</span><span class="op">$</span><span class="va">ARM</span><span class="op">)</span>, ref<span class="op">=</span><span class="st">"B"</span><span class="op">)</span></code></pre></div>
 </div>
 </div>
 <div id="exploratory-analysis" class="section level1">
@@ -221,32 +223,34 @@ pre { /* Code block - determines code spacing between lines */
 <a href="#exploratory-analysis" class="anchor"></a>Exploratory analysis</h1>
 <p>Before performing any statistical analysis, it is important to explore the data.</p>
 <p>Most importantly is a Kaplan-Meier plot and code to do this using <tt>ggsurvplot</tt> is presented below.</p>
-<div class="sourceCode" id="cb3"><html><body><pre class="r">
-<span class="no">km.est.OS</span> <span class="kw">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/survival/man/survfit.html">survfit</a></span>(<span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html">Surv</a></span>(<span class="no">OS_days</span>, <span class="no">OS_event</span>) ~ <span class="no">ARM</span> , <span class="kw">data</span> <span class="kw">=</span> <span class="no">analysis_data</span>, <span class="kw">conf.type</span> <span class="kw">=</span> <span class="st">'plain'</span>)
-<span class="no">km.est.PFS</span> <span class="kw">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/survival/man/survfit.html">survfit</a></span>(<span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html">Surv</a></span>(<span class="no">PFS_days</span>, <span class="no">PFS_event</span>) ~ <span class="no">ARM</span> , <span class="kw">data</span> <span class="kw">=</span> <span class="no">analysis_data</span>, <span class="kw">conf.type</span> <span class="kw">=</span> <span class="st">'plain'</span>)
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R">
+<span class="va">km.est.OS</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/survival/man/survfit.html">survfit</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html">Surv</a></span><span class="op">(</span><span class="va">OS_days</span>, <span class="va">OS_event</span><span class="op">)</span> <span class="op">~</span> <span class="va">ARM</span> , data <span class="op">=</span> <span class="va">analysis_data</span>, conf.type <span class="op">=</span> <span class="st">'plain'</span><span class="op">)</span>
+<span class="va">km.est.PFS</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/survival/man/survfit.html">survfit</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html">Surv</a></span><span class="op">(</span><span class="va">PFS_days</span>, <span class="va">PFS_event</span><span class="op">)</span> <span class="op">~</span> <span class="va">ARM</span> , data <span class="op">=</span> <span class="va">analysis_data</span>, conf.type <span class="op">=</span> <span class="st">'plain'</span><span class="op">)</span>
 
 <span class="co">#KM_list &lt;- list(OS = km.est.OS, PFS = km.est.PFS)</span>
 
-<span class="no">KM_plot_OS</span> <span class="kw">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/survminer/man/ggsurvplot.html">ggsurvplot</a></span>(<span class="no">km.est.OS</span>, <span class="kw">risk.table</span> <span class="kw">=</span> <span class="fl">TRUE</span>, <span class="kw">data</span> <span class="kw">=</span> <span class="no">analysis_data</span>,
-           <span class="kw">break.time.by</span> <span class="kw">=</span> <span class="fl">100</span>,
-           <span class="kw">conf.int</span> <span class="kw">=</span> <span class="fl">FALSE</span>,
-           <span class="kw">censor</span><span class="kw">=</span><span class="fl">FALSE</span>,
-           <span class="kw">legend.title</span> <span class="kw">=</span> <span class="st">''</span>,
-           <span class="kw">xlab</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html">paste0</a></span>(<span class="st">'Overall survival (Days)'</span>),
-           <span class="kw">size</span> <span class="kw">=</span> <span class="fl">0.72</span>,
-           <span class="kw">xlim</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="fl">0</span>, <span class="fl">600</span>))
-<span class="no">KM_plot_OS</span></pre></body></html></div>
+<span class="va">KM_plot_OS</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/survminer/man/ggsurvplot.html">ggsurvplot</a></span><span class="op">(</span><span class="va">km.est.OS</span>, risk.table <span class="op">=</span> <span class="cn">TRUE</span>, data <span class="op">=</span> <span class="va">analysis_data</span>,
+           break.time.by <span class="op">=</span> <span class="fl">100</span>,
+           conf.int <span class="op">=</span> <span class="cn">FALSE</span>,
+           censor<span class="op">=</span><span class="cn">FALSE</span>,
+           legend.title <span class="op">=</span> <span class="st">''</span>,
+           xlab <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html">paste0</a></span><span class="op">(</span><span class="st">'Overall survival (Days)'</span><span class="op">)</span>,
+           size <span class="op">=</span> <span class="fl">0.72</span>,
+           xlim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">600</span><span class="op">)</span><span class="op">)</span>
+<span class="va">KM_plot_OS</span></code></pre></div>
 <p><img src="Fitting_models_in_R_files/figure-html/unnamed-chunk-3-1.png" width="672"></p>
-<div class="sourceCode" id="cb4"><html><body><pre class="r">
-<span class="no">KM_plot_PFS</span> <span class="kw">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/survminer/man/ggsurvplot.html">ggsurvplot</a></span>(<span class="no">km.est.PFS</span>, <span class="kw">risk.table</span> <span class="kw">=</span> <span class="fl">TRUE</span>, <span class="kw">data</span> <span class="kw">=</span> <span class="no">analysis_data</span>,
-           <span class="kw">break.time.by</span> <span class="kw">=</span> <span class="fl">100</span>,
-           <span class="kw">conf.int</span> <span class="kw">=</span> <span class="fl">FALSE</span>,
-           <span class="kw">censor</span><span class="kw">=</span><span class="fl">FALSE</span>,
-           <span class="kw">legend.title</span> <span class="kw">=</span> <span class="st">''</span>,
-           <span class="kw">xlab</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html">paste0</a></span>(<span class="st">'Progression-free survival (Days)'</span>),
-           <span class="kw">size</span> <span class="kw">=</span> <span class="fl">0.72</span>,
-           <span class="kw">xlim</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="fl">0</span>, <span class="fl">600</span>))
-<span class="no">KM_plot_PFS</span></pre></body></html></div>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R">
+<span class="va">KM_plot_PFS</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/survminer/man/ggsurvplot.html">ggsurvplot</a></span><span class="op">(</span><span class="va">km.est.PFS</span>, risk.table <span class="op">=</span> <span class="cn">TRUE</span>, data <span class="op">=</span> <span class="va">analysis_data</span>,
+           break.time.by <span class="op">=</span> <span class="fl">100</span>,
+           conf.int <span class="op">=</span> <span class="cn">FALSE</span>,
+           censor<span class="op">=</span><span class="cn">FALSE</span>,
+           legend.title <span class="op">=</span> <span class="st">''</span>,
+           xlab <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html">paste0</a></span><span class="op">(</span><span class="st">'Progression-free survival (Days)'</span><span class="op">)</span>,
+           size <span class="op">=</span> <span class="fl">0.72</span>,
+           xlim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">600</span><span class="op">)</span><span class="op">)</span>
+<span class="va">KM_plot_PFS</span></code></pre></div>
 <p><img src="Fitting_models_in_R_files/figure-html/unnamed-chunk-3-2.png" width="672"></p>
 </div>
 <div id="fitting-the-models" class="section level1">
@@ -268,21 +272,22 @@ pre { /* Code block - determines code spacing between lines */
 <h2 class="hasAnchor">
 <a href="#separate-models-for-each-treatment" class="anchor"></a>Separate models for each treatment</h2>
 <p>These models have been fit using the <tt>runPSM</tt> function using the model.type=“Separate” argument.</p>
-<div class="sourceCode" id="cb5"><html><body><pre class="r"><span class="no">psm_OS_separate</span> <span class="kw">&lt;-</span> <span class="fu"><a href="../reference/runPSM.html">runPSM</a></span>(<span class="kw">data</span><span class="kw">=</span><span class="no">analysis_data</span>,
-                          <span class="kw">time_var</span><span class="kw">=</span><span class="st">"OS_days"</span>,
-                          <span class="kw">event_var</span><span class="kw">=</span><span class="st">"OS_event"</span>,
-                          <span class="kw">model.type</span><span class="kw">=</span><span class="st">"Separate"</span>,
-                          <span class="kw">distr</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">'exp'</span>,
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">psm_OS_separate</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/runPSM.html">runPSM</a></span><span class="op">(</span>data<span class="op">=</span><span class="va">analysis_data</span>,
+                          time_var<span class="op">=</span><span class="st">"OS_days"</span>,
+                          event_var<span class="op">=</span><span class="st">"OS_event"</span>,
+                          model.type<span class="op">=</span><span class="st">"Separate"</span>,
+                          distr <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">'exp'</span>,
                                     <span class="st">'weibull'</span>,
                                     <span class="st">'gompertz'</span>,
                                     <span class="st">'lnorm'</span>,
                                     <span class="st">'llogis'</span>,
                                     <span class="st">'gengamma'</span>,
-                                    <span class="st">'gamma'</span>),
-                          <span class="kw">strata_var</span> <span class="kw">=</span> <span class="st">"ARM"</span>,
-                          <span class="kw">int_name</span><span class="kw">=</span><span class="st">"A"</span>,
-                          <span class="kw">ref_name</span> <span class="kw">=</span> <span class="st">"B"</span>)
-<span class="no">psm_OS_separate</span>
+                                    <span class="st">'gamma'</span><span class="op">)</span>,
+                          strata_var <span class="op">=</span> <span class="st">"ARM"</span>,
+                          int_name<span class="op">=</span><span class="st">"A"</span>,
+                          ref_name <span class="op">=</span> <span class="st">"B"</span><span class="op">)</span>
+<span class="va">psm_OS_separate</span>
 <span class="co">#&gt; $models.int</span>
 <span class="co">#&gt; $models.int$exp</span>
 <span class="co">#&gt; Call:</span>
@@ -535,27 +540,28 @@ pre { /* Code block - determines code spacing between lines */
 <span class="co">#&gt;   gengamma.sigma.B gengamma.Q.B gamma.shape.B gamma.rate.B    Model</span>
 <span class="co">#&gt; 1       -0.1054668     1.217508   -0.01839982    -5.889741 separate</span>
 <span class="co">#&gt;   Intervention name Reference name</span>
-<span class="co">#&gt; 1                 A              B</span></pre></body></html></div>
+<span class="co">#&gt; 1                 A              B</span></code></pre></div>
 </div>
 <div id="independent-shape-models" class="section level2">
 <h2 class="hasAnchor">
 <a href="#independent-shape-models" class="anchor"></a>Independent shape models</h2>
 <p>These models are similar to the separate model for each treatment as they allow all parameters to vary by treatment, however it is performed using 1 model for 2 treatments, rather than 2 models as above. They have been fit using the <tt>runPSM</tt> function using the model.type=“Independent shape” argument.</p>
-<div class="sourceCode" id="cb6"><html><body><pre class="r"><span class="no">psm_OS_ind_shape</span> <span class="kw">&lt;-</span> <span class="fu"><a href="../reference/runPSM.html">runPSM</a></span>(<span class="kw">data</span><span class="kw">=</span><span class="no">analysis_data</span>,
-                            <span class="kw">time_var</span><span class="kw">=</span><span class="st">"OS_days"</span>,
-                            <span class="kw">event_var</span><span class="kw">=</span><span class="st">"OS_event"</span>,
-                            <span class="kw">model.type</span><span class="kw">=</span><span class="st">"Independent shape"</span>,
-                            <span class="kw">distr</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>( <span class="st">'weibull'</span>,
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">psm_OS_ind_shape</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/runPSM.html">runPSM</a></span><span class="op">(</span>data<span class="op">=</span><span class="va">analysis_data</span>,
+                            time_var<span class="op">=</span><span class="st">"OS_days"</span>,
+                            event_var<span class="op">=</span><span class="st">"OS_event"</span>,
+                            model.type<span class="op">=</span><span class="st">"Independent shape"</span>,
+                            distr <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span> <span class="st">'weibull'</span>,
                             <span class="st">'gompertz'</span>,
                             <span class="st">'lnorm'</span>,
                             <span class="st">'llogis'</span>,
                             <span class="st">'gengamma'</span>,
-                            <span class="st">'gamma'</span>),
-                            <span class="kw">strata_var</span> <span class="kw">=</span> <span class="st">"ARM"</span>,
-                            <span class="kw">int_name</span><span class="kw">=</span><span class="st">"A"</span>,
-                            <span class="kw">ref_name</span> <span class="kw">=</span> <span class="st">"B"</span>)
+                            <span class="st">'gamma'</span><span class="op">)</span>,
+                            strata_var <span class="op">=</span> <span class="st">"ARM"</span>,
+                            int_name<span class="op">=</span><span class="st">"A"</span>,
+                            ref_name <span class="op">=</span> <span class="st">"B"</span><span class="op">)</span>
 
-<span class="no">psm_OS_ind_shape</span>
+<span class="va">psm_OS_ind_shape</span>
 <span class="co">#&gt; $models</span>
 <span class="co">#&gt; $models$weibull</span>
 <span class="co">#&gt; Call:</span>
@@ -725,27 +731,28 @@ pre { /* Code block - determines code spacing between lines */
 <span class="co">#&gt;   gengamma.sigma.TE gengamma.Q.TE             Model Intervention name</span>
 <span class="co">#&gt; 1         0.1913629    -0.4499184 Independent shape                 A</span>
 <span class="co">#&gt;   Reference name</span>
-<span class="co">#&gt; 1              B</span></pre></body></html></div>
+<span class="co">#&gt; 1              B</span></code></pre></div>
 </div>
 <div id="fit-common-shape-models" class="section level2">
 <h2 class="hasAnchor">
 <a href="#fit-common-shape-models" class="anchor"></a>Fit common shape models</h2>
 <p>These models have been fit using the <tt>runPSM</tt> function using the model.type=“Common shape” argument.</p>
-<div class="sourceCode" id="cb7"><html><body><pre class="r"><span class="no">psm_OS_common_shape</span> <span class="kw">&lt;-</span> <span class="fu"><a href="../reference/runPSM.html">runPSM</a></span>(<span class="kw">data</span><span class="kw">=</span><span class="no">analysis_data</span>,
-                     <span class="kw">time_var</span><span class="kw">=</span><span class="st">"OS_days"</span>,
-                     <span class="kw">event_var</span><span class="kw">=</span><span class="st">"OS_event"</span>,
-                     <span class="kw">model.type</span><span class="kw">=</span><span class="st">"Common shape"</span>,
-                     <span class="kw">distr</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">'exp'</span>,
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">psm_OS_common_shape</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/runPSM.html">runPSM</a></span><span class="op">(</span>data<span class="op">=</span><span class="va">analysis_data</span>,
+                     time_var<span class="op">=</span><span class="st">"OS_days"</span>,
+                     event_var<span class="op">=</span><span class="st">"OS_event"</span>,
+                     model.type<span class="op">=</span><span class="st">"Common shape"</span>,
+                     distr <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">'exp'</span>,
                                <span class="st">'weibull'</span>,
                                <span class="st">'gompertz'</span>,
                                <span class="st">'lnorm'</span>,
                                <span class="st">'llogis'</span>,
                                <span class="st">'gengamma'</span>,
-                               <span class="st">'gamma'</span>),
-                     <span class="kw">strata_var</span> <span class="kw">=</span> <span class="st">"ARM"</span>,
-                     <span class="kw">int_name</span><span class="kw">=</span><span class="st">"A"</span>,
-                     <span class="kw">ref_name</span> <span class="kw">=</span> <span class="st">"B"</span>)
-<span class="no">psm_OS_common_shape</span>
+                               <span class="st">'gamma'</span><span class="op">)</span>,
+                     strata_var <span class="op">=</span> <span class="st">"ARM"</span>,
+                     int_name<span class="op">=</span><span class="st">"A"</span>,
+                     ref_name <span class="op">=</span> <span class="st">"B"</span><span class="op">)</span>
+<span class="va">psm_OS_common_shape</span>
 <span class="co">#&gt; $models</span>
 <span class="co">#&gt; $models$exp</span>
 <span class="co">#&gt; Call:</span>
@@ -916,30 +923,31 @@ pre { /* Code block - determines code spacing between lines */
 <span class="co">#&gt;   gengamma.mu.A gengamma.mu.B gengamma.sigma.A gengamma.sigma.B gengamma.Q.A</span>
 <span class="co">#&gt; 1      4.690469      5.840432       0.04296199       0.04296199    0.9212455</span>
 <span class="co">#&gt;   gengamma.Q.B gengamma.mu.TE        Model Intervention name Reference name</span>
-<span class="co">#&gt; 1    0.9212455      -1.149962 Common shape                 A              B</span></pre></body></html></div>
+<span class="co">#&gt; 1    0.9212455      -1.149962 Common shape                 A              B</span></code></pre></div>
 </div>
 <div id="output-parameters-to-excel" class="section level2">
 <h2 class="hasAnchor">
 <a href="#output-parameters-to-excel" class="anchor"></a>Output parameters to excel</h2>
 <p>Once all the models have been fit, they can be combined to output to excel such that there is 1 row per model.</p>
-<div class="sourceCode" id="cb8"><html><body><pre class="r"><span class="no">parameters_all</span> <span class="kw">&lt;-</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate-joins.html">full_join</a></span>(<span class="no">psm_OS_ind_shape</span>$<span class="no">parameters</span>, <span class="no">psm_OS_common_shape</span>$<span class="no">parameters</span>) <span class="kw">%&gt;%</span>
-  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate-joins.html">full_join</a></span>(<span class="no">psm_OS_separate</span>$<span class="no">parameters</span>) <span class="kw">%&gt;%</span>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">parameters_all</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate-joins.html">full_join</a></span><span class="op">(</span><span class="va">psm_OS_ind_shape</span><span class="op">$</span><span class="va">parameters</span>, <span class="va">psm_OS_common_shape</span><span class="op">$</span><span class="va">parameters</span><span class="op">)</span> <span class="op">%&gt;%</span>
+  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate-joins.html">full_join</a></span><span class="op">(</span><span class="va">psm_OS_separate</span><span class="op">$</span><span class="va">parameters</span><span class="op">)</span> <span class="op">%&gt;%</span>
 <span class="co"># Add meta data to add in details of analysis</span>
-  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html">mutate</a></span>(<span class="kw">Study_name</span> <span class="kw">=</span> <span class="st">"Study ABC"</span>,
-          <span class="kw">Datacut</span> <span class="kw">=</span> <span class="st">"Final"</span>,
-         <span class="kw">Population</span> <span class="kw">=</span> <span class="st">"ITT"</span>,
-         <span class="kw">Endpoint</span> <span class="kw">=</span> <span class="st">"OS"</span>,
-         <span class="kw">Endpoint_def</span> <span class="kw">=</span> <span class="st">"NA"</span>) <span class="kw">%&gt;%</span>
+  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html">mutate</a></span><span class="op">(</span>Study_name <span class="op">=</span> <span class="st">"Study ABC"</span>,
+          Datacut <span class="op">=</span> <span class="st">"Final"</span>,
+         Population <span class="op">=</span> <span class="st">"ITT"</span>,
+         Endpoint <span class="op">=</span> <span class="st">"OS"</span>,
+         Endpoint_def <span class="op">=</span> <span class="st">"NA"</span><span class="op">)</span> <span class="op">%&gt;%</span>
   <span class="co">#reorder columns</span>
-  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html">select</a></span>(<span class="st">"Model"</span>, <span class="st">"Intervention name"</span>, <span class="st">"Reference name"</span>,
-         <span class="no">Study_name</span>, <span class="no">Datacut</span>, <span class="no">Population</span>, <span class="no">Endpoint</span>, <span class="no">Endpoint_def</span>,
-         <span class="fu"><a href="https://dplyr.tidyverse.org/reference/reexports.html">starts_with</a></span>(<span class="st">"exp"</span>), <span class="fu"><a href="https://dplyr.tidyverse.org/reference/reexports.html">starts_with</a></span>(<span class="st">"weibull"</span>), <span class="fu"><a href="https://dplyr.tidyverse.org/reference/reexports.html">starts_with</a></span>(<span class="st">"gompertz"</span>), <span class="fu"><a href="https://dplyr.tidyverse.org/reference/reexports.html">starts_with</a></span>(<span class="st">"lnorm"</span>),
-         <span class="fu"><a href="https://dplyr.tidyverse.org/reference/reexports.html">starts_with</a></span>(<span class="st">"llogis"</span>), <span class="fu"><a href="https://dplyr.tidyverse.org/reference/reexports.html">starts_with</a></span>(<span class="st">"gengamma"</span>), <span class="fu"><a href="https://dplyr.tidyverse.org/reference/reexports.html">starts_with</a></span>(<span class="st">"gamma"</span>)) <span class="kw">%&gt;%</span>
-  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/arrange.html">arrange</a></span>(<span class="no">Model</span>)
+  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html">select</a></span><span class="op">(</span><span class="st">"Model"</span>, <span class="st">"Intervention name"</span>, <span class="st">"Reference name"</span>,
+         <span class="va">Study_name</span>, <span class="va">Datacut</span>, <span class="va">Population</span>, <span class="va">Endpoint</span>, <span class="va">Endpoint_def</span>,
+         <span class="fu"><a href="https://tidyselect.r-lib.org/reference/starts_with.html">starts_with</a></span><span class="op">(</span><span class="st">"exp"</span><span class="op">)</span>, <span class="fu"><a href="https://tidyselect.r-lib.org/reference/starts_with.html">starts_with</a></span><span class="op">(</span><span class="st">"weibull"</span><span class="op">)</span>, <span class="fu"><a href="https://tidyselect.r-lib.org/reference/starts_with.html">starts_with</a></span><span class="op">(</span><span class="st">"gompertz"</span><span class="op">)</span>, <span class="fu"><a href="https://tidyselect.r-lib.org/reference/starts_with.html">starts_with</a></span><span class="op">(</span><span class="st">"lnorm"</span><span class="op">)</span>,
+         <span class="fu"><a href="https://tidyselect.r-lib.org/reference/starts_with.html">starts_with</a></span><span class="op">(</span><span class="st">"llogis"</span><span class="op">)</span>, <span class="fu"><a href="https://tidyselect.r-lib.org/reference/starts_with.html">starts_with</a></span><span class="op">(</span><span class="st">"gengamma"</span><span class="op">)</span>, <span class="fu"><a href="https://tidyselect.r-lib.org/reference/starts_with.html">starts_with</a></span><span class="op">(</span><span class="st">"gamma"</span><span class="op">)</span><span class="op">)</span> <span class="op">%&gt;%</span>
+  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/arrange.html">arrange</a></span><span class="op">(</span><span class="va">Model</span><span class="op">)</span>
 <span class="co">#&gt; Joining, by = c("weibull.scale.A", "weibull.scale.B", "weibull.shape.A", "weibull.shape.B", "weibull.scale.TE", "llogis.scale.A", "llogis.scale.B", "llogis.shape.A", "llogis.shape.B", "llogis.scale.TE", "gompertz.rate.A", "gompertz.rate.B", "gompertz.shape.A", "gompertz.shape.B", "gompertz.rate.TE", "gamma.rate.A", "gamma.rate.B", "gamma.shape.A", "gamma.shape.B", "gamma.rate.TE", "lnorm.meanlog.A", "lnorm.meanlog.B", "lnorm.sdlog.A", "lnorm.sdlog.B", "lnorm.meanlog.TE", "gengamma.mu.A", "gengamma.mu.B", "gengamma.sigma.A", "gengamma.sigma.B", "gengamma.Q.A", "gengamma.Q.B", "gengamma.mu.TE", "Model", "Intervention name", "Reference name")</span>
 <span class="co">#&gt; Joining, by = c("weibull.scale.A", "weibull.scale.B", "weibull.shape.A", "weibull.shape.B", "llogis.scale.A", "llogis.scale.B", "llogis.shape.A", "llogis.shape.B", "gompertz.rate.A", "gompertz.rate.B", "gompertz.shape.A", "gompertz.shape.B", "gamma.rate.A", "gamma.rate.B", "gamma.shape.A", "gamma.shape.B", "lnorm.meanlog.A", "lnorm.meanlog.B", "lnorm.sdlog.A", "lnorm.sdlog.B", "gengamma.mu.A", "gengamma.mu.B", "gengamma.sigma.A", "gengamma.sigma.B", "gengamma.Q.A", "gengamma.Q.B", "Model", "Intervention name", "Reference name", "exp.rate.A", "exp.rate.B")</span>
 
-<span class="no">parameters_all</span>
+<span class="va">parameters_all</span>
 <span class="co">#&gt;               Model Intervention name Reference name Study_name Datacut</span>
 <span class="co">#&gt; 1      Common shape                 A              B  Study ABC   Final</span>
 <span class="co">#&gt; 2 Independent shape                 A              B  Study ABC   Final</span>
@@ -985,7 +993,7 @@ pre { /* Code block - determines code spacing between lines */
 <span class="co">#&gt; 2      1.165280     0.02105901</span>
 <span class="co">#&gt; 3            NA             NA</span>
 
-<span class="co">#write.csv(parameters_all, "developing R code/params OS.csv")</span></pre></body></html></div>
+<span class="co">#write.csv(parameters_all, "developing R code/params OS.csv")</span></code></pre></div>
 </div>
 </div>
 <div id="estimate-survival-from-the-models-and-plot-the-curves" class="section level1">
@@ -993,14 +1001,15 @@ pre { /* Code block - determines code spacing between lines */
 <a href="#estimate-survival-from-the-models-and-plot-the-curves" class="anchor"></a>Estimate survival from the models and plot the curves</h1>
 <p>Survival at a given time can be estimated using the <tt>get_curvefits</tt> function as shown below for treatment-effect models.</p>
 <p>This can be used to cross check survival in excel models. The example is given below for the treatment-effect models.</p>
-<div class="sourceCode" id="cb9"><html><body><pre class="r"><span class="co"># Landmark survival</span>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="co"># Landmark survival</span>
 
-<span class="no">curvefits_TEM_OS_landmark</span> <span class="kw">&lt;-</span> <span class="fu"><a href="../reference/get_curvefits.html">get_curvefits</a></span>(<span class="kw">models</span> <span class="kw">=</span> <span class="no">psm_OS_common_shape</span>$<span class="no">models</span>,
-                                           <span class="kw">time</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="fl">0</span>, <span class="fl">100</span>, <span class="fl">200</span>, <span class="fl">300</span>))
-<span class="no">curvefits_df_TEM_OS_landmark</span> <span class="kw">&lt;-</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/bind.html">bind_rows</a></span>(<span class="no">curvefits_TEM_OS_landmark</span>$<span class="no">curvefits</span>, <span class="kw">.id</span> <span class="kw">=</span> <span class="st">"Dist"</span>)  <span class="kw">%&gt;%</span>
-  <span class="fu"><a href="https://tidyr.tidyverse.org/reference/pivot_wider.html">pivot_wider</a></span>(<span class="kw">names_from</span>  <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="no">Dist</span>, <span class="no">ARM</span>), <span class="kw">values_from</span>  <span class="kw">=</span> <span class="no">est</span>) <span class="kw">%&gt;%</span>
-  <span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html">as.data.frame</a></span>()
-<span class="no">curvefits_df_TEM_OS_landmark</span>
+<span class="va">curvefits_TEM_OS_landmark</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/get_curvefits.html">get_curvefits</a></span><span class="op">(</span>models <span class="op">=</span> <span class="va">psm_OS_common_shape</span><span class="op">$</span><span class="va">models</span>,
+                                           time <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">100</span>, <span class="fl">200</span>, <span class="fl">300</span><span class="op">)</span><span class="op">)</span>
+<span class="va">curvefits_df_TEM_OS_landmark</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/bind.html">bind_rows</a></span><span class="op">(</span><span class="va">curvefits_TEM_OS_landmark</span><span class="op">$</span><span class="va">curvefits</span>, .id <span class="op">=</span> <span class="st">"Dist"</span><span class="op">)</span>  <span class="op">%&gt;%</span>
+  <span class="fu"><a href="https://tidyr.tidyverse.org/reference/pivot_wider.html">pivot_wider</a></span><span class="op">(</span>names_from  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="va">Dist</span>, <span class="va">ARM</span><span class="op">)</span>, values_from  <span class="op">=</span> <span class="va">est</span><span class="op">)</span> <span class="op">%&gt;%</span>
+  <span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html">as.data.frame</a></span><span class="op">(</span><span class="op">)</span>
+<span class="va">curvefits_df_TEM_OS_landmark</span>
 <span class="co">#&gt;   time   exp_Ref    exp_Int weibull_Ref weibull_Int gompertz_Ref gompertz_Int</span>
 <span class="co">#&gt; 1    0 1.0000000 1.00000000   1.0000000  1.00000000    1.0000000   1.00000000</span>
 <span class="co">#&gt; 2  100 0.7520608 0.41255895   0.7505372  0.41212147    0.7488330   0.41054348</span>
@@ -1015,90 +1024,92 @@ pre { /* Code block - determines code spacing between lines */
 <span class="co">#&gt; 1 1.00000000</span>
 <span class="co">#&gt; 2 0.41253541</span>
 <span class="co">#&gt; 3 0.17111969</span>
-<span class="co">#&gt; 4 0.07106512</span></pre></body></html></div>
+<span class="co">#&gt; 4 0.07106512</span></code></pre></div>
 <p>The <tt>get_curvefits</tt> function can also be used to generate the data required to plot the survival curves, overlaid on top of the KM plot. The time argument should reflect how long you want to the extrapolate for and the unit of time is the same as the input data (in this example, days).</p>
 <p>The <tt>ggsurvplot</tt> function from the <tt>survminer</tt> package has been used to show how the survival curves can be plotted.</p>
-<div class="sourceCode" id="cb10"><html><body><pre class="r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R">
 <span class="co"># Create data set for plots</span>
-<span class="no">curvefits_TEM_OS</span> <span class="kw">&lt;-</span> <span class="fu"><a href="../reference/get_curvefits.html">get_curvefits</a></span>(<span class="kw">models</span> <span class="kw">=</span> <span class="no">psm_OS_common_shape</span>$<span class="no">models</span>,
-                                  <span class="kw">time</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html">seq</a></span>(<span class="kw">from</span><span class="kw">=</span><span class="fl">0</span>, <span class="kw">to</span> <span class="kw">=</span> <span class="fl">500</span>, <span class="kw">by</span> <span class="kw">=</span> <span class="fl">10</span>))
+<span class="va">curvefits_TEM_OS</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/get_curvefits.html">get_curvefits</a></span><span class="op">(</span>models <span class="op">=</span> <span class="va">psm_OS_common_shape</span><span class="op">$</span><span class="va">models</span>,
+                                  time <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html">seq</a></span><span class="op">(</span>from<span class="op">=</span><span class="fl">0</span>, to <span class="op">=</span> <span class="fl">500</span>, by <span class="op">=</span> <span class="fl">10</span><span class="op">)</span><span class="op">)</span>
 
 <span class="co"># format data ready for the plot</span>
-<span class="no">curvefits_df_TEM_OS</span> <span class="kw">&lt;-</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/bind.html">bind_rows</a></span>(<span class="no">curvefits_TEM_OS</span>$<span class="no">curvefits</span>, <span class="kw">.id</span> <span class="kw">=</span> <span class="st">"Dist"</span>) <span class="kw">%&gt;%</span>
-  <span class="fu"><a href="https://tidyr.tidyverse.org/reference/pivot_wider.html">pivot_wider</a></span>(<span class="kw">names_from</span>  <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="no">ARM</span>), <span class="kw">values_from</span>  <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="no">est</span>))
+<span class="va">curvefits_df_TEM_OS</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/bind.html">bind_rows</a></span><span class="op">(</span><span class="va">curvefits_TEM_OS</span><span class="op">$</span><span class="va">curvefits</span>, .id <span class="op">=</span> <span class="st">"Dist"</span><span class="op">)</span> <span class="op">%&gt;%</span>
+  <span class="fu"><a href="https://tidyr.tidyverse.org/reference/pivot_wider.html">pivot_wider</a></span><span class="op">(</span>names_from  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="va">ARM</span><span class="op">)</span>, values_from  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="va">est</span><span class="op">)</span><span class="op">)</span>
 
-<span class="no">analysis_data_TrtA</span> <span class="kw">&lt;-</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html">filter</a></span>(<span class="no">analysis_data</span>, <span class="no">ARM</span><span class="kw">==</span><span class="st">"A"</span>)
-<span class="no">analysis_data_TrtB</span> <span class="kw">&lt;-</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html">filter</a></span>(<span class="no">analysis_data</span>, <span class="no">ARM</span><span class="kw">==</span><span class="st">"B"</span>)
+<span class="va">analysis_data_TrtA</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html">filter</a></span><span class="op">(</span><span class="va">analysis_data</span>, <span class="va">ARM</span><span class="op">==</span><span class="st">"A"</span><span class="op">)</span>
+<span class="va">analysis_data_TrtB</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html">filter</a></span><span class="op">(</span><span class="va">analysis_data</span>, <span class="va">ARM</span><span class="op">==</span><span class="st">"B"</span><span class="op">)</span>
 
 <span class="co"># Get KM estimates</span>
-<span class="no">km.est.OS.TrtA</span> <span class="kw">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/survival/man/survfit.html">survfit</a></span>(<span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html">Surv</a></span>(<span class="no">OS_days</span>, <span class="no">OS_event</span>) ~ <span class="fl">1</span> , <span class="kw">data</span> <span class="kw">=</span> <span class="no">analysis_data_TrtA</span>, <span class="kw">conf.type</span> <span class="kw">=</span> <span class="st">'plain'</span>)
-<span class="no">km.est.OS.TrtB</span> <span class="kw">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/survival/man/survfit.html">survfit</a></span>(<span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html">Surv</a></span>(<span class="no">OS_days</span>, <span class="no">OS_event</span>) ~ <span class="fl">1</span> , <span class="kw">data</span> <span class="kw">=</span> <span class="no">analysis_data_TrtB</span>, <span class="kw">conf.type</span> <span class="kw">=</span> <span class="st">'plain'</span>)
+<span class="va">km.est.OS.TrtA</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/survival/man/survfit.html">survfit</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html">Surv</a></span><span class="op">(</span><span class="va">OS_days</span>, <span class="va">OS_event</span><span class="op">)</span> <span class="op">~</span> <span class="fl">1</span> , data <span class="op">=</span> <span class="va">analysis_data_TrtA</span>, conf.type <span class="op">=</span> <span class="st">'plain'</span><span class="op">)</span>
+<span class="va">km.est.OS.TrtB</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/survival/man/survfit.html">survfit</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html">Surv</a></span><span class="op">(</span><span class="va">OS_days</span>, <span class="va">OS_event</span><span class="op">)</span> <span class="op">~</span> <span class="fl">1</span> , data <span class="op">=</span> <span class="va">analysis_data_TrtB</span>, conf.type <span class="op">=</span> <span class="st">'plain'</span><span class="op">)</span>
 
 
 <span class="co"># Plot survival curves for arm A</span>
-<span class="no">plot.OS.A</span> <span class="kw">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/survminer/man/ggsurvplot.html">ggsurvplot</a></span>(<span class="no">km.est.OS.TrtA</span>,
-                        <span class="kw">combine</span> <span class="kw">=</span> <span class="fl">TRUE</span>,
-                        <span class="kw">censor</span> <span class="kw">=</span> <span class="fl">FALSE</span>,
-                        <span class="kw">risk.table</span> <span class="kw">=</span> <span class="fl">TRUE</span>,
-                        <span class="kw">conf.int</span> <span class="kw">=</span> <span class="fl">FALSE</span>,
-                        <span class="kw">break.x.by</span> <span class="kw">=</span> <span class="fl">100</span>,
-                        <span class="kw">xlim</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="fl">0</span>, <span class="fl">500</span>),
-                        <span class="kw">xlab</span> <span class="kw">=</span> <span class="st">"Time (days)"</span>,
-                        <span class="kw">size</span> <span class="kw">=</span> <span class="fl">0.72</span>,
-                        <span class="kw">linetype</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="fl">6</span>,<span class="fl">6</span>,<span class="fl">6</span>,<span class="fl">6</span>, <span class="fl">1</span>, <span class="fl">6</span>, <span class="fl">6</span>,<span class="fl">6</span>,<span class="fl">6</span>),
-                        <span class="kw">title</span>  <span class="kw">=</span>  <span class="st">'Kaplan-Meier of OS with standard distribution overlays'</span>,
-                        <span class="kw">legend.title</span> <span class="kw">=</span> <span class="st">''</span>,
-                        <span class="kw">legend.labs</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">"KM"</span>),
-                        <span class="kw">surv.median.line</span> <span class="kw">=</span> <span class="st">'hv'</span>,
-                        <span class="kw">palette</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="fu"><a href="https://rdrr.io/r/grDevices/rgb.html">rgb</a></span>(<span class="fl">0</span>,<span class="fl">0</span>,<span class="fl">0</span>,<span class="kw">max</span><span class="kw">=</span><span class="fl">30</span>)),
-                        <span class="kw">risk.table.y.text.col</span> <span class="kw">=</span> <span class="no">F</span>
-)
+<span class="va">plot.OS.A</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/survminer/man/ggsurvplot.html">ggsurvplot</a></span><span class="op">(</span><span class="va">km.est.OS.TrtA</span>,
+                        combine <span class="op">=</span> <span class="cn">TRUE</span>,
+                        censor <span class="op">=</span> <span class="cn">FALSE</span>,
+                        risk.table <span class="op">=</span> <span class="cn">TRUE</span>,
+                        conf.int <span class="op">=</span> <span class="cn">FALSE</span>,
+                        break.x.by <span class="op">=</span> <span class="fl">100</span>,
+                        xlim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">500</span><span class="op">)</span>,
+                        xlab <span class="op">=</span> <span class="st">"Time (days)"</span>,
+                        size <span class="op">=</span> <span class="fl">0.72</span>,
+                        linetype <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fl">6</span>,<span class="fl">6</span>,<span class="fl">6</span>,<span class="fl">6</span>, <span class="fl">1</span>, <span class="fl">6</span>, <span class="fl">6</span>,<span class="fl">6</span>,<span class="fl">6</span><span class="op">)</span>,
+                        title  <span class="op">=</span>  <span class="st">'Kaplan-Meier of OS with standard distribution overlays'</span>,
+                        legend.title <span class="op">=</span> <span class="st">''</span>,
+                        legend.labs <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"KM"</span><span class="op">)</span>,
+                        surv.median.line <span class="op">=</span> <span class="st">'hv'</span>,
+                        palette <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/grDevices/rgb.html">rgb</a></span><span class="op">(</span><span class="fl">0</span>,<span class="fl">0</span>,<span class="fl">0</span>,max<span class="op">=</span><span class="fl">30</span><span class="op">)</span><span class="op">)</span>,
+                        risk.table.y.text.col <span class="op">=</span> <span class="cn">F</span>
+<span class="op">)</span>
 
 
-<span class="no">plot.OS.A</span>$<span class="no">plot</span> <span class="kw">&lt;-</span> <span class="no">plot.OS.A</span>$<span class="no">plot</span> +
-  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="kw">x</span> <span class="kw">=</span> <span class="no">time</span>, <span class="kw">y</span> <span class="kw">=</span> <span class="no">Int</span>,
-                <span class="kw">colour</span> <span class="kw">=</span> <span class="no">Dist</span>,
-                <span class="kw">linetype</span> <span class="kw">=</span> <span class="no">Dist</span>),
-            <span class="kw">size</span> <span class="kw">=</span> <span class="fl">0.72</span>,
-            <span class="kw">data</span> <span class="kw">=</span> <span class="no">curvefits_df_TEM_OS</span>) +
-  <span class="fu">scale_color_manual</span>(<span class="kw">values</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="no">blue</span>, <span class="no">pink</span>, <span class="no">Dyellow</span>, <span class="no">orange</span>, <span class="no">grey1</span>, <span class="no">lightPink</span>, <span class="no">red</span>, <span class="no">Dblue</span>))
+<span class="va">plot.OS.A</span><span class="op">$</span><span class="va">plot</span> <span class="op">&lt;-</span> <span class="va">plot.OS.A</span><span class="op">$</span><span class="va">plot</span> <span class="op">+</span>
+  <span class="fu">geom_line</span><span class="op">(</span><span class="fu">aes</span><span class="op">(</span>x <span class="op">=</span> <span class="va">time</span>, y <span class="op">=</span> <span class="va">Int</span>,
+                colour <span class="op">=</span> <span class="va">Dist</span>,
+                linetype <span class="op">=</span> <span class="va">Dist</span><span class="op">)</span>,
+            size <span class="op">=</span> <span class="fl">0.72</span>,
+            data <span class="op">=</span> <span class="va">curvefits_df_TEM_OS</span><span class="op">)</span> <span class="op">+</span>
+  <span class="fu">scale_color_manual</span><span class="op">(</span>values <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="va">blue</span>, <span class="va">pink</span>, <span class="va">Dyellow</span>, <span class="va">orange</span>, <span class="va">grey1</span>, <span class="va">lightPink</span>, <span class="va">red</span>, <span class="va">Dblue</span><span class="op">)</span><span class="op">)</span>
 <span class="co">#&gt; Scale for 'colour' is already present. Adding another scale for 'colour',</span>
 <span class="co">#&gt; which will replace the existing scale.</span>
 
-<span class="no">plot.OS.A</span></pre></body></html></div>
+<span class="va">plot.OS.A</span></code></pre></div>
 <p><img src="Fitting_models_in_R_files/figure-html/unnamed-chunk-9-1.png" width="672"></p>
-<div class="sourceCode" id="cb11"><html><body><pre class="r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<code class="sourceCode R">
 <span class="co"># Plot survival curves for arm B</span>
-<span class="no">plot.OS.B</span> <span class="kw">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/survminer/man/ggsurvplot.html">ggsurvplot</a></span>(<span class="no">km.est.OS.TrtB</span>,
-                        <span class="kw">combine</span> <span class="kw">=</span> <span class="fl">TRUE</span>,
-                        <span class="kw">censor</span> <span class="kw">=</span> <span class="fl">FALSE</span>,
-                        <span class="kw">risk.table</span> <span class="kw">=</span> <span class="fl">TRUE</span>,
-                        <span class="kw">conf.int</span> <span class="kw">=</span> <span class="fl">FALSE</span>,
-                        <span class="kw">break.x.by</span> <span class="kw">=</span> <span class="fl">100</span>,
-                        <span class="kw">xlim</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="fl">0</span>, <span class="fl">500</span>),
-                        <span class="kw">xlab</span> <span class="kw">=</span> <span class="st">"Time (days)"</span>,
-                        <span class="kw">size</span> <span class="kw">=</span> <span class="fl">0.72</span>,
-                        <span class="kw">linetype</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="fl">6</span>,<span class="fl">6</span>,<span class="fl">6</span>,<span class="fl">6</span>, <span class="fl">1</span>, <span class="fl">6</span>, <span class="fl">6</span>,<span class="fl">6</span>,<span class="fl">6</span>),
-                        <span class="kw">title</span>  <span class="kw">=</span>  <span class="st">'Kaplan-Meier of OS with standard distribution overlays'</span>,
-                        <span class="kw">legend.title</span> <span class="kw">=</span> <span class="st">''</span>,
-                        <span class="kw">legend.labs</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">"KM"</span>),
-                        <span class="kw">surv.median.line</span> <span class="kw">=</span> <span class="st">'hv'</span>,
-                        <span class="kw">palette</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="fu"><a href="https://rdrr.io/r/grDevices/rgb.html">rgb</a></span>(<span class="fl">0</span>,<span class="fl">0</span>,<span class="fl">0</span>,<span class="kw">max</span><span class="kw">=</span><span class="fl">30</span>)),
-                        <span class="kw">risk.table.y.text.col</span> <span class="kw">=</span> <span class="no">F</span>
-)
+<span class="va">plot.OS.B</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/survminer/man/ggsurvplot.html">ggsurvplot</a></span><span class="op">(</span><span class="va">km.est.OS.TrtB</span>,
+                        combine <span class="op">=</span> <span class="cn">TRUE</span>,
+                        censor <span class="op">=</span> <span class="cn">FALSE</span>,
+                        risk.table <span class="op">=</span> <span class="cn">TRUE</span>,
+                        conf.int <span class="op">=</span> <span class="cn">FALSE</span>,
+                        break.x.by <span class="op">=</span> <span class="fl">100</span>,
+                        xlim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">500</span><span class="op">)</span>,
+                        xlab <span class="op">=</span> <span class="st">"Time (days)"</span>,
+                        size <span class="op">=</span> <span class="fl">0.72</span>,
+                        linetype <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fl">6</span>,<span class="fl">6</span>,<span class="fl">6</span>,<span class="fl">6</span>, <span class="fl">1</span>, <span class="fl">6</span>, <span class="fl">6</span>,<span class="fl">6</span>,<span class="fl">6</span><span class="op">)</span>,
+                        title  <span class="op">=</span>  <span class="st">'Kaplan-Meier of OS with standard distribution overlays'</span>,
+                        legend.title <span class="op">=</span> <span class="st">''</span>,
+                        legend.labs <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"KM"</span><span class="op">)</span>,
+                        surv.median.line <span class="op">=</span> <span class="st">'hv'</span>,
+                        palette <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/grDevices/rgb.html">rgb</a></span><span class="op">(</span><span class="fl">0</span>,<span class="fl">0</span>,<span class="fl">0</span>,max<span class="op">=</span><span class="fl">30</span><span class="op">)</span><span class="op">)</span>,
+                        risk.table.y.text.col <span class="op">=</span> <span class="cn">F</span>
+<span class="op">)</span>
 
 
-<span class="no">plot.OS.B</span>$<span class="no">plot</span> <span class="kw">&lt;-</span> <span class="no">plot.OS.B</span>$<span class="no">plot</span> +
-  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="kw">x</span> <span class="kw">=</span> <span class="no">time</span>, <span class="kw">y</span> <span class="kw">=</span> <span class="no">Ref</span>,
-                <span class="kw">colour</span> <span class="kw">=</span> <span class="no">Dist</span>,
-                <span class="kw">linetype</span> <span class="kw">=</span> <span class="no">Dist</span>),
-            <span class="kw">size</span> <span class="kw">=</span> <span class="fl">0.72</span>,
-            <span class="kw">data</span> <span class="kw">=</span> <span class="no">curvefits_df_TEM_OS</span>) +
-  <span class="fu">scale_color_manual</span>(<span class="kw">values</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="no">blue</span>, <span class="no">pink</span>, <span class="no">Dyellow</span>, <span class="no">orange</span>, <span class="no">grey1</span>, <span class="no">lightPink</span>, <span class="no">red</span>, <span class="no">Dblue</span>))
+<span class="va">plot.OS.B</span><span class="op">$</span><span class="va">plot</span> <span class="op">&lt;-</span> <span class="va">plot.OS.B</span><span class="op">$</span><span class="va">plot</span> <span class="op">+</span>
+  <span class="fu">geom_line</span><span class="op">(</span><span class="fu">aes</span><span class="op">(</span>x <span class="op">=</span> <span class="va">time</span>, y <span class="op">=</span> <span class="va">Ref</span>,
+                colour <span class="op">=</span> <span class="va">Dist</span>,
+                linetype <span class="op">=</span> <span class="va">Dist</span><span class="op">)</span>,
+            size <span class="op">=</span> <span class="fl">0.72</span>,
+            data <span class="op">=</span> <span class="va">curvefits_df_TEM_OS</span><span class="op">)</span> <span class="op">+</span>
+  <span class="fu">scale_color_manual</span><span class="op">(</span>values <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="va">blue</span>, <span class="va">pink</span>, <span class="va">Dyellow</span>, <span class="va">orange</span>, <span class="va">grey1</span>, <span class="va">lightPink</span>, <span class="va">red</span>, <span class="va">Dblue</span><span class="op">)</span><span class="op">)</span>
 <span class="co">#&gt; Scale for 'colour' is already present. Adding another scale for 'colour',</span>
 <span class="co">#&gt; which will replace the existing scale.</span>
 
-<span class="no">plot.OS.B</span></pre></body></html></div>
+<span class="va">plot.OS.B</span></code></pre></div>
 <p><img src="Fitting_models_in_R_files/figure-html/unnamed-chunk-9-2.png" width="672"></p>
 </div>
 <div id="bootstrapping" class="section level1">
@@ -1112,36 +1123,37 @@ pre { /* Code block - determines code spacing between lines */
 </ol>
 <p>This procedure is repeated multiple times to obtain a distribution of parameters. For this example, bootstrap estimates of the parameters were calculated using the <tt>boot</tt> package. An argument for the <tt>boot</tt> function is <tt>statistic</tt> which is a function which when applied to data returns a vector containing the statistic(s) of interest. The <tt>bootPSM</tt> function in the <tt>flexsurvPlus</tt> package can be used for this purpose.</p>
 <p>The inputs for the <tt>bootPSM</tt> function are very similar to the <tt>runPSM</tt> function, however there are a few additional arguments: <em><tt>endpoint1</tt> - Character to indicate the name of the first endpoint, used for labelling. </em><tt>endpoint2</tt> - Character to indicate the name of the second endpoint, used for labelling. <em><tt>time_var2</tt> - Name of time variable in ‘data’ of second endpoint. Variable must be numerical and &gt;0. </em><tt>event_var2</tt> - Name of event variable in ‘data’ of second endpoint. Variable must be numerical and contain 1’s to indicate an event and 0 to indicate a censor *<tt>i</tt> - Index used to select a sample within <tt>boot</tt></p>
-<div class="sourceCode" id="cb12"><html><body><pre class="r"><span class="fu"><a href="https://rdrr.io/r/base/Random.html">set.seed</a></span>(<span class="fl">2358</span>)
-<span class="no">n.sim</span> <span class="kw">&lt;-</span> <span class="fl">100</span>
-<span class="no">PSM_bootstraps</span> <span class="kw">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/boot/man/boot.html">boot</a></span>(
-                 <span class="kw">statistic</span> <span class="kw">=</span> <span class="no">bootPSM</span>, <span class="co"># bootstrap the HR (defined in the MAIC package)</span>
-                      <span class="kw">R</span><span class="kw">=</span><span class="no">n.sim</span>, <span class="co"># number of bootstrap samples</span>
-                      <span class="kw">data</span><span class="kw">=</span><span class="no">analysis_data</span>,
-                      <span class="kw">endpoint1</span> <span class="kw">=</span> <span class="st">"OS"</span>,
-                      <span class="kw">endpoint2</span> <span class="kw">=</span> <span class="st">"PFS"</span>,
-                      <span class="kw">time_var</span><span class="kw">=</span><span class="st">"OS_days"</span>,
-                      <span class="kw">event_var</span><span class="kw">=</span><span class="st">"OS_event"</span>,
-                      <span class="kw">time_var2</span><span class="kw">=</span><span class="st">"PFS_days"</span>,
-                      <span class="kw">event_var2</span><span class="kw">=</span><span class="st">"PFS_event"</span>,
-                      <span class="kw">model.type</span><span class="kw">=</span><span class="st">"Common shape"</span>,
-                      <span class="kw">distr</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">'exp'</span>,
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/base/Random.html">set.seed</a></span><span class="op">(</span><span class="fl">2358</span><span class="op">)</span>
+<span class="va">n.sim</span> <span class="op">&lt;-</span> <span class="fl">100</span>
+<span class="va">PSM_bootstraps</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/boot/man/boot.html">boot</a></span><span class="op">(</span>
+                 statistic <span class="op">=</span> <span class="va">bootPSM</span>, <span class="co"># bootstrap the HR (defined in the MAIC package)</span>
+                      R<span class="op">=</span><span class="va">n.sim</span>, <span class="co"># number of bootstrap samples</span>
+                      data<span class="op">=</span><span class="va">analysis_data</span>,
+                      endpoint1 <span class="op">=</span> <span class="st">"OS"</span>,
+                      endpoint2 <span class="op">=</span> <span class="st">"PFS"</span>,
+                      time_var<span class="op">=</span><span class="st">"OS_days"</span>,
+                      event_var<span class="op">=</span><span class="st">"OS_event"</span>,
+                      time_var2<span class="op">=</span><span class="st">"PFS_days"</span>,
+                      event_var2<span class="op">=</span><span class="st">"PFS_event"</span>,
+                      model.type<span class="op">=</span><span class="st">"Common shape"</span>,
+                      distr <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">'exp'</span>,
                                 <span class="st">'weibull'</span>,
                                 <span class="st">'gompertz'</span>,
                                 <span class="st">'lnorm'</span>,
                                 <span class="st">'llogis'</span>,
                                 <span class="st">'gengamma'</span>,
-                                <span class="st">'gamma'</span>),
-                      <span class="kw">strata_var</span> <span class="kw">=</span> <span class="st">"ARM"</span>,
-                      <span class="kw">int_name</span><span class="kw">=</span><span class="st">"A"</span>,
-                      <span class="kw">ref_name</span> <span class="kw">=</span> <span class="st">"B"</span>
-)
+                                <span class="st">'gamma'</span><span class="op">)</span>,
+                      strata_var <span class="op">=</span> <span class="st">"ARM"</span>,
+                      int_name<span class="op">=</span><span class="st">"A"</span>,
+                      ref_name <span class="op">=</span> <span class="st">"B"</span>
+<span class="op">)</span>
 <span class="co">#&gt; Warning in log(pmax - pmin): NaNs produced</span>
 
 
-<span class="no">PSM_boot_data</span> <span class="kw">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html">as.data.frame</a></span>(<span class="no">PSM_bootstraps</span>$<span class="no">t</span>)
-<span class="fu"><a href="https://rdrr.io/r/base/colnames.html">colnames</a></span>(<span class="no">PSM_boot_data</span>) <span class="kw">&lt;-</span> <span class="fu"><a href="https://tibble.tidyverse.org/reference/rownames.html">rownames</a></span>(<span class="fu"><a href="https://rdrr.io/r/base/t.html">t</a></span>(<span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html">as.data.frame</a></span>(<span class="no">PSM_bootstraps</span>$<span class="no">t0</span>)))
-<span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span>(<span class="no">PSM_boot_data</span>)
+<span class="va">PSM_boot_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html">as.data.frame</a></span><span class="op">(</span><span class="va">PSM_bootstraps</span><span class="op">$</span><span class="va">t</span><span class="op">)</span>
+<span class="fu"><a href="https://rdrr.io/r/base/colnames.html">colnames</a></span><span class="op">(</span><span class="va">PSM_boot_data</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://tibble.tidyverse.org/reference/rownames.html">rownames</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/t.html">t</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html">as.data.frame</a></span><span class="op">(</span><span class="va">PSM_bootstraps</span><span class="op">$</span><span class="va">t0</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>
+<span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">PSM_boot_data</span><span class="op">)</span>
 <span class="co">#&gt;   exp.rate.A.OS exp.rate.B.OS exp.rate.TE.OS weibull.scale.A.OS</span>
 <span class="co">#&gt; 1     -4.674186     -5.845196       1.171010           4.673623</span>
 <span class="co">#&gt; 2     -4.797600     -5.876173       1.078573           4.797855</span>
@@ -1274,28 +1286,29 @@ pre { /* Code block - determines code spacing between lines */
 <span class="co">#&gt; 3         -0.7229095</span>
 <span class="co">#&gt; 4         -0.6495951</span>
 <span class="co">#&gt; 5         -0.6892003</span>
-<span class="co">#&gt; 6         -0.9693311</span></pre></body></html></div>
+<span class="co">#&gt; 6         -0.9693311</span></code></pre></div>
 <p>The primary use of the bootstrap samples is to be used in probabilistic sensitivity analyses in economic models. Some basic statistics and diagnostics plots (histograms) can be used to summarise the bootstrap estimates and are presented below.</p>
-<div class="sourceCode" id="cb13"><html><body><pre class="r"><span class="co"># Summary of bootstrap values ----------------------------------------------</span>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="co"># Summary of bootstrap values ----------------------------------------------</span>
 <span class="co">#Re-format the data</span>
-<span class="no">boot_gathered</span> <span class="kw">&lt;-</span> <span class="no">PSM_boot_data</span> <span class="kw">%&gt;%</span>
-  <span class="fu"><a href="https://tidyr.tidyverse.org/reference/gather.html">gather</a></span>(<span class="kw">key</span> <span class="kw">=</span> <span class="st">'parameter'</span>, <span class="kw">value</span> <span class="kw">=</span> <span class="st">'value'</span>)
+<span class="va">boot_gathered</span> <span class="op">&lt;-</span> <span class="va">PSM_boot_data</span> <span class="op">%&gt;%</span>
+  <span class="fu"><a href="https://tidyr.tidyverse.org/reference/gather.html">gather</a></span><span class="op">(</span>key <span class="op">=</span> <span class="st">'parameter'</span>, value <span class="op">=</span> <span class="st">'value'</span><span class="op">)</span>
 
 <span class="co">#calculate basic summary stats for all parameters</span>
-<span class="no">boot_summ</span> <span class="kw">&lt;-</span> <span class="no">boot_gathered</span> <span class="kw">%&gt;%</span>
-  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html">group_by</a></span>(<span class="no">parameter</span>) <span class="kw">%&gt;%</span>
-  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/summarise.html">summarise</a></span>(<span class="fu"><a href="https://dplyr.tidyverse.org/reference/across.html">across</a></span>(<span class="kw">.cols</span> <span class="kw">=</span> <span class="fu">where</span>(<span class="no">is.numeric</span>),
-                   <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span>(
-                     <span class="kw">mean</span> <span class="kw">=</span> ~<span class="fu"><a href="https://rdrr.io/r/base/mean.html">mean</a></span>(<span class="no">.</span>, <span class="kw">na.rm</span> <span class="kw">=</span> <span class="fl">TRUE</span>),
-                     <span class="kw">sd</span> <span class="kw">=</span> ~<span class="fu"><a href="https://rdrr.io/r/stats/sd.html">sd</a></span>(<span class="no">.</span>, <span class="kw">na.rm</span> <span class="kw">=</span> <span class="fl">TRUE</span>),
-                     <span class="kw">median</span> <span class="kw">=</span> ~<span class="fu"><a href="https://rdrr.io/r/stats/median.html">median</a></span>(<span class="no">.</span>, <span class="kw">na.rm</span> <span class="kw">=</span> <span class="fl">TRUE</span>),
-                     <span class="kw">min</span> <span class="kw">=</span> ~<span class="fu"><a href="https://rdrr.io/r/base/Extremes.html">min</a></span>(<span class="no">.</span>, <span class="kw">na.rm</span> <span class="kw">=</span> <span class="fl">TRUE</span>),
-                     <span class="kw">max</span> <span class="kw">=</span> ~<span class="fu"><a href="https://rdrr.io/r/base/Extremes.html">max</a></span>(<span class="no">.</span>, <span class="kw">na.rm</span> <span class="kw">=</span> <span class="fl">TRUE</span>)
-                   )
-                   )) <span class="kw">%&gt;%</span>
-  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html">mutate</a></span>(<span class="fu"><a href="https://dplyr.tidyverse.org/reference/across.html">across</a></span>(<span class="kw">.cols</span> <span class="kw">=</span> <span class="fu">where</span>(<span class="no">is.numeric</span>), ~<span class="fu"><a href="https://rdrr.io/r/base/Round.html">round</a></span>(<span class="no">.</span>, <span class="fl">3</span>)), <span class="kw">.keep</span> <span class="kw">=</span> <span class="st">'unused'</span>)
+<span class="va">boot_summ</span> <span class="op">&lt;-</span> <span class="va">boot_gathered</span> <span class="op">%&gt;%</span>
+  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html">group_by</a></span><span class="op">(</span><span class="va">parameter</span><span class="op">)</span> <span class="op">%&gt;%</span>
+  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/summarise.html">summarise</a></span><span class="op">(</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/across.html">across</a></span><span class="op">(</span>.cols <span class="op">=</span> <span class="fu">where</span><span class="op">(</span><span class="va">is.numeric</span><span class="op">)</span>,
+                   <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>
+                     mean <span class="op">=</span> <span class="op">~</span><span class="fu"><a href="https://rdrr.io/r/base/mean.html">mean</a></span><span class="op">(</span><span class="va">.</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,
+                     sd <span class="op">=</span> <span class="op">~</span><span class="fu"><a href="https://rdrr.io/r/stats/sd.html">sd</a></span><span class="op">(</span><span class="va">.</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,
+                     median <span class="op">=</span> <span class="op">~</span><span class="fu"><a href="https://rdrr.io/r/stats/median.html">median</a></span><span class="op">(</span><span class="va">.</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,
+                     min <span class="op">=</span> <span class="op">~</span><span class="fu"><a href="https://rdrr.io/r/base/Extremes.html">min</a></span><span class="op">(</span><span class="va">.</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,
+                     max <span class="op">=</span> <span class="op">~</span><span class="fu"><a href="https://rdrr.io/r/base/Extremes.html">max</a></span><span class="op">(</span><span class="va">.</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>
+                   <span class="op">)</span>
+                   <span class="op">)</span><span class="op">)</span> <span class="op">%&gt;%</span>
+  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html">mutate</a></span><span class="op">(</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/across.html">across</a></span><span class="op">(</span>.cols <span class="op">=</span> <span class="fu">where</span><span class="op">(</span><span class="va">is.numeric</span><span class="op">)</span>, <span class="op">~</span><span class="fu"><a href="https://rdrr.io/r/base/Round.html">round</a></span><span class="op">(</span><span class="va">.</span>, <span class="fl">3</span><span class="op">)</span><span class="op">)</span>, .keep <span class="op">=</span> <span class="st">'unused'</span><span class="op">)</span>
 <span class="co">#&gt; `summarise()` ungrouping output (override with `.groups` argument)</span>
-<span class="no">boot_summ</span>
+<span class="va">boot_summ</span>
 <span class="co">#&gt; # A tibble: 70 x 6</span>
 <span class="co">#&gt;    parameter        value_mean value_sd value_median value_min value_max</span>
 <span class="co">#&gt;    &lt;chr&gt;                 &lt;dbl&gt;    &lt;dbl&gt;        &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;</span>
@@ -1312,13 +1325,13 @@ pre { /* Code block - determines code spacing between lines */
 <span class="co">#&gt; # … with 60 more rows</span>
 <span class="co">#Density plots for each parameter to show distribution</span>
 <span class="co">#Could also be individual plots instead of faceted</span>
-<span class="no">p_boot_density</span> <span class="kw">&lt;-</span> <span class="fu">ggplot</span>(<span class="no">boot_gathered</span>) +
-  <span class="fu">geom_density</span>(<span class="fu">aes</span>(<span class="no">value</span>)) +
-  <span class="fu">geom_vline</span>(<span class="fu">aes</span>(<span class="kw">xintercept</span> <span class="kw">=</span> <span class="no">value_mean</span>), <span class="no">boot_summ</span>, <span class="kw">colour</span> <span class="kw">=</span> <span class="st">'darkgreen'</span>) +
-  <span class="fu">geom_vline</span>(<span class="fu">aes</span>(<span class="kw">xintercept</span> <span class="kw">=</span> <span class="no">value_median</span>), <span class="no">boot_summ</span>, <span class="kw">colour</span> <span class="kw">=</span> <span class="st">'blue'</span>) +
-  <span class="fu">facet_wrap</span>(~<span class="no">parameter</span>, <span class="kw">scales</span> <span class="kw">=</span> <span class="st">'free'</span>)
+<span class="va">p_boot_density</span> <span class="op">&lt;-</span> <span class="fu">ggplot</span><span class="op">(</span><span class="va">boot_gathered</span><span class="op">)</span> <span class="op">+</span>
+  <span class="fu">geom_density</span><span class="op">(</span><span class="fu">aes</span><span class="op">(</span><span class="va">value</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span>
+  <span class="fu">geom_vline</span><span class="op">(</span><span class="fu">aes</span><span class="op">(</span>xintercept <span class="op">=</span> <span class="va">value_mean</span><span class="op">)</span>, <span class="va">boot_summ</span>, colour <span class="op">=</span> <span class="st">'darkgreen'</span><span class="op">)</span> <span class="op">+</span>
+  <span class="fu">geom_vline</span><span class="op">(</span><span class="fu">aes</span><span class="op">(</span>xintercept <span class="op">=</span> <span class="va">value_median</span><span class="op">)</span>, <span class="va">boot_summ</span>, colour <span class="op">=</span> <span class="st">'blue'</span><span class="op">)</span> <span class="op">+</span>
+  <span class="fu">facet_wrap</span><span class="op">(</span><span class="op">~</span><span class="va">parameter</span>, scales <span class="op">=</span> <span class="st">'free'</span><span class="op">)</span>
 
-<span class="fu"><a href="https://rdrr.io/r/base/print.html">print</a></span>(<span class="no">p_boot_density</span>)</pre></body></html></div>
+<span class="fu"><a href="https://rdrr.io/r/base/print.html">print</a></span><span class="op">(</span><span class="va">p_boot_density</span><span class="op">)</span></code></pre></div>
 <p><img src="Fitting_models_in_R_files/figure-html/unnamed-chunk-11-1.png" width="672"></p>
 <p>#References</p>
 <div id="refs" class="references">
@@ -1350,7 +1363,7 @@ pre { /* Code block - determines code spacing between lines */
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.5.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.6.1.</p>
 </div>
 
       </footer>
