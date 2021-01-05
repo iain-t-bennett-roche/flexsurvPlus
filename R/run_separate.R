@@ -87,21 +87,32 @@ run_separate <- function(data,
   # If this is a separate model fitted to each treatment group, rename the parameter from the
   # exponential model to be consistent with output from Common shape models
   suppressWarnings(colnames(param_out.int)[colnames(param_out.int) == 'exp'] <- "exp.rate")
-  suppressWarnings(colnames(param_out.int) <- paste0(colnames(param_out.int),".", int_name))
+  suppressWarnings(colnames(param_out.int) <- paste0(colnames(param_out.int),".int"))
 
   suppressWarnings(colnames(param_out.ref)[colnames(param_out.ref) == 'exp'] <- "exp.rate")
-  suppressWarnings(colnames(param_out.ref) <- paste0(colnames(param_out.ref),".", ref_name))
+  suppressWarnings(colnames(param_out.ref) <- paste0(colnames(param_out.ref),".ref"))
 
   #Re-organise columns
   param_final <- cbind(param_out.int, param_out.ref) %>%
     as.data.frame() %>%
     #groups parameters by distribution in the order given in the dist argument
-    dplyr::mutate(Model="separate", `Intervention name`=int_name, `Reference name`=ref_name)
+    dplyr::mutate(Model="separate", Intervention_name=int_name, Reference_name=ref_name)
 
+  # rename for output
+  names(models.int) <- paste0(names(models.int), ".sepint")
+  names(models.ref) <- paste0(names(models.ref), ".sepref")
+  
+  models <- c(models.int, models.ref)
+  
+  params.int$name <-  paste0(params.int$name, ".sepint")
+  params.ref$name <-  paste0(params.ref$name, ".refint")
+  
+  params <- dplyr::bind_rows(params.int, params.ref)
+  
   #collect and return output
   output <- list(
-    models.int = models.int, models.ref = models.ref,
-    model_summary.int = params.int, model_summary.ref = params.ref,
+    models = models,
+    model_summary = params,
     parameters = param_final
   )
 

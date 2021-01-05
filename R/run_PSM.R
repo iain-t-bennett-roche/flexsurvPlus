@@ -56,7 +56,7 @@
 #' @export
 runPSM <- function(data,
                    time_var, event_var,
-                   model.type,
+                   model.type = c("Separate", "Common shape", "Independent shape"),
                    distr = c('exp',
                              'weibull',
                              'gompertz',
@@ -83,27 +83,43 @@ runPSM <- function(data,
     msg = "Only the following model types are supported are supported: 'Common shape', 'Independent shape', 'Separate' "
   )
 
-
-
   #For models with common shape, calculate the location
   #parameter for the treatment arm for each distribution
 
-  if(model.type == 'Common shape'){
-    output <- run_common_shape(data, time_var, event_var,distr,strata_var, int_name, ref_name)
+  models <- list()
+  model_summary <- tibble()
+  parameters <- tibble()
+  
+  if('Common shape' %in% model.type){
+    output1 <- run_common_shape(data, time_var, event_var,distr,strata_var, int_name, ref_name)
+    models <- output1$models
+    model_summary <- output1$model_summary
+    parameters <- output1$parameters
   }
 
   # For separate models split the data by treatment and for 2 separate models
   # for each distribution
 
-  if(model.type == 'Separate'){
-    output <- run_separate(data, time_var, event_var,distr,strata_var, int_name, ref_name)
+  if('Separate' %in% model.type){
+    output2 <- run_separate(data, time_var, event_var,distr,strata_var, int_name, ref_name)
+    models <- c(models, output2$models)
+    model_summary <- dplyr::bind_rows(model_summary, output2$model_summary)
+    parameters <- dplyr::bind_rows(parameters, output2$parameters)
   }
 
   #For models with independent shape calculate the scale and shape parameters for the
   #treatment arm for each distribution
-  if(model.type == 'Independent shape'){
-    output <- run_independent_shape(data, time_var, event_var,distr,strata_var, int_name, ref_name)
+  if('Independent shape' %in% model.type){
+    output3 <- run_independent_shape(data, time_var, event_var,distr,strata_var, int_name, ref_name)
+    models <- c(models, output3$models)
+    model_summary <- dplyr::bind_rows(model_summary, output3$model_summary)
+    parameters <- dplyr::bind_rows(parameters, output3$parameters)
   }
 
-return(output)
+  # combine the outputs
+  output <- list(models = models,
+                 model_summary = model_summary,
+                 parameters = parameters)
+  
+  return(output)
 }

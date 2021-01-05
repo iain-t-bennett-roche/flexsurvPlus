@@ -1,6 +1,7 @@
 # Internal functions - Not exported ---------------------------------------
 # Format data for analysis
 Format_data_separate <- function(data, time_var, event_var, strata_var, int_name, ref_name) {
+  validate_standard_data(data = data, time_var = time_var, event_var = event_var, strata_var = strata_var, int_name = int_name, ref_name = ref_name)
   dat <- data[,c(time_var, event_var, strata_var)]
   colnames(dat) <- c("Time", "Event", "ARM")
   dat.int <- dat %>% filter(ARM==int_name)
@@ -10,11 +11,69 @@ Format_data_separate <- function(data, time_var, event_var, strata_var, int_name
 
 # with variable for ARM
 Format_data <- function(data, time_var, event_var, strata_var, int_name, ref_name) {
+  validate_standard_data(data = data, time_var = time_var, event_var = event_var, strata_var = strata_var, int_name = int_name, ref_name = ref_name)
+  
   dat <- data[,c(time_var, event_var, strata_var)]
   colnames(dat) <- c("Time", "Event", "ARM")
-  dat <- dat %>% mutate(ARM=ifelse(ARM==int_name, "Int", "Ref"))
-  dat$ARM <- relevel(as.factor(dat$ARM), ref="Ref")
-  return(dat)
+  
+  dat <- dat %>%
+    filter(ARM %in% c(int_name, ref_name)) %>% 
+    mutate(ARM = ifelse(ARM==int_name, "Int", "Ref"),
+           ARM = factor(ARM, levels = c("Ref", "Int", ordered = TRUE)))
+  
+    return(dat)
+}
+
+
+# validate the standard data
+
+# validate the data 
+
+validate_standard_data <- function(data, time_var, event_var, strata_var, ref_name, int_name){
+  
+  assertthat::assert_that(
+    time_var %in% names(data),
+    msg = paste0("time_var = ", time_var, " is not found in data.")
+  )
+  
+  assertthat::assert_that(
+    event_var %in% names(data),
+    msg = paste0("event_var = ", event_var, " is not found in data.")
+  )
+  
+  assertthat::assert_that(
+    strata_var %in% names(data),
+    msg = paste0("strata_var = ", strata_var, " is not found in data.")
+  )
+  
+  dat <- data[,c(time_var, event_var, strata_var)] 
+  colnames(dat) <- c("Time", "Event", "ARM")
+  
+  filt_dat <- dat %>%
+    dplyr::filter(ARM %in% c(ref_name, int_name))
+  
+  included.trts <- unique(dat$ARM)
+  
+  assertthat::assert_that(
+    all(int_name %in% included.trts),
+    msg = paste0("int_name = ", int_name, " is not found in ", strata_var, ". Possible values are: ", included.trts)
+  )
+  
+  assertthat::assert_that(
+    all(ref_name %in% included.trts),
+    msg = paste0("ref_name = ", ref_name, " is not found in ", strata_var, ". Possible values are: ", included.trts)
+  )
+  
+  assertthat::assert_that(
+    all(dat$Time > 0),
+    msg = paste0("Invalid time values found. All values of time_var = ", time_var, " must be greater than 0")
+  )
+  
+  assertthat::assert_that(
+    all(dat$Event %in% c(0,1)),
+    msg = paste0("Invalid event values found. All values of event_var = ", event_var, " must be 0 or 1 only. With 1 indicating event.")
+  )
+  
 }
 
 

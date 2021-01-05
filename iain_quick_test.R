@@ -1,4 +1,4 @@
-
+rm(list = ls())
 
 #library(flexsurvPlus)
 #local version for testing
@@ -13,31 +13,168 @@ library(tidyr)
 
 # Read in ADaM data and rename variables of interest
 
-adtte <- read.csv(system.file("extdata", "adtte.csv", package = "flexsurvPlus", mustWork = TRUE))
+
+adtte <- sim_adtte(seed = 2020, rho = 0.6)
 
 # subset OS data and rename
 OS_data <- adtte %>%
   filter(PARAMCD=="OS") %>%
-  mutate(ARM = as.factor(ARM)) %>%
-  rename(OS_days = AVAL,
-         OS_event = EVNT,
-         OS_cens = CNSR
-  ) %>%
-  select(-PARAMCD, -PARAM)
+  transmute(USUBJID,
+            ARMCD,
+            OS_days = AVAL,
+            OS_event = 1- CNSR
+  )
 
 # subset PFS data and rename
 PFS_data <- adtte %>%
   filter(PARAMCD=="PFS") %>%
-  rename(PFS_days = AVAL,
-         PFS_event = EVNT,
-         PFS_cens = CNSR
-  ) %>%
-  select(-PARAMCD, -PARAM)
+  transmute(USUBJID,
+            ARMCD,
+            PFS_days = AVAL,
+            PFS_event = 1- CNSR
+  )
 
-analysis_data <- left_join(OS_data, PFS_data)
-analysis_data$ARM <- relevel(as.factor(analysis_data$ARM), ref="B")
+analysis_data <- left_join(OS_data, PFS_data, by = c("USUBJID", "ARMCD"))
+
+psm_OS_all <- runPSM(data=analysis_data,
+                     time_var="OS_days",
+                     event_var="OS_event",
+                     model.type= c("Common shape", 
+                                   "Independent shape", 
+                                   "Separate"),
+                     distr = c('exp',
+                               'weibull',
+                               'gompertz',
+                               'lnorm',
+                               'llogis',
+                               'gengamma',
+                               'gamma'),
+                     strata_var = "ARMCD",
+                     int_name="A",
+                     ref_name = "B")
+psm_OS_all
+
+
+adata <- tibble(x=1:10,y=x^2)
+
+fx <- function(data, opt1 = "tibble", i){
+  stats <- summarise(data, x = sum(x), y = sum(y))
+  
+  if (opt1 == "tibble"){
+    rc <- stats 
+  } else {
+    rc <- c(stats$x, stats$y)
+    names(rc) <- names(stats)
+  } 
+  
+  return(rc)  
+}
+
+fx(adata)
+fx(adata, opt1 = "v")
+
+a <- boot(data = adata, statistic = fx, R = 10)
+b <- boot(data = adata, statistic = fx, R = 10, opt1 = "v")
+b$t0
+
+selected_models <- c("weibull.comshp","weibull.indshp","gamma.comshp")
+
+# Create data set for plots
+curvefits_PFS <- get_curvefits(models = psm_PFS_all$models[selected_models],
+                               time = seq(from=0, to = 500, by = 10))
+
+# format data ready for the plot
+curvefits_df_PFS <- bind_rows(curvefits_PFS$curvefits, .id = "Dist") %>%
+  pivot_wider(names_from  = c(ARM), values_from  = c(est))
+
+analysis_data_TrtA <- filter(analysis_data, ARMCD=="A")
+analysis_data_TrtB <- filter(analysis_data, ARMCD=="B")
+
+# Get KM estimates
+km.est.PFS.TrtA <- survfit(Surv(PFS_days, PFS_event) ~ 1 , data = analysis_data_TrtA, conf.type = 'plain')
+km.est.PFS.TrtB <- survfit(Surv(PFS_days, PFS_event) ~ 1 , data = analysis_data_TrtB, conf.type = 'plain')
+
+
+# Plot survival curves for arm A
+plot.PFS.A <- ggsurvplot(km.est.PFS.TrtA,
+                         combine = TRUE,
+                         censor = FALSE,
+                         risk.table = TRUE,
+                         conf.int = FALSE,
+                         break.x.by = 100,
+                         xlim = c(0, 500),
+                         xlab = "Time (days)",
+                         size = 0.72,
+                         linetype = c(6,6,6,6, 1, 6, 6,6,6),
+                         title  =  'Kaplan-Meier of OS with standard distribution overlays',
+                         legend.title = '',
+                         legend.labs = c("KM"),
+                         surv.median.line = 'hv',
+                         palette = c(rgb(0,0,0,max=30)),
+                         risk.table.y.text.col = F
+)
+
+
+plot.PFS.A$plot <- plot.PFS.A$plot +
+  geom_line(aes(x = time, y = Int,
+                colour = Dist,
+                linetype = Dist),
+            size = 0.72,
+            data = curvefits_df_PFS) +
+  scale_color_manual(values = c(blue, pink, orange, red))
+
+flexsurvPlus:::validate_standard_data(data=analysis_data,
+                                      time_var="OS_days",
+                                      event_var="OS_event",
+                                      strata_var = "ARMCD",
+                                      int_name="A",
+                                      ref_name = "B")
+
+
+km.est.OS <- survfit(Surv(OS_days, OS_event) ~ ARMCD , data = analysis_data, conf.type = 'plain')
+km.est.PFS <- survfit(Surv(PFS_days, PFS_event) ~ ARMCD , data = analysis_data, conf.type = 'plain')
+
+#KM_list <- list(OS = km.est.OS, PFS = km.est.PFS)
+
+KM_plot_OS <- ggsurvplot(km.est.OS, risk.table = TRUE, data = analysis_data,
+                         break.time.by = 100,
+                         conf.int = FALSE,
+                         censor=FALSE,
+                         legend.title = '',
+                         xlab = paste0('Overall survival (Days)'),
+                         size = 0.72,
+                         xlim = c(0, 700))
+KM_plot_OS
+
+KM_plot_PFS <- ggsurvplot(km.est.PFS, risk.table = TRUE, data = analysis_data,
+                          break.time.by = 100,
+                          conf.int = FALSE,
+                          censor=FALSE,
+                          legend.title = '',
+                          xlab = paste0('Progression-free survival (Days)'),
+                          size = 0.72,
+                          xlim = c(0, 700))
+KM_plot_PFS
 
 # Fitting the models
+
+psm_OS <- runPSM(data=analysis_data,
+                          time_var="OS_days",
+                          event_var="OS_event",
+                          model.type=c("Separate","Common shape"),
+                          distr = c('exp',
+                                    'weibull',
+                                    'gompertz',
+                                    'lnorm',
+                                    'llogis',
+                                    'gengamma',
+                                    'gamma'),
+                          strata_var = "ARM",
+                          int_name="A",
+                          ref_name = "B")
+
+
+get_curvefits(psm_OS$models, time = c(0,1,2))
 
 #These functions have been used to estimate 3 types of model:
   

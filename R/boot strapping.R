@@ -68,7 +68,7 @@
 bootPSM <- function(data,
                    endpoint1, endpoint2,
                    time_var, event_var,
-                   time_var2, event_var2,
+                   time_var2 = NULL, event_var2 = NULL,
                    model.type,
                    distr = c('exp',
                              'weibull',
@@ -81,60 +81,46 @@ bootPSM <- function(data,
                    int_name, ref_name,
                    i){
 
-
-  #test that only valid distributions have been provided
-  #This is also tested within fit_models. Consider eliminating here to avoid redundancy
-  allowed_dist <- c('exp', 'weibull', 'gompertz', 'lnorm', 'llogis', 'gengamma', 'gamma')
-  assertthat::assert_that(
-    all(distr %in% allowed_dist),
-    msg = "Only the following distributions are supported: 'exp', 'weibull', 'gompertz', 'lnorm', 'llogis', 'gengamma', 'gamma' "
-  )
-
-
-  #test that a legitimate value for model type has been provided
-  assertthat::assert_that(
-    all(model.type %in% c('Common shape', 'Independent shape', 'Separate')),
-    msg = "Only the following model types are supported are supported: 'Common shape', 'Independent shape', 'Separate' "
-  )
-
   data_boot <- data[i,]
 
-  #For models with common shape, calculate the location
-  #parameter for the treatment arm for each distribution
+  # call run_PSM (this does validity checks on inputs so no need to duplicate checks here)
+  # check if have 1 or more time vars included
   tryCatch({
-  if(model.type == 'Common shape'){
-    output1 <- run_common_shape(data_boot, time_var, event_var,distr,strata_var, int_name, ref_name)
-    output2 <- run_common_shape(data_boot, time_var2, event_var2,distr,strata_var, int_name, ref_name)
-  }
-
-    # For separate models split the data by treatment and for 2 separate models
-    # for each distribution
-  if(model.type == 'Separate'){
-    output1 <- run_separate(data_boot, time_var, event_var, distr,strata_var, int_name, ref_name)
-    output2 <- run_separate(data_boot, time_var2, event_var2, distr,strata_var, int_name, ref_name)
-  }
-
-  #For models with independent shape calculate the scale and shape parameters for the
-  #treatment arm for each distribution
-  if(model.type == 'Independent shape'){
-    output1 <- run_independent_shape(data_boot, time_var, event_var,distr,strata_var, int_name, ref_name)
-    output2 <- run_independent_shape(data_boot, time_var2, event_var2,distr,strata_var, int_name, ref_name)
-  }
-
-
-    # remove labels
-    output1$parameters <- output1$parameters %>%
-      select(-Model, -`Intervention name`, -`Reference name`)
-
-    output2$parameters <- output2$parameters %>%
-    select(-Model, -`Intervention name`, -`Reference name`)
-
-  colnames(output1$parameters) <- paste0(colnames(output1$parameters), ".",endpoint1)
-  colnames(output2$parameters) <- paste0(colnames(output2$parameters), ".", endpoint2)
-
-
-  all_params <- cbind(output1$parameters, output2$parameters)
-  all_params_out <- data.matrix(all_params)
-  return(all_params_out)
-})
+    
+    if (!is.null(time_var2)){
+      # 2 endpoints - assume correlated
+      
+      output1 <- run_PSM(data_boot, time_var = time_var, event_var = event_var, 
+                         distr = distr, strata_var = strata_var, int_name = int_name, ref_name  = ref_name, model.type = model.type)
+      
+      
+      output2 <- run_PSM(data_boot, time_var = time_var2, event_var = event_var2, 
+                         distr = distr, strata_var = strata_var, int_name = int_name, ref_name  = ref_name, model.type = model.type)
+      
+      # remove labels
+      output1$parameters <- output1$parameters %>%
+        select(-Model, -`Intervention name`, -`Reference name`)
+      
+      output2$parameters <- output2$parameters %>%
+        select(-Model, -`Intervention name`, -`Reference name`)
+      
+      colnames(output1$parameters) <- paste0(colnames(output1$parameters), ".", endpoint1)
+      colnames(output2$parameters) <- paste0(colnames(output2$parameters), ".", endpoint2)
+      
+      
+      all_params <- cbind(output1$parameters, output2$parameters)
+      all_params_out <- data.matrix(all_params)
+      
+    } else{
+      # only 1 endpoints so format is matching standard return format
+      output <- runPSM(data_boot, time_var = time_var, event_var = event_var, 
+                       distr = distr, strata_var = strata_var, int_name = int_name, ref_name  = ref_name, model.type = model.type)
+      
+      params 
+    }
+  
+  
+   
+    return(all_params_out)
+  })
 }

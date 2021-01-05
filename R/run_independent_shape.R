@@ -53,7 +53,8 @@
 #' @export
 run_independent_shape <- function(data,
                    time_var, event_var,
-                   distr = c('weibull',
+                   distr = c('exp',
+                             'weibull',
                              'gompertz',
                              'lnorm',
                              'llogis',
@@ -64,21 +65,42 @@ run_independent_shape <- function(data,
 
   #test that only valid distributions have been provided
   #This is also tested within fit_models. Consider eliminating here to avoid redundancy
-  allowed_dist <- c('weibull', 'gompertz', 'lnorm', 'llogis', 'gengamma', 'gamma')
+  allowed_dist <- c('exp', 'weibull', 'gompertz', 'lnorm', 'llogis', 'gengamma', 'gamma')
   assertthat::assert_that(
     all(distr %in% allowed_dist),
-    msg = "Only the following distributions are supported: 'weibull', 'gompertz', 'lnorm', 'llogis', 'gengamma', 'gamma' "
+    msg = "Only the following distributions are supported: 'exp', weibull', 'gompertz', 'lnorm', 'llogis', 'gengamma', 'gamma' "
   )
 
   # standardise variable names
   data_standard=Format_data(data, time_var, event_var, strata_var, int_name, ref_name)
 
   # Model formulas
+  model.formula.int = Surv(Time, Event==1) ~ ARM
   model.formula.shape = Surv(Time, Event==1) ~ ARM + shape(ARM)
   model.formula.sdlog = Surv(Time, Event==1) ~ ARM + sdlog(ARM)
   model.formula.sigma_Q = Surv(Time, Event==1) ~ ARM + sigma(ARM) + Q(ARM)
 
-
+  models <- list()
+  params <- tibble()
+  params_out <- tibble(.rows = 1)
+  
+  if('exp' %in% distr){
+    models.exp <- fit_models(model.formula=model.formula.int, distr = "exp", data=data_standard)
+    params.exp <- get_params(models=models.exp)
+    param_out.exp <- t(unlist(params.exp$coef)) %>% as.data.frame() %>%
+      dplyr::mutate(
+        exp.rate.int = exp.rate + exp.ARMInt,
+        exp.rate.ref = exp.rate,
+        exp.rate.TE = exp.ARMInt) %>%
+      dplyr::select(-exp.rate, -exp.ARMInt)
+    
+    # append this model to output 
+    models$exp.indshp <- models.exp$exp
+    params_out <- dplyr::bind_cols(params_out, param_out.exp)
+    params.exp$name <- "exp.indshp"
+    params <- dplyr::bind_rows(params, params.exp)
+    
+  }
 
   if('weibull' %in% distr){
     models.weib <- fit_models(model.formula=model.formula.shape, distr = "weibull", data=data_standard)
@@ -92,6 +114,12 @@ run_independent_shape <- function(data,
         weibull.scale.TE = weibull.ARMInt,
         weibull.shape.TE = `weibull.shape(ARMInt)`) %>%
       select(-weibull.scale, -weibull.shape, -weibull.ARMInt, -`weibull.shape(ARMInt)`)
+    
+    # append this model to output 
+    models$weibull.indshp <- models.weib$weibull
+    params_out <- dplyr::bind_cols(params_out, param_out.weib)
+    params.weib$name <- "weibull.indshp"
+    params <- dplyr::bind_rows(params, params.weib)
   }
 
   if('gompertz' %in% distr){
@@ -106,6 +134,12 @@ run_independent_shape <- function(data,
         gompertz.rate.TE = gompertz.ARMInt,
         gompertz.shape.TE = `gompertz.shape(ARMInt)`) %>%
       select(-gompertz.rate, -gompertz.shape, -gompertz.ARMInt,-`gompertz.shape(ARMInt)`)
+    
+    # append this model to output 
+    models$gompertz.indshp <- models.gomp$gompertz
+    params_out <- dplyr::bind_cols(params_out, param_out.gomp)
+    params.gomp$name <- "gompertz.indshp"
+    params <- dplyr::bind_rows(params, params.gomp)
   }
 
   if('llogis' %in% distr){
@@ -121,6 +155,11 @@ run_independent_shape <- function(data,
         llogis.shape.TE = `llogis.shape(ARMInt)`) %>%
       select(-llogis.scale, -llogis.shape, -llogis.ARMInt, -`llogis.shape(ARMInt)`)
 
+    # append this model to output 
+    models$llogis.indshp <- models.llogis$llogis
+    params_out <- dplyr::bind_cols(params_out, param_out.llogis)
+    params.llogis$name <- "llogis.indshp"
+    params <- dplyr::bind_rows(params, params.llogis)
   }
 
   if('gamma' %in% distr){
@@ -135,6 +174,12 @@ run_independent_shape <- function(data,
         gamma.rate.TE = gamma.ARMInt,
         gamma.shape.TE = `gamma.shape(ARMInt)`) %>%
       select(-gamma.rate, -gamma.shape, -gamma.ARMInt, -`gamma.shape(ARMInt)`)
+    
+    # append this model to output 
+    models$gamma.indshp <- models.gamma$gamma
+    params_out <- dplyr::bind_cols(params_out, param_out.gamma)
+    params.gamma$name <- "gamma.indshp"
+    params <- dplyr::bind_rows(params, params.gamma)
   }
 
   if('lnorm' %in% distr){
@@ -150,6 +195,11 @@ run_independent_shape <- function(data,
         lnorm.sdlog.TE = `lnorm.sdlog(ARMInt)`) %>%
       select(-lnorm.meanlog, -lnorm.sdlog, -lnorm.ARMInt, -`lnorm.sdlog(ARMInt)`)
 
+    # append this model to output 
+    models$lnorm.indshp <- models.lnorm$lnorm
+    params_out <- dplyr::bind_cols(params_out, param_out.lnorm)
+    params.lnorm$name <- "lnorm.indshp"
+    params <- dplyr::bind_rows(params, params.lnorm)
   }
 
   if('gengamma' %in% distr){
@@ -168,27 +218,20 @@ run_independent_shape <- function(data,
         gengamma.Q.TE = `gengamma.Q(ARMInt)`) %>%
       select(-gengamma.mu, -gengamma.sigma, -gengamma.Q, -gengamma.ARMInt, -`gengamma.sigma(ARMInt)`, -`gengamma.Q(ARMInt)`)
 
+    # append this model to output 
+    models$gengamma.indshp <- models.gengamma$gengamma
+    params_out <- dplyr::bind_cols(params_out, param_out.gengamma)
+    params.gengamma$name <- "gengamma.indshp"
+    params <- dplyr::bind_rows(params, params.gengamma)
   }
 
+  
   #Re-organise columns
-  param_out <- cbind(param_out.weib, param_out.llogis, param_out.gomp, param_out.gamma, param_out.lnorm, param_out.gengamma)
-
-
-  colnames(param_out) <- gsub("int", int_name, colnames(param_out))
-  colnames(param_out) <- gsub("ref", ref_name, colnames(param_out))
-
-
-
-  #Re-organise columns
-  param_final <- param_out %>%
+  param_final <- params_out %>%
     #groups parameters by distribution in the order given in the dist argument
-    dplyr::mutate(Model="Independent shape", `Intervention name`=int_name, `Reference name`=ref_name)
+    dplyr::mutate(Model="Independent shape", Intervention_name =int_name, Reference_name=ref_name)
 
-  models <- list(weibull=models.weib$weibull, llogis=models.llogis$llogis, gompertz=models.gomp$gompertz, gamma=models.gamma$gamma, lnorm=models.lnorm$lnorm, gengamma=models.gengamma$gengamma)
-
-  params <- bind_rows(params.weib, params.llogis, params.gomp, params.gamma, params.lnorm, params.gengamma)
-
-  #collect and return output
+    #collect and return output
   output <- list(
     models = models,
     model_summary = params,

@@ -73,7 +73,8 @@ run_common_shape <- function(data,
 
   #Fit the models for seven standard distributions
   models <- fit_models(model.formula=model.formula, distr = distr, data=data_standard)
-
+  models.out <- list()
+  
   #get parameter estimates and model fit statistics
   params <- get_params(models=models)
 
@@ -87,6 +88,8 @@ run_common_shape <- function(data,
         exp.rate.ref = exp.rate,
         exp.rate.TE = exp.ARMInt) %>%
       dplyr::select(-exp.rate, -exp.ARMInt)
+
+      
   }
 
   if('weibull' %in% distr){
@@ -98,6 +101,7 @@ run_common_shape <- function(data,
         weibull.shape.ref = weibull.shape,
         weibull.scale.TE = weibull.ARMInt) %>%
       select(-weibull.scale, -weibull.shape, -weibull.ARMInt)
+    
   }
 
   if('gompertz' %in% distr){
@@ -109,6 +113,8 @@ run_common_shape <- function(data,
         gompertz.shape.ref = gompertz.shape,
         gompertz.rate.TE = gompertz.ARMInt) %>%
       select(-gompertz.rate, -gompertz.shape, -gompertz.ARMInt)
+  
+    
   }
 
   if('llogis' %in% distr){
@@ -132,6 +138,7 @@ run_common_shape <- function(data,
         gamma.shape.ref = gamma.shape,
         gamma.rate.TE = gamma.ARMInt) %>%
       select(-gamma.rate, -gamma.shape, -gamma.ARMInt)
+    
   }
 
   if('lnorm' %in% distr){
@@ -158,23 +165,26 @@ run_common_shape <- function(data,
         gengamma.mu.TE = gengamma.ARMInt) %>%
       select(-gengamma.mu, -gengamma.sigma, -gengamma.Q, -gengamma.ARMInt)
 
+    models.out$gengamma.comshp <- models$gengamma
   }
-
-
-  colnames(param_out) <- gsub("int", int_name, colnames(param_out))
-  colnames(param_out) <- gsub("ref", ref_name, colnames(param_out))
-
 
 
   #Re-organise columns
   param_final <- param_out %>%
     #groups parameters by distribution in the order given in the dist argument
-    dplyr::mutate(Model="Common shape", `Intervention name`=int_name, `Reference name`=ref_name)
+    dplyr::mutate(Model="Common shape", Intervention_name=int_name, Reference_name=ref_name)
 
+  # rename models so can bind with others without conflicts
+  models.out <- models
+  names(models.out) <- paste0(names(models.out), ".comshp")
+  
+  params.out <- params
+  params.out$name <- paste0(params.out$name, ".comshp")
+  
   #collect and return output
   output <- list(
-    models = models,
-    model_summary = params,
+    models = models.out,
+    model_summary = params.out,
     parameters = param_final
   )
   return(output)

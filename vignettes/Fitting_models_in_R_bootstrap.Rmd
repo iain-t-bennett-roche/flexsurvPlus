@@ -1,0 +1,224 @@
+---
+title: "Fitting parametric survival models in R - uncertainty"
+author: "Roche"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+bibliography: references.bib
+csl: biomedicine.csl
+vignette: >
+  %\VignetteIndexEntryFitting parametric survival models in R - uncertainty}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 6
+)
+```
+
+<style type="text/css">
+
+body{ /* Normal  */
+      font-size: 14px;
+  }
+td {  /* Table  */
+  font-size: 10px;
+}
+h1.title {
+  font-size: 38px;
+}
+h1 { /* Header 1 */
+  font-size: 28px;
+  }
+h2 { /* Header 2 */
+    font-size: 22px;
+}
+h3 { /* Header 3 */
+  font-size: 18px;
+}
+code.r{ /* Code block */
+    font-size: 12px;
+}
+pre { /* Code block - determines code spacing between lines */
+    font-size: 14px;
+}
+</style>
+
+# Introduction
+
+Parametric survival models are often the preferred method of extrapolating
+survival data for use in economic models. The National Institute for Health and
+Care Excellence (NICE) Decision Support Unit (DSU) technical support document
+(TSD) 14 recommends that the Exponential, Weibull, Gompertz, log-logistic, log
+normal and Generalized Gamma parametric models should all be
+considered.[@latimer2011nice] More recently, NICE also discusses more flexible
+models in NICE DSU TSD 21, however, more these models are not in the scope of
+this package.[@rutherford2020nice] The Canadian Agency for Drugs and
+Technologies in Health (CADTH) additionally specifies that the Gamma
+distribution must also be considered. This document therefore details the
+characteristics of each of these distributions and demonstrates how the
+parameters from each distribution, outputted using the flexsurvPlus package, can be
+implemented within an economic model.[@cadth2020]
+
+# Handling uncertainty
+
+The flexsurvPlus package allows the handling of uncertainty in estimates primarily through boot strapping. This enables correlations between different endpoints to be preserved in the excel models.
+
+# Set up packages and data
+
+## Install packages
+
+The following packages are required to run this example:
+
+```{r setup}
+library(flexsurvPlus)
+library(tibble)
+library(dplyr)
+library(survival)
+library(survminer)
+library(tidyr)
+library(boot)
+
+
+```
+
+## Read in the data
+
+To perform survival analyses, patient level data is required for the survival endpoints. 
+
+This example uses a standard simulated data set
+(adtte). There is no standard naming that is
+needed for this package however, there are some set variables that are needed:
+
+* Time - a numeric variable
+* Event - a binary variable (event=1, censor=0)
+* Treatment - a character variable with the name of the intervention treatment 
+
+The data must be in "wide" format such that there is one row per patient and columns for each endpoint separately.
+In this example, we use overall survival (OS) and progression-free survival (PFS). 
+```{r}
+
+
+adtte <- sim_adtte(seed = 2020, rho = 0.6) # simulate data with a medium correlation between PFS & OS
+
+# subset OS data and rename
+OS_data <- adtte %>%
+  filter(PARAMCD=="OS") %>%
+  transmute(USUBJID,
+            ARMCD,
+            OS_days = AVAL,
+            OS_event = 1- CNSR
+  )
+
+# subset PFS data and rename
+PFS_data <- adtte %>%
+  filter(PARAMCD=="PFS") %>%
+  transmute(USUBJID,
+            ARMCD,
+            PFS_days = AVAL,
+            PFS_event = 1- CNSR
+  )
+
+analysis_data <- left_join(OS_data, PFS_data, by = c("USUBJID", "ARMCD"))
+
+
+```
+
+# Bootstrapping
+
+Bootstrapping has been used to estimate the uncertainty of the parameters from the survival models for multiple endpoints at once to preserve the correlation between endpoints. In this example we have used OS and PFS.
+
+Bootstrapping involves:
+
+1. Sampling, with replacement, from all patients
+2. Estimating all specified parametric survival models
+
+
+This procedure is repeated multiple times to obtain a distribution of parameters.
+For this example, bootstrap estimates of the parameters were calculated using the
+<tt>boot</tt> package. An argument for the <tt>boot</tt> function is
+<tt>statistic</tt> which is a function which when applied to data returns a
+vector containing the statistic(s) of interest. The <tt>bootPSM</tt> function 
+in the <tt>flexsurvPlus</tt> package can be used for this purpose.
+
+The inputs for the <tt>bootPSM</tt> function are very similar to the <tt>runPSM</tt> function, however there are a few additional arguments:
+*<tt>endpoint1</tt> - Character to indicate the name of the first endpoint, used for labelling.
+*<tt>endpoint2</tt> - Character to indicate the name of the second endpoint, used for labelling.
+*<tt>time_var2</tt> - Name of time variable in 'data' of second endpoint. Variable must be numerical and >0.
+*<tt>event_var2</tt> - Name of event variable in 'data' of second endpoint. Variable must be numerical and contain 1's to indicate an event and 0 to indicate a censor
+*<tt>i</tt> - Index used to select a sample within <tt>boot</tt>
+
+
+```{r}
+set.seed(2358)
+n.sim <- 100
+PSM_bootstraps <- boot(
+                 statistic = bootPSM, # bootstrap the HR (defined in the MAIC package)
+                      R=n.sim, # number of bootstrap samples
+                      data=analysis_data,
+                      endpoint1 = "OS",
+                      endpoint2 = "PFS",
+                      time_var="OS_days",
+                      event_var="OS_event",
+                      time_var2="PFS_days",
+                      event_var2="PFS_event",
+                      model.type="Common shape",
+                      distr = c('exp',
+                                'weibull',
+                                'gompertz',
+                                'lnorm',
+                                'llogis',
+                                'gengamma',
+                                'gamma'),
+                      strata_var = "ARM",
+                      int_name="A",
+                      ref_name = "B"
+)
+
+
+PSM_boot_data <- as.data.frame(PSM_bootstraps$t)
+colnames(PSM_boot_data) <- rownames(t(as.data.frame(PSM_bootstraps$t0)))
+head(PSM_boot_data)
+
+```
+
+The primary use of the bootstrap samples is to be used in probabilistic sensitivity analyses in economic models. Some basic statistics and diagnostics plots (histograms) can be used to summarise the bootstrap estimates and are presented below. 
+
+```{r}
+# Summary of bootstrap values ----------------------------------------------
+#Re-format the data
+boot_gathered <- PSM_boot_data %>%
+  gather(key = 'parameter', value = 'value')
+
+#calculate basic summary stats for all parameters
+boot_summ <- boot_gathered %>%
+  group_by(parameter) %>%
+  summarise(across(.cols = where(is.numeric),
+                   list(
+                     mean = ~mean(., na.rm = TRUE),
+                     sd = ~sd(., na.rm = TRUE),
+                     median = ~median(., na.rm = TRUE),
+                     min = ~min(., na.rm = TRUE),
+                     max = ~max(., na.rm = TRUE)
+                   )
+                   )) %>%
+  mutate(across(.cols = where(is.numeric), ~round(., 3)), .keep = 'unused')
+boot_summ
+#Density plots for each parameter to show distribution
+#Could also be individual plots instead of faceted
+p_boot_density <- ggplot(boot_gathered) +
+  geom_density(aes(value)) +
+  geom_vline(aes(xintercept = value_mean), boot_summ, colour = 'darkgreen') +
+  geom_vline(aes(xintercept = value_median), boot_summ, colour = 'blue') +
+  facet_wrap(~parameter, scales = 'free')
+
+print(p_boot_density)
+
+
+```
+
+#References
