@@ -80,7 +80,7 @@
       <ul class="nav navbar-nav">
         <li>
   <a href="../index.html">
-    <span class="fas fa fas fa-home fa-lg"></span>
+    <span class="fas fa-home fa-lg"></span>
      
   </a>
 </li>
@@ -96,6 +96,9 @@
   <ul class="dropdown-menu" role="menu">
     <li>
       <a href="../articles/Fitting_models_in_R.html">Fitting parametric survival models in R</a>
+    </li>
+    <li>
+      <a href="../articles/Fitting_models_in_R_bootstrap.html">PSA and correlated endpoints (bootstrap approch)</a>
     </li>
     <li>
       <a href="../articles/Survival_analysis_theory.html">Parametric survival analysis using the flexsurvPlus package: understanding the theory</a>
@@ -127,11 +130,11 @@
     <p>Fits single or multiple <code>flexsurv</code> models using <code>flexsurvreg</code>.</p>
     </div>
 
-    <pre class="usage"><span class='fu'>fit_models</span><span class='op'>(</span>
-  <span class='va'>model.formula</span>,
-  distr <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>"exp"</span>, <span class='st'>"weibull"</span>, <span class='st'>"gompertz"</span>, <span class='st'>"lnorm"</span>, <span class='st'>"llogis"</span>, <span class='st'>"gengamma"</span>, <span class='st'>"gamma"</span><span class='op'>)</span>,
-  <span class='va'>data</span>
-<span class='op'>)</span></pre>
+    <pre class="usage"><span class='fu'>fit_models</span>(
+  <span class='no'>model.formula</span>,
+  <span class='kw'>distr</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>"exp"</span>, <span class='st'>"weibull"</span>, <span class='st'>"gompertz"</span>, <span class='st'>"lnorm"</span>, <span class='st'>"llogis"</span>, <span class='st'>"gengamma"</span>, <span class='st'>"gamma"</span>),
+  <span class='no'>data</span>
+)</pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -196,7 +199,7 @@ the <code>fit_models</code> function</p></td>
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.6.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.5.1.</p>
 </div>
 
       </footer>

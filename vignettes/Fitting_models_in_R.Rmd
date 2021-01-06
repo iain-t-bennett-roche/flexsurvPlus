@@ -128,20 +128,11 @@ needed for this package however, there are some set variables that are needed:
 * Treatment - a character variable with the name of the intervention treatment 
 
 The data must be in "wide" format such that there is one row per patient and columns for each endpoint separately.
-In this example, we use overall survival (OS) and progression-free survival (PFS). 
+In this example, we use progression-free survival (PFS). 
 ```{r}
 
 
 adtte <- sim_adtte(seed = 2020, rho = 0.6)
-
-# subset OS data and rename
-OS_data <- adtte %>%
-  filter(PARAMCD=="OS") %>%
-  transmute(USUBJID,
-            ARMCD,
-            OS_days = AVAL,
-            OS_event = 1- CNSR
-  )
 
 # subset PFS data and rename
 PFS_data <- adtte %>%
@@ -151,9 +142,6 @@ PFS_data <- adtte %>%
             PFS_days = AVAL,
             PFS_event = 1- CNSR
   )
-
-analysis_data <- left_join(OS_data, PFS_data, by = c("USUBJID", "ARMCD"))
-
 
 ```
 
@@ -165,22 +153,11 @@ Most importantly is a Kaplan-Meier plot and code to do this using <tt>ggsurvplot
 
 ```{r, warning=FALSE}
 
-km.est.OS <- survfit(Surv(OS_days, OS_event) ~ ARMCD , data = analysis_data, conf.type = 'plain')
-km.est.PFS <- survfit(Surv(PFS_days, PFS_event) ~ ARMCD , data = analysis_data, conf.type = 'plain')
+km.est.PFS <- survfit(Surv(PFS_days, PFS_event) ~ ARMCD , data = PFS_data, conf.type = 'plain')
 
 #KM_list <- list(OS = km.est.OS, PFS = km.est.PFS)
 
-KM_plot_OS <- ggsurvplot(km.est.OS, risk.table = TRUE, data = analysis_data,
-           break.time.by = 200,
-           conf.int = FALSE,
-           censor=FALSE,
-           legend.title = '',
-           xlab = paste0('Overall survival (Days)'),
-           size = 0.72,
-           xlim = c(0, 800))
-KM_plot_OS
-
-KM_plot_PFS <- ggsurvplot(km.est.PFS, risk.table = TRUE, data = analysis_data,
+KM_plot_PFS <- ggsurvplot(km.est.PFS, risk.table = TRUE, data = PFS_data,
            break.time.by = 200,
            conf.int = FALSE,
            censor=FALSE,
@@ -241,25 +218,7 @@ Example code to fit all models is presented below.
 
 ```{r}
 
-psm_OS_all <- runPSM(data=analysis_data,
-                     time_var="OS_days",
-                     event_var="OS_event",
-                     model.type= c("Common shape", 
-                                   "Independent shape", 
-                                   "Separate"),
-                     distr = c('exp',
-                               'weibull',
-                               'gompertz',
-                               'lnorm',
-                               'llogis',
-                               'gengamma',
-                               'gamma'),
-                     strata_var = "ARMCD",
-                     int_name="A",
-                     ref_name = "B")
-psm_OS_all
-
-psm_PFS_all <- runPSM(data=analysis_data,
+psm_PFS_all <- runPSM(data=PFS_data,
                      time_var="PFS_days",
                      event_var="PFS_event",
                      model.type= c("Common shape", 
@@ -293,33 +252,6 @@ These models are similar to the separate model for each treatment as they allow 
 ## Fit common shape models
 These models have been fit using the <tt>runPSM</tt> function using  the model.type="Common shape" argument.
 
-## Output parameters to excel
-
-Once all the models have been fit, they can be output to excel.
-
-```{r}
-# Add meta data to add in details of analysis
-parameters_OS <- psm_OS_all$parameters %>%
-  mutate(Study_name = "Study ABC",
-         Datacut = "Final",
-         Population = "ITT",
-         Endpoint = "OS")
-
-# Add meta data to add in details of analysis
-parameters_PFS <- psm_PFS_all$parameters %>%
-  mutate(Study_name = "Study ABC",
-         Datacut = "Final",
-         Population = "ITT",
-         Endpoint = "PFS")
-
-# stack the PFS & OS parameters
-parameters_all <- rbind(parameters_PFS, parameters_OS)
-
-parameters_all
-
-#write.csv(parameters_all, "params_for_model.csv")
-
-```
 
 # Estimate survival from the models and plot the curves
 
@@ -332,14 +264,14 @@ This can be used to cross check survival in excel models.  The example is given 
 # Landmark survival
 
 # for clarity just pick the 4 different weibull models. 
-selected_models <- c("weibull.comshp","weibull.indshp","weibull.sepint", "weibull.sepref")
+selected_models <- c("comshp.weibull","indshp.weibull","sepint.weibull", "sepref.weibull")
 
-curvefits_OS_landmark <- get_curvefits(models = psm_OS_all$models[selected_models],
+curvefits_PFS_landmark <- get_curvefits(models = psm_PFS_all$models[selected_models],
                                            time = c(0, 100, 200, 300))
-curvefits_df_OS_landmark <- bind_rows(curvefits_OS_landmark$curvefits, .id = "Dist")  %>%
+curvefits_df_PFS_landmark <- bind_rows(curvefits_PFS_landmark$curvefits, .id = "Dist")  %>%
   pivot_wider(names_from  = c(Dist, ARM), values_from  = est) %>%
   as.data.frame()
-curvefits_df_OS_landmark
+curvefits_df_PFS_landmark
 ```
 
 
@@ -352,7 +284,7 @@ The time argument should reflect how long you want to the extrapolate for and th
 ```{r}
 
 # for clarity just pick the 2 different weibull models and a Gamma. 
-selected_models <- c("weibull.comshp","weibull.indshp","gamma.comshp")
+selected_models <- c("comshp.weibull","comshp.gengamma","indshp.gengamma")
 
 # Create data set for plots
 curvefits_PFS <- get_curvefits(models = psm_PFS_all$models[selected_models],
@@ -362,8 +294,8 @@ curvefits_PFS <- get_curvefits(models = psm_PFS_all$models[selected_models],
 curvefits_df_PFS <- bind_rows(curvefits_PFS$curvefits, .id = "Dist") %>%
   pivot_wider(names_from  = c(ARM), values_from  = c(est))
 
-analysis_data_TrtA <- filter(analysis_data, ARMCD=="A")
-analysis_data_TrtB <- filter(analysis_data, ARMCD=="B")
+analysis_data_TrtA <- filter(PFS_data, ARMCD=="A")
+analysis_data_TrtB <- filter(PFS_data, ARMCD=="B")
 
 # Get KM estimates
 km.est.PFS.TrtA <- survfit(Surv(PFS_days, PFS_event) ~ 1 , data = analysis_data_TrtA, conf.type = 'plain')
@@ -428,9 +360,100 @@ plot.PFS.B$plot <- plot.PFS.B$plot +
             data = curvefits_df_PFS) +
   scale_color_manual(values = c(blue, pink, Dyellow, orange))
 
-plot.OS.B
+plot.PFS.B
 
 ```
 
 
-#References
+# Adressing uncertainty - Bootstrapping
+
+Bootstrapping has been used to estimate the uncertainty of the parameters from the survival models. Boostrapping is used for two reasons motivated by intent of this package to support further modeling in excel.
+1. To simplify and accelerate calculations in excel while maintaining correlations between parameters (as is commonly done for NMA)
+2. To maintain correlations across multiple endpoints (see separate vignette for details)
+
+Bootstrapping involves:
+
+1. Sampling, with replacement, from all patients
+2. Estimating all specified parametric survival models
+
+This procedure is repeated multiple times to obtain a distribution of parameters.
+For this example, bootstrap estimates of the parameters were calculated using the
+<tt>boot</tt> package. An argument for the <tt>boot</tt> function is
+<tt>statistic</tt> which is a function which when applied to data returns a
+vector containing the statistic(s) of interest. The <tt>bootPSM</tt> function 
+in the <tt>flexsurvPlus</tt> package can be used for this purpose.
+
+The inputs for the <tt>bootPSM</tt> function are identical to the <tt>runPSM</tt> function, however there is one additional argument:
+*<tt>i</tt> - Index used to select a sample within <tt>boot</tt>
+
+
+```{r}
+set.seed(2358)
+# for speed and illustration only 4 models are selected for bootstrapping - all could be included
+n.sim <- 100
+PSM_bootstraps_PFS <- boot(
+  statistic = bootPSM, # bootstrap function
+  R=n.sim, # number of bootstrap samples
+  data=PFS_data,
+  time_var="PFS_days",
+  event_var="PFS_event",
+  model.type = c("Common shape", "Separate"),
+  distr = c('weibull', 'gamma'),
+  strata_var = "ARMCD",
+  int_name = "B",
+  ref_name = "A"
+)
+
+```
+
+To simplify the post processing of the bootstrap samples a function \code{\link{bootPSMtidy}} is provided that does some manipulations. This returns a tibble similar to the \code{Parameters} one that is returned by \code{\link{bootPSMtidy}}. SampleID identified the bootstrap sample. SampleID of 0 are the parameters for the original data.
+
+
+```{r}
+PSM_bootstrap_PFS_data <- bootPSMtidy(PSM_bootstraps_PFS)
+head(PSM_bootstrap_PFS_data)
+
+```
+
+# Estimating quantities from the sample
+
+As the <tt>flexsurv</tt> parameterisations are used any quantity of interest can be simply calculated for all models and samples through use of the flexsurv functions such as the extrapolated means via flexsurv::mean_weibull.
+
+```{r}
+estimated_deltamean <- PSM_bootstrap_PFS_data %>%
+  transmute(SampleID, Model,
+            Weibull.Mean.ref = flexsurv::mean_weibull(shape = weibull.shape.ref, scale = weibull.scale.ref),
+            Weibull.Mean.int = flexsurv::mean_weibull(shape = weibull.shape.int, scale = weibull.scale.int),
+            Weibull.Mean.delta = Weibull.Mean.int - Weibull.Mean.ref)
+
+head(estimated_deltamean)
+
+estimated_deltamean %>%
+  ggplot(aes(x = Weibull.Mean.delta)) + 
+  geom_density()
+
+```
+
+
+
+# Outputing parameters to excel 
+
+The primary use of the bootstrap samples is to be used in probabilistic sensitivity analyses in economic models. 
+
+Once all the models have been fit and bootstrap samples estimated they can be output to excel. By selecting SampleID = 0 the estimates for the original data are returned. To run PSA in excel only a random number between 1 and the number of samples needs to be generated.
+
+```{r}
+
+# Add meta data to include details of analysis
+parameters_PFS <- PSM_bootstrap_PFS_data %>%
+  mutate(Study_name = "Study ABC",
+         Datacut = "Final",
+         Population = "ITT",
+         Endpoint = "PFS")
+
+#write.csv(parameters_PFS, "params_for_model.csv")
+
+```
+
+
+# References

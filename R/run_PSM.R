@@ -6,7 +6,7 @@
 #' @param time_var Name of time variable in 'data'. Variable must be numerical and >0.
 #' @param  event_var Name of event variable in 'data'. Variable must be
 #'   numerical and contain 1's to indicate an event and 0 to indicate a censor.
-#' @param model.type Character vector indicating the type of model formula
+#' @param model.type Character vector indicating the types of model formula
 #'   provided. Permitted values are
 #' \itemize{
 #'   \item 'Common shape' a model with a single covariate for the effect of
@@ -25,8 +25,7 @@
 #'    must be a level of the "strata_var" column in "data", used for labelling
 #'    the parameters.
 #' @param distr A vector string of distributions, see dist argument in
-#'   \code{\link{flexsurvreg}}. This is passed to the \code{distr} argument of
-#'   the \code{\link{fit_models}} function
+#'   \code{\link{flexsurvreg}}. 
 #'
 #' @details Possible distributions include:
 #' \itemize{
@@ -46,12 +45,19 @@
 #'   \item 'model_summary' is a tibble object containing the fitted model objects, the parameter
 #'   estimates (\code{\link{coef}}),  \code{\link{AIC}} and \code{\link{BIC}}
 #'   from flexsurv objects.
-#'   \item 'parameters' is a data frame with with one row which contains the coefficients for all of the flexsurv models specified.
+#'   \item 'parameters' is a data frame with with one row per model.type called which contains the coefficients for all of the flexsurv models specified.
 #'    The column names are in the format 'distribution.parameter.TreatmentName', for example, weibull.shape.Intervention refers to the shape parameter
 #'     of the weibull distribution for the intervention treatment and 'gengamma.mu.Reference' refers to the mu parameter
 #'     of the generalised gamma distribution for the reference treatment. Columns with 'TE' at the end are the treatment effect coefficients
 #'      (applicable to the scale and shape parameters for independent shape models, applicable to the scale parameter only for the common shape
-#'      model and not applicable for the separate model).}
+#'      model and not applicable for the separate model).
+#'    \item 'parameters_vector' is a vector which contains the coefficients for all of the flexsurv models specified.
+#'    The column names are in the format 'modeltype.distribution.parameter.TreatmentName', for example, comshp.weibull.shape.Int refers to the shape parameter
+#'     of the common shape weibull distribution for the intervention treatment and 'indshp.gengamma.mu.ref' refers to the mu parameter
+#'     of the independent shape generalised gamma distribution for the reference treatment. Columns with 'TE' at the end are the treatment effect coefficients
+#'      (applicable to the scale and shape parameters for independent shape models, applicable to the scale parameter only for the common shape
+#'      model and not applicable for the separate model).
+#'      }
 #'
 #' @export
 runPSM <- function(data,
@@ -89,12 +95,14 @@ runPSM <- function(data,
   models <- list()
   model_summary <- tibble()
   parameters <- tibble()
+  parameters_vector <- numeric()
   
   if('Common shape' %in% model.type){
     output1 <- run_common_shape(data, time_var, event_var,distr,strata_var, int_name, ref_name)
     models <- output1$models
     model_summary <- output1$model_summary
     parameters <- output1$parameters
+    parameters_vector <- output1$parameters_vector
   }
 
   # For separate models split the data by treatment and for 2 separate models
@@ -105,6 +113,7 @@ runPSM <- function(data,
     models <- c(models, output2$models)
     model_summary <- dplyr::bind_rows(model_summary, output2$model_summary)
     parameters <- dplyr::bind_rows(parameters, output2$parameters)
+    parameters_vector <- c(parameters_vector, output2$parameters_vector)
   }
 
   #For models with independent shape calculate the scale and shape parameters for the
@@ -114,12 +123,15 @@ runPSM <- function(data,
     models <- c(models, output3$models)
     model_summary <- dplyr::bind_rows(model_summary, output3$model_summary)
     parameters <- dplyr::bind_rows(parameters, output3$parameters)
+    parameters_vector <- c(parameters_vector, output3$parameters_vector)
   }
 
   # combine the outputs
   output <- list(models = models,
                  model_summary = model_summary,
-                 parameters = parameters)
+                 parameters = parameters,
+                 parameters_vector = parameters_vector
+                 )
   
   return(output)
 }

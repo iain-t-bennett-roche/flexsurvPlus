@@ -1,5 +1,5 @@
 ---
-title: "Fitting parametric survival models in R - uncertainty"
+title: "PSA and correlated endpoints (bootstrap approch)"
 author: "Roche"
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
@@ -66,7 +66,7 @@ implemented within an economic model.[@cadth2020]
 
 # Handling uncertainty
 
-The flexsurvPlus package allows the handling of uncertainty in estimates primarily through boot strapping. This enables correlations between different endpoints to be preserved in the excel models.
+The flexsurvPlus package allows the handling of uncertainty in estimates primarily through boot strapping. This enables correlations between different endpoints to be preserved in the excel models. This vignette illustrates this with a simple example.
 
 # Set up packages and data
 
@@ -79,9 +79,9 @@ library(flexsurvPlus)
 library(tibble)
 library(dplyr)
 library(survival)
-library(survminer)
 library(tidyr)
 library(boot)
+library(ggplot2)
 
 
 ```
@@ -103,7 +103,8 @@ In this example, we use overall survival (OS) and progression-free survival (PFS
 ```{r}
 
 
-adtte <- sim_adtte(seed = 2020, rho = 0.6) # simulate data with a medium correlation between PFS & OS
+# simulate data with a medium correlation between PFS & OS on the patient level
+adtte <- sim_adtte(seed = 2020, rho = 0.6) 
 
 # subset OS data and rename
 OS_data <- adtte %>%
@@ -128,95 +129,160 @@ analysis_data <- left_join(OS_data, PFS_data, by = c("USUBJID", "ARMCD"))
 
 ```
 
-# Bootstrapping
 
-Bootstrapping has been used to estimate the uncertainty of the parameters from the survival models for multiple endpoints at once to preserve the correlation between endpoints. In this example we have used OS and PFS.
+# Bootstrapping the endpoints
 
-Bootstrapping involves:
+## Ignoring correlation between endpoints
 
-1. Sampling, with replacement, from all patients
-2. Estimating all specified parametric survival models
-
-
-This procedure is repeated multiple times to obtain a distribution of parameters.
-For this example, bootstrap estimates of the parameters were calculated using the
-<tt>boot</tt> package. An argument for the <tt>boot</tt> function is
-<tt>statistic</tt> which is a function which when applied to data returns a
-vector containing the statistic(s) of interest. The <tt>bootPSM</tt> function 
-in the <tt>flexsurvPlus</tt> package can be used for this purpose.
-
-The inputs for the <tt>bootPSM</tt> function are very similar to the <tt>runPSM</tt> function, however there are a few additional arguments:
-*<tt>endpoint1</tt> - Character to indicate the name of the first endpoint, used for labelling.
-*<tt>endpoint2</tt> - Character to indicate the name of the second endpoint, used for labelling.
-*<tt>time_var2</tt> - Name of time variable in 'data' of second endpoint. Variable must be numerical and >0.
-*<tt>event_var2</tt> - Name of event variable in 'data' of second endpoint. Variable must be numerical and contain 1's to indicate an event and 0 to indicate a censor
-*<tt>i</tt> - Index used to select a sample within <tt>boot</tt>
+Bootstrapping has been used to estimate the uncertainty of the parameters from the survival models for multiple endpoints at once to preserve the correlation between endpoints. In this example we have used OS and PFS. For speed of execution and illustration of concept we only fit a common shape weibull model for PFS and separate gamma models for OS here but all models discussed in <tt>runPSM</tt> could be specified with a single call.
 
 
 ```{r}
+
+
 set.seed(2358)
 n.sim <- 100
-PSM_bootstraps <- boot(
-                 statistic = bootPSM, # bootstrap the HR (defined in the MAIC package)
-                      R=n.sim, # number of bootstrap samples
-                      data=analysis_data,
-                      endpoint1 = "OS",
-                      endpoint2 = "PFS",
-                      time_var="OS_days",
-                      event_var="OS_event",
-                      time_var2="PFS_days",
-                      event_var2="PFS_event",
-                      model.type="Common shape",
-                      distr = c('exp',
-                                'weibull',
-                                'gompertz',
-                                'lnorm',
-                                'llogis',
-                                'gengamma',
-                                'gamma'),
-                      strata_var = "ARM",
-                      int_name="A",
-                      ref_name = "B"
+
+PSM_bootstraps_PFS <- boot(
+  statistic = bootPSM, # bootstrap function
+  R=n.sim, # number of bootstrap samples
+  data=analysis_data,
+  time_var="PFS_days",
+  event_var="PFS_event",
+  model.type=c("Common shape"),
+  distr = c('weibull'),
+  strata_var = "ARMCD",
+  int_name="B",
+  ref_name = "A"
+)
+
+PSM_bootstraps_OS <- boot(
+  statistic = bootPSM, # bootstrap function
+  R=n.sim, # number of bootstrap samples
+  data=analysis_data,
+  time_var="OS_days",
+  event_var="OS_event",
+  model.type=c("Separate"),
+  distr = c('gamma'),
+  strata_var = "ARMCD",
+  int_name="B",
+  ref_name = "A"
 )
 
 
-PSM_boot_data <- as.data.frame(PSM_bootstraps$t)
-colnames(PSM_boot_data) <- rownames(t(as.data.frame(PSM_bootstraps$t0)))
-head(PSM_boot_data)
+```
+
+We can see these are using different bootstrap samples by looking at the bootstrap indexes. This is equiavlent to performing PSA for OS and PFS independently.
+
+```{r}
+
+index_PFS <- boot.array(PSM_bootstraps_PFS, indices = TRUE)
+index_OS  <- boot.array(PSM_bootstraps_OS, indices = TRUE)
+
+all(index_OS == index_PFS)
 
 ```
 
-The primary use of the bootstrap samples is to be used in probabilistic sensitivity analyses in economic models. Some basic statistics and diagnostics plots (histograms) can be used to summarise the bootstrap estimates and are presented below. 
+
+## Considering correlation between endpoints
+
+If we want to maintain correlations between PFS and OS we need to use the same bootstrap samples for both the PFS and OS analysis. The easiest way to do this is to reuse the same seed before calling the boot function for the second endpoint. 
+
 
 ```{r}
-# Summary of bootstrap values ----------------------------------------------
-#Re-format the data
-boot_gathered <- PSM_boot_data %>%
-  gather(key = 'parameter', value = 'value')
 
-#calculate basic summary stats for all parameters
-boot_summ <- boot_gathered %>%
-  group_by(parameter) %>%
-  summarise(across(.cols = where(is.numeric),
-                   list(
-                     mean = ~mean(., na.rm = TRUE),
-                     sd = ~sd(., na.rm = TRUE),
-                     median = ~median(., na.rm = TRUE),
-                     min = ~min(., na.rm = TRUE),
-                     max = ~max(., na.rm = TRUE)
-                   )
-                   )) %>%
-  mutate(across(.cols = where(is.numeric), ~round(., 3)), .keep = 'unused')
-boot_summ
-#Density plots for each parameter to show distribution
-#Could also be individual plots instead of faceted
-p_boot_density <- ggplot(boot_gathered) +
-  geom_density(aes(value)) +
-  geom_vline(aes(xintercept = value_mean), boot_summ, colour = 'darkgreen') +
-  geom_vline(aes(xintercept = value_median), boot_summ, colour = 'blue') +
-  facet_wrap(~parameter, scales = 'free')
+n.sim <- 100
 
-print(p_boot_density)
+set.seed(2020)
+
+PSM_bootstraps_PFScor <- boot(
+  statistic = bootPSM, # bootstrap function
+  R=n.sim, # number of bootstrap samples
+  data=analysis_data,
+  time_var="PFS_days",
+  event_var="PFS_event",
+  model.type=c("Common shape"),
+  distr = c('weibull'),
+  strata_var = "ARMCD",
+  int_name="B",
+  ref_name = "A"
+)
+
+set.seed(2020)
+
+PSM_bootstraps_OScor <- boot(
+  statistic = bootPSM, # bootstrap function
+  R=n.sim, # number of bootstrap samples
+  data=analysis_data,
+  time_var="OS_days",
+  event_var="OS_event",
+  model.type=c("Separate"),
+  distr = c('gamma'),
+  strata_var = "ARMCD",
+  int_name= "B",
+  ref_name = "A"
+)
+
+```
+
+We can check these are indeed using the same bootstrap samples by comparing the indexes selected. This means the associated bootstrap distributions for PFS and OS remain correlated.
+
+```{r}
+
+index_PFScor <- boot.array(PSM_bootstraps_PFScor, indices = TRUE)
+index_OScor  <- boot.array(PSM_bootstraps_OScor, indices = TRUE)
+
+all(index_OScor == index_PFScor)
+
+```
+
+
+## Plotting impact of accounting for correlations between endpoints
+
+The primary use of the bootstrap samples is to be used in probabilistic sensitivity analyses (PSA) in economic models. To illustrate the impact of accounting for correlations between each endpoint in such PSA we will look at plotting the difference between the extrapolated mean PFS and mean OS. To do this we need to calculate the mean PFS and mean OS for the reference and intervention arm for each sample. 
+
+```{r}
+
+os_means <- bind_rows(
+  mutate(bootPSMtidy(PSM_bootstraps_OS), Bootstrap = "Uncorrelated"), 
+  mutate(bootPSMtidy(PSM_bootstraps_OScor), Bootstrap = "Correlated")
+  ) %>%
+  transmute(SampleID, Bootstrap, 
+    os_mean_time_ref = flexsurv::mean_gamma(shape = gamma.shape.ref, rate = gamma.rate.ref),
+    os_mean_time_int = flexsurv::mean_gamma(shape = gamma.shape.int, rate = gamma.rate.int),
+    os_mean_delta = os_mean_time_int - os_mean_time_ref
+  ) 
+
+pfs_means <- bind_rows(
+  mutate(bootPSMtidy(PSM_bootstraps_PFS), Bootstrap = "Uncorrelated"), 
+  mutate(bootPSMtidy(PSM_bootstraps_PFScor), Bootstrap = "Correlated")
+  ) %>%
+  transmute(SampleID, Bootstrap, 
+            pfs_mean_time_ref = flexsurv::mean_weibull(shape = weibull.shape.ref, scale = weibull.scale.ref),
+            pfs_mean_time_int = flexsurv::mean_weibull(shape = weibull.shape.int, scale = weibull.scale.int),
+            pfs_mean_delta = pfs_mean_time_int - pfs_mean_time_ref
+  ) 
+
+
+mean_durations <- pfs_means %>%
+  left_join(os_means, by = c("SampleID", "Bootstrap"))
+
+head(mean_durations)
+```
+
+We can now plot this dataset and as expected the correlated bootstrap approach leads to mean estimates for PFS and OS that preserve the correlations in the underlying data. Here we use all bootstrap samples but in the context of an excel economic we would perform PSA by randomly sampling SampleIDs and using the same SampleID for both PFS and OS in a single PSA run.
+
+```{r}
+
+mean_durations %>% 
+  ggplot(aes(x = pfs_mean_delta, y = os_mean_delta, color = Bootstrap)) +
+  theme_bw() +
+  geom_point() +
+  stat_ellipse() +
+  coord_cartesian(xlim = c(100, 300), ylim = c(0, 2500)) +
+  xlab("Difference in mean (weibull) PFS (B vs A)") +
+  ylab("Difference in mean (gamma) OS (B vs A)") +
+  ggtitle("Each point is a bootstrap sample")
 
 
 ```

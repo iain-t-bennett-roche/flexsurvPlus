@@ -8,7 +8,7 @@ runPSM(
   data,
   time_var,
   event_var,
-  model.type,
+  model.type = c("Separate", "Common shape", "Independent shape"),
   distr = c("exp", "weibull", "gompertz", "lnorm", "llogis", "gengamma", "gamma"),
   strata_var,
   int_name,
@@ -25,7 +25,7 @@ time to event outcomes. This is passed to the \code{data} argument of the
 \item{event_var}{Name of event variable in 'data'. Variable must be
 numerical and contain 1's to indicate an event and 0 to indicate a censor.}
 
-\item{model.type}{Character vector indicating the type of model formula
+\item{model.type}{Character vector indicating the types of model formula
 provided. Permitted values are
 \itemize{
 \item 'Common shape' a model with a single covariate for the effect of
@@ -37,8 +37,7 @@ data from each treatment group in a study
 }}
 
 \item{distr}{A vector string of distributions, see dist argument in
-\code{\link{flexsurvreg}}. This is passed to the \code{distr} argument of
-the \code{\link{fit_models}} function}
+\code{\link{flexsurvreg}}.}
 
 \item{strata_var}{Name of stratification variable in "data". This is usually
 the treatment variable and must be categorical.}
@@ -59,12 +58,19 @@ A list containing 'models' (output from \code{\link{fit_models}}), 'model_summar
 \item 'model_summary' is a tibble object containing the fitted model objects, the parameter
 estimates (\code{\link{coef}}),  \code{\link{AIC}} and \code{\link{BIC}}
 from flexsurv objects.
-\item 'parameters' is a data frame with with one row which contains the coefficients for all of the flexsurv models specified.
+\item 'parameters' is a data frame with with one row per model.type called which contains the coefficients for all of the flexsurv models specified.
 The column names are in the format 'distribution.parameter.TreatmentName', for example, weibull.shape.Intervention refers to the shape parameter
 of the weibull distribution for the intervention treatment and 'gengamma.mu.Reference' refers to the mu parameter
 of the generalised gamma distribution for the reference treatment. Columns with 'TE' at the end are the treatment effect coefficients
 (applicable to the scale and shape parameters for independent shape models, applicable to the scale parameter only for the common shape
-model and not applicable for the separate model).}
+model and not applicable for the separate model).
+\item 'parameters_vector' is a vector which contains the coefficients for all of the flexsurv models specified.
+The column names are in the format 'modeltype.distribution.parameter.TreatmentName', for example, comshp.weibull.shape.Int refers to the shape parameter
+of the common shape weibull distribution for the intervention treatment and 'indshp.gengamma.mu.ref' refers to the mu parameter
+of the independent shape generalised gamma distribution for the reference treatment. Columns with 'TE' at the end are the treatment effect coefficients
+(applicable to the scale and shape parameters for independent shape models, applicable to the scale parameter only for the common shape
+model and not applicable for the separate model).
+}
 }
 \description{
 Run a complete parametric survival analysis for one model with multiple distributions

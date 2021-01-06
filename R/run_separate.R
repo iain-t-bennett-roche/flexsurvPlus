@@ -92,28 +92,44 @@ run_separate <- function(data,
   suppressWarnings(colnames(param_out.ref)[colnames(param_out.ref) == 'exp'] <- "exp.rate")
   suppressWarnings(colnames(param_out.ref) <- paste0(colnames(param_out.ref),".ref"))
 
-  #Re-organise columns
-  param_final <- cbind(param_out.int, param_out.ref) %>%
-    as.data.frame() %>%
-    #groups parameters by distribution in the order given in the dist argument
-    dplyr::mutate(Model="separate", Intervention_name=int_name, Reference_name=ref_name)
+  
 
   # rename for output
-  names(models.int) <- paste0(names(models.int), ".sepint")
-  names(models.ref) <- paste0(names(models.ref), ".sepref")
+  names(models.int) <- paste0("sep.int.", names(models.int))
+  names(models.ref) <- paste0("sep.ref.", names(models.ref))
   
   models <- c(models.int, models.ref)
   
-  params.int$name <-  paste0(params.int$name, ".sepint")
-  params.ref$name <-  paste0(params.ref$name, ".refint")
+  params.int$name <-  paste0("sep.int.", params.int$name)
+  params.ref$name <-  paste0("ref.int.", params.ref$name)
   
   params <- dplyr::bind_rows(params.int, params.ref)
   
+  param_out <- cbind(param_out.int, param_out.ref)  %>%
+    as.data.frame() 
+  
+  #######################################################
+  # prepare parameter outputs
+  # this function exponentiates values that coef returns on the log scale
+  # e.g. weibull shape and scale
+  # this further simplifies other function use
+  param_final <- post_process_param_out(param_out)
+  
+  # as a data frame with metadata 
+  param_df <- param_final %>%
+    dplyr::mutate(Model="Seperate", Intervention_name=int_name, Reference_name=ref_name)
+  
+  # as a vector version with just numerics - needed for bootstrapping
+  paramV <- as.numeric(param_final)
+  names(paramV) <- paste0("sep.", colnames(param_final))
+  
+  #######################################################
   #collect and return output
   output <- list(
     models = models,
     model_summary = params,
-    parameters = param_final
+    parameters = param_df,
+    parameters_vector = paramV
   )
 
   return(output)

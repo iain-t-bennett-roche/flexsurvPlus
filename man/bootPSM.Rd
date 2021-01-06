@@ -2,103 +2,38 @@
 % Please edit documentation in R/boot strapping.R
 \name{bootPSM}
 \alias{bootPSM}
-\title{Run a complete parametric survival analysis for two endpoints with multiple distributions}
+\title{Run a complete parametric survival analysis}
 \usage{
-bootPSM(
-  data,
-  endpoint1,
-  endpoint2,
-  time_var,
-  event_var,
-  time_var2,
-  event_var2,
-  model.type,
-  distr = c("exp", "weibull", "gompertz", "lnorm", "llogis", "gengamma", "gamma"),
-  strata_var,
-  int_name,
-  ref_name,
-  i
-)
+bootPSM(data, i, ...)
 }
 \arguments{
 \item{data}{A data frame containing individual patient data for the relevant
 time to event outcomes. This is passed to the \code{data} argument of the
-\code{\link{fit_models}} function}
-
-\item{endpoint1}{Character to indicate the name of the first endpoint, used for labelling.}
-
-\item{endpoint2}{Character to indicate the name of the second endpoint, used for labelling.}
-
-\item{time_var}{Name of time variable in 'data' of first endpoint. Variable must be numerical and >0.}
-
-\item{event_var}{Name of event variable in 'data' of first endpoint.
-Variable must be numerical and contain 1's to indicate an event and 0 to
-indicate a censor.}
-
-\item{time_var2}{Name of time variable in 'data' of second endpoint. Variable must be numerical and >0.}
-
-\item{event_var2}{Name of event variable in 'data' of second endpoint.
-Variable must be numerical and contain 1's to indicate an event and 0 to
-indicate a censor.}
-
-\item{model.type}{Character vector indicating the type of model formula provided. Permitted values are
-\itemize{
-\item 'Common shape' a model with a single covariate for the effect of
-treatment on the scale parameter of the model
-\item 'Independent shape' a model with a single covariate for treatment
-that affects both the scale and shape parameters of the model
-\item 'Separate' a model with no covariates typically fitted separately to
-data from each treatment group in a study
-}}
-
-\item{distr}{A vector string of distributions, see dist argument in
-\code{\link{flexsurvreg}}. This is passed to the \code{distr} argument of
-the \code{\link{fit_models}} function}
-
-\item{strata_var}{Name of stratification variable in "data". This is usually
-the treatment variable and must be categorical.}
-
-\item{int_name}{Character to indicate the name of the treatment of interest,
-must be a level of the "strata_var" column in "data", used for labelling
-the parameters.}
-
-\item{ref_name}{Character to indicate the name of the reference treatment,
-must be a level of the "strata_var" column in "data", used for labelling
-the parameters.}
+\code{\link{runPSM}} function}
 
 \item{i}{Index used to select a sample within \code{\link{boot}}.}
+
+\item{...}{Additional parameters as used by \code{\link{runPSM}}}
 }
 \value{
-The 'parameters' object from the \code{\link{runPSM}} function.
+The 'parameters_vector' object from the \code{\link{runPSM}} function.
 
-'parameters' is a data frame with with one row which contains the coefficients for all of the flexsurv models specified.
-The column names are in the format 'distribution.parameter.TreatmentName', for example, weibull.shape.Intervention refers to the shape parameter
-of the weibull distribution for the intervention treatment and 'gengamma.mu.Reference' refers to the mu parameter
-of the generalised gamma distribution for the reference treatment. Columns with 'TE' at the end are the treatment effect coefficients
+'parameters_vector' is a vector which contains the coefficients for all of the flexsurv models specified.
+The column names are in the format 'modeltype.distribution.parameter.TreatmentName', for example, comshp.weibull.shape.Int refers to the shape parameter
+of the common shape weibull distribution for the intervention treatment and 'indshp.gengamma.mu.ref' refers to the mu parameter
+of the independent shape generalised gamma distribution for the reference treatment. Columns with 'TE' at the end are the treatment effect coefficients
 (applicable to the scale and shape parameters for independent shape models, applicable to the scale parameter only for the common shape
 model and not applicable for the separate model).
 }
 \description{
-Run a complete parametric survival analysis for two endpoints with multiple
-distributions. For use when performing bootstrapping on two correlated
-endpoints such as PFS and OS.
+This function is a wrapper for the \code{\link{runPSM}} function intended to be run with the \code{\link{boot}} package.
+It enables running a complete parametric survival analysis for use when performing bootstrapping to explore uncertainty.
+By re-using random seeds for each bootstrap sample it is possible to maintain correlations across multiple endpoints.
 }
 \details{
 This function is intended to be used in conjunction with the
 \code{\link{boot}} function to return the statistic to be
 bootstrapped. In this case by performing parametric survival modelling using
 {\link{flexsurv}} and returning the parameters of the survival distributions.
-This is used as the 'statistic' argument in
-the boot function.
-
-#' Possible distributions include:
-\itemize{
-\item Exponential ('exp')
-\item Weibull ('weibull')
-\item Gompertz ('gompertz')
-\item Log-normal ('lnorm')
-\item Log-logistic ('llogis')
-\item Generalized gamma ('gengamma')
-\item Gamma ('gamma')
-}
+This is used as the 'statistic' argument in the boot function.
 }

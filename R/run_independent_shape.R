@@ -95,9 +95,9 @@ run_independent_shape <- function(data,
       dplyr::select(-exp.rate, -exp.ARMInt)
     
     # append this model to output 
-    models$exp.indshp <- models.exp$exp
+    models$indshp.exp <- models.exp$exp
     params_out <- dplyr::bind_cols(params_out, param_out.exp)
-    params.exp$name <- "exp.indshp"
+    params.exp$name <- "indshp.exp"
     params <- dplyr::bind_rows(params, params.exp)
     
   }
@@ -116,9 +116,9 @@ run_independent_shape <- function(data,
       select(-weibull.scale, -weibull.shape, -weibull.ARMInt, -`weibull.shape(ARMInt)`)
     
     # append this model to output 
-    models$weibull.indshp <- models.weib$weibull
+    models$indshp.weibull <- models.weib$weibull
     params_out <- dplyr::bind_cols(params_out, param_out.weib)
-    params.weib$name <- "weibull.indshp"
+    params.weib$name <- "indshp.weibull"
     params <- dplyr::bind_rows(params, params.weib)
   }
 
@@ -136,9 +136,9 @@ run_independent_shape <- function(data,
       select(-gompertz.rate, -gompertz.shape, -gompertz.ARMInt,-`gompertz.shape(ARMInt)`)
     
     # append this model to output 
-    models$gompertz.indshp <- models.gomp$gompertz
+    models$indshp.gompertz <- models.gomp$gompertz
     params_out <- dplyr::bind_cols(params_out, param_out.gomp)
-    params.gomp$name <- "gompertz.indshp"
+    params.gomp$name <- "indshp.gompertz"
     params <- dplyr::bind_rows(params, params.gomp)
   }
 
@@ -156,9 +156,9 @@ run_independent_shape <- function(data,
       select(-llogis.scale, -llogis.shape, -llogis.ARMInt, -`llogis.shape(ARMInt)`)
 
     # append this model to output 
-    models$llogis.indshp <- models.llogis$llogis
+    models$indshp.llogis <- models.llogis$llogis
     params_out <- dplyr::bind_cols(params_out, param_out.llogis)
-    params.llogis$name <- "llogis.indshp"
+    params.llogis$name <- "indshp.llogis"
     params <- dplyr::bind_rows(params, params.llogis)
   }
 
@@ -176,9 +176,9 @@ run_independent_shape <- function(data,
       select(-gamma.rate, -gamma.shape, -gamma.ARMInt, -`gamma.shape(ARMInt)`)
     
     # append this model to output 
-    models$gamma.indshp <- models.gamma$gamma
+    models$indshp.gamma <- models.gamma$gamma
     params_out <- dplyr::bind_cols(params_out, param_out.gamma)
-    params.gamma$name <- "gamma.indshp"
+    params.gamma$name <- "indshp.gamma"
     params <- dplyr::bind_rows(params, params.gamma)
   }
 
@@ -196,9 +196,9 @@ run_independent_shape <- function(data,
       select(-lnorm.meanlog, -lnorm.sdlog, -lnorm.ARMInt, -`lnorm.sdlog(ARMInt)`)
 
     # append this model to output 
-    models$lnorm.indshp <- models.lnorm$lnorm
+    models$indshp.lnorm <- models.lnorm$lnorm
     params_out <- dplyr::bind_cols(params_out, param_out.lnorm)
-    params.lnorm$name <- "lnorm.indshp"
+    params.lnorm$name <- "indshp.lnorm"
     params <- dplyr::bind_rows(params, params.lnorm)
   }
 
@@ -219,23 +219,37 @@ run_independent_shape <- function(data,
       select(-gengamma.mu, -gengamma.sigma, -gengamma.Q, -gengamma.ARMInt, -`gengamma.sigma(ARMInt)`, -`gengamma.Q(ARMInt)`)
 
     # append this model to output 
-    models$gengamma.indshp <- models.gengamma$gengamma
+    models$indshp.gengamma <- models.gengamma$gengamma
     params_out <- dplyr::bind_cols(params_out, param_out.gengamma)
-    params.gengamma$name <- "gengamma.indshp"
+    params.gengamma$name <- "indshp.gengamma"
     params <- dplyr::bind_rows(params, params.gengamma)
   }
 
+  #######################################################
+  # prepare parameter outputs
+  # this function exponentiates values that coef returns on the log scale
+  # e.g. weibull shape and scale
+  # this further simplifies other function use
+  param_final <- post_process_param_out(params_out)
   
-  #Re-organise columns
-  param_final <- params_out %>%
-    #groups parameters by distribution in the order given in the dist argument
-    dplyr::mutate(Model="Independent shape", Intervention_name =int_name, Reference_name=ref_name)
+  # as a data frame with metadata 
+  param_df <- param_final %>%
+    dplyr::mutate(Model="Independent shape", Intervention_name=int_name, Reference_name=ref_name)
+  
+  # as a vector version with just numerics - needed for bootstrapping
+  paramV <- as.numeric(param_final)
+  names(paramV) <- paste0("indshp.", colnames(param_final))
+  
+  #######################################################
+  
 
-    #collect and return output
+  # prepare parameter outputs
+  
   output <- list(
     models = models,
     model_summary = params,
-    parameters = param_final
+    parameters = param_df,
+    parameters_vector = paramV
   )
   return(output)
 }

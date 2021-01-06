@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Run a complete parametric survival analysis for two endpoints with multiple distributions — bootPSM • flexsurvPlus</title>
+<title>Run a complete parametric survival analysis — bootPSM • flexsurvPlus</title>
 
 
 <!-- jquery -->
@@ -39,10 +39,10 @@
 
 
 
-<meta property="og:title" content="Run a complete parametric survival analysis for two endpoints with multiple distributions — bootPSM" />
-<meta property="og:description" content="Run a complete parametric survival analysis for two endpoints with multiple
-distributions. For use when performing bootstrapping on two correlated
-endpoints such as PFS and OS." />
+<meta property="og:title" content="Run a complete parametric survival analysis — bootPSM" />
+<meta property="og:description" content="This function is a wrapper for the runPSM function intended to be run with the boot package.
+It enables running a complete parametric survival analysis for use when performing bootstrapping to explore uncertainty.
+By re-using random seeds for each bootstrap sample it is possible to maintain correlations across multiple endpoints." />
 
 
 
@@ -82,7 +82,7 @@ endpoints such as PFS and OS." />
       <ul class="nav navbar-nav">
         <li>
   <a href="../index.html">
-    <span class="fas fa fas fa-home fa-lg"></span>
+    <span class="fas fa-home fa-lg"></span>
      
   </a>
 </li>
@@ -98,6 +98,9 @@ endpoints such as PFS and OS." />
   <ul class="dropdown-menu" role="menu">
     <li>
       <a href="../articles/Fitting_models_in_R.html">Fitting parametric survival models in R</a>
+    </li>
+    <li>
+      <a href="../articles/Fitting_models_in_R_bootstrap.html">PSA and correlated endpoints (bootstrap approch)</a>
     </li>
     <li>
       <a href="../articles/Survival_analysis_theory.html">Parametric survival analysis using the flexsurvPlus package: understanding the theory</a>
@@ -120,32 +123,18 @@ endpoints such as PFS and OS." />
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Run a complete parametric survival analysis for two endpoints with multiple distributions</h1>
+    <h1>Run a complete parametric survival analysis</h1>
     
     <div class="hidden name"><code>bootPSM.Rd</code></div>
     </div>
 
     <div class="ref-description">
-    <p>Run a complete parametric survival analysis for two endpoints with multiple
-distributions. For use when performing bootstrapping on two correlated
-endpoints such as PFS and OS.</p>
+    <p>This function is a wrapper for the <code><a href='runPSM.html'>runPSM</a></code> function intended to be run with the <code>boot</code> package.
+It enables running a complete parametric survival analysis for use when performing bootstrapping to explore uncertainty.
+By re-using random seeds for each bootstrap sample it is possible to maintain correlations across multiple endpoints.</p>
     </div>
 
-    <pre class="usage"><span class='fu'>bootPSM</span><span class='op'>(</span>
-  <span class='va'>data</span>,
-  <span class='va'>endpoint1</span>,
-  <span class='va'>endpoint2</span>,
-  <span class='va'>time_var</span>,
-  <span class='va'>event_var</span>,
-  <span class='va'>time_var2</span>,
-  <span class='va'>event_var2</span>,
-  <span class='va'>model.type</span>,
-  distr <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>"exp"</span>, <span class='st'>"weibull"</span>, <span class='st'>"gompertz"</span>, <span class='st'>"lnorm"</span>, <span class='st'>"llogis"</span>, <span class='st'>"gengamma"</span>, <span class='st'>"gamma"</span><span class='op'>)</span>,
-  <span class='va'>strata_var</span>,
-  <span class='va'>int_name</span>,
-  <span class='va'>ref_name</span>,
-  <span class='va'>i</span>
-<span class='op'>)</span></pre>
+    <pre class="usage"><span class='fu'>bootPSM</span>(<span class='no'>data</span>, <span class='no'>i</span>, <span class='no'>...</span>)</pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -154,83 +143,25 @@ endpoints such as PFS and OS.</p>
       <th>data</th>
       <td><p>A data frame containing individual patient data for the relevant
 time to event outcomes. This is passed to the <code>data</code> argument of the
-<code><a href='fit_models.html'>fit_models</a></code> function</p></td>
-    </tr>
-    <tr>
-      <th>endpoint1</th>
-      <td><p>Character to indicate the name of the first endpoint, used for labelling.</p></td>
-    </tr>
-    <tr>
-      <th>endpoint2</th>
-      <td><p>Character to indicate the name of the second endpoint, used for labelling.</p></td>
-    </tr>
-    <tr>
-      <th>time_var</th>
-      <td><p>Name of time variable in 'data' of first endpoint. Variable must be numerical and &gt;0.</p></td>
-    </tr>
-    <tr>
-      <th>event_var</th>
-      <td><p>Name of event variable in 'data' of first endpoint.
-Variable must be numerical and contain 1's to indicate an event and 0 to
-indicate a censor.</p></td>
-    </tr>
-    <tr>
-      <th>time_var2</th>
-      <td><p>Name of time variable in 'data' of second endpoint. Variable must be numerical and &gt;0.</p></td>
-    </tr>
-    <tr>
-      <th>event_var2</th>
-      <td><p>Name of event variable in 'data' of second endpoint.
-Variable must be numerical and contain 1's to indicate an event and 0 to
-indicate a censor.</p></td>
-    </tr>
-    <tr>
-      <th>model.type</th>
-      <td><p>Character vector indicating the type of model formula provided. Permitted values are</p><ul>
-<li><p>'Common shape' a model with a single covariate for the effect of
-treatment on the scale parameter of the model</p></li>
-<li><p>'Independent shape' a model with a single covariate for treatment
-that affects both the scale and shape parameters of the model</p></li>
-<li><p>'Separate' a model with no covariates typically fitted separately to
-data from each treatment group in a study</p></li>
-</ul></td>
-    </tr>
-    <tr>
-      <th>distr</th>
-      <td><p>A vector string of distributions, see dist argument in
-<code>flexsurvreg</code>. This is passed to the <code>distr</code> argument of
-the <code><a href='fit_models.html'>fit_models</a></code> function</p></td>
-    </tr>
-    <tr>
-      <th>strata_var</th>
-      <td><p>Name of stratification variable in "data". This is usually
-the treatment variable and must be categorical.</p></td>
-    </tr>
-    <tr>
-      <th>int_name</th>
-      <td><p>Character to indicate the name of the treatment of interest,
-must be a level of the "strata_var" column in "data", used for labelling
-the parameters.</p></td>
-    </tr>
-    <tr>
-      <th>ref_name</th>
-      <td><p>Character to indicate the name of the reference treatment,
-must be a level of the "strata_var" column in "data", used for labelling
-the parameters.</p></td>
+<code><a href='runPSM.html'>runPSM</a></code> function</p></td>
     </tr>
     <tr>
       <th>i</th>
       <td><p>Index used to select a sample within <code>boot</code>.</p></td>
     </tr>
+    <tr>
+      <th>...</th>
+      <td><p>Additional parameters as used by <code><a href='runPSM.html'>runPSM</a></code></p></td>
+    </tr>
     </table>
 
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
-    <p>The 'parameters' object from the <code><a href='runPSM.html'>runPSM</a></code> function.</p>
-<p>'parameters' is a data frame with with one row which contains the coefficients for all of the flexsurv models specified.
-The column names are in the format 'distribution.parameter.TreatmentName', for example, weibull.shape.Intervention refers to the shape parameter
-of the weibull distribution for the intervention treatment and 'gengamma.mu.Reference' refers to the mu parameter
-of the generalised gamma distribution for the reference treatment. Columns with 'TE' at the end are the treatment effect coefficients
+    <p>The 'parameters_vector' object from the <code><a href='runPSM.html'>runPSM</a></code> function.</p>
+<p>'parameters_vector' is a vector which contains the coefficients for all of the flexsurv models specified.
+The column names are in the format 'modeltype.distribution.parameter.TreatmentName', for example, comshp.weibull.shape.Int refers to the shape parameter
+of the common shape weibull distribution for the intervention treatment and 'indshp.gengamma.mu.ref' refers to the mu parameter
+of the independent shape generalised gamma distribution for the reference treatment. Columns with 'TE' at the end are the treatment effect coefficients
 (applicable to the scale and shape parameters for independent shape models, applicable to the scale parameter only for the common shape
 model and not applicable for the separate model).</p>
     <h2 class="hasAnchor" id="details"><a class="anchor" href="#details"></a>Details</h2>
@@ -239,18 +170,7 @@ model and not applicable for the separate model).</p>
 <code>boot</code> function to return the statistic to be
 bootstrapped. In this case by performing parametric survival modelling using
 flexsurv and returning the parameters of the survival distributions.
-This is used as the 'statistic' argument in
-the boot function.</p>
-<p>#' Possible distributions include:</p><ul>
-<li><p>Exponential ('exp')</p></li>
-<li><p>Weibull ('weibull')</p></li>
-<li><p>Gompertz ('gompertz')</p></li>
-<li><p>Log-normal ('lnorm')</p></li>
-<li><p>Log-logistic ('llogis')</p></li>
-<li><p>Generalized gamma ('gengamma')</p></li>
-<li><p>Gamma ('gamma')</p></li>
-</ul>
-
+This is used as the 'statistic' argument in the boot function.</p>
 
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
@@ -267,7 +187,7 @@ the boot function.</p>
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.6.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.5.1.</p>
 </div>
 
       </footer>

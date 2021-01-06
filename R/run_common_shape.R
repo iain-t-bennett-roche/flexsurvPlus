@@ -73,7 +73,6 @@ run_common_shape <- function(data,
 
   #Fit the models for seven standard distributions
   models <- fit_models(model.formula=model.formula, distr = distr, data=data_standard)
-  models.out <- list()
   
   #get parameter estimates and model fit statistics
   params <- get_params(models=models)
@@ -165,27 +164,38 @@ run_common_shape <- function(data,
         gengamma.mu.TE = gengamma.ARMInt) %>%
       select(-gengamma.mu, -gengamma.sigma, -gengamma.Q, -gengamma.ARMInt)
 
-    models.out$gengamma.comshp <- models$gengamma
   }
-
-
-  #Re-organise columns
-  param_final <- param_out %>%
-    #groups parameters by distribution in the order given in the dist argument
-    dplyr::mutate(Model="Common shape", Intervention_name=int_name, Reference_name=ref_name)
 
   # rename models so can bind with others without conflicts
   models.out <- models
-  names(models.out) <- paste0(names(models.out), ".comshp")
+  names(models.out) <- paste0("comshp.", names(models.out))
   
   params.out <- params
-  params.out$name <- paste0(params.out$name, ".comshp")
+  params.out$name <- paste0("comshp.", params.out$name)
+  
+  #######################################################
+  # prepare parameter outputs
+  # this function exponentiates values that coef returns on the log scale
+  # e.g. weibull shape and scale
+  # this further simplifies other function use
+  param_final <- post_process_param_out(param_out)
+  
+  # as a data frame with metadata 
+  param_df <- param_final %>%
+    dplyr::mutate(Model="Common shape", Intervention_name=int_name, Reference_name=ref_name)
+
+  # as a vector version with just numerics - needed for bootstrapping
+  paramV <- as.numeric(param_final)
+  names(paramV) <- paste0("comshp.", colnames(param_final))
+  
+  #######################################################
   
   #collect and return output
   output <- list(
     models = models.out,
     model_summary = params.out,
-    parameters = param_final
+    parameters = param_df,
+    parameters_vector = paramV
   )
   return(output)
 }

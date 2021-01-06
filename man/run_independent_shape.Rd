@@ -8,7 +8,7 @@ run_independent_shape(
   data,
   time_var,
   event_var,
-  distr = c("weibull", "gompertz", "lnorm", "llogis", "gengamma", "gamma"),
+  distr = c("exp", "weibull", "gompertz", "lnorm", "llogis", "gengamma", "gamma"),
   strata_var,
   int_name,
   ref_name

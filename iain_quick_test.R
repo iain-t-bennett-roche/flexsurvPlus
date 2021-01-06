@@ -10,11 +10,9 @@ library(dplyr)
 library(survival)
 library(survminer)
 library(tidyr)
+library(boot)
 
-# Read in ADaM data and rename variables of interest
-
-
-adtte <- sim_adtte(seed = 2020, rho = 0.6)
+adtte <- sim_adtte(seed = 2020, rho = 0.6) # simulate data with a medium correlation between PFS & OS
 
 # subset OS data and rename
 OS_data <- adtte %>%
@@ -36,29 +34,129 @@ PFS_data <- adtte %>%
 
 analysis_data <- left_join(OS_data, PFS_data, by = c("USUBJID", "ARMCD"))
 
-psm_OS_all <- runPSM(data=analysis_data,
+
+# fit basic models
+
+n.sim <- 100
+
+
+PSM_bootstraps_PFS <- boot(
+  statistic = bootPSM, # bootstrap function
+  R=n.sim, # number of bootstrap samples
+  data=analysis_data,
+  time_var="PFS_days",
+  event_var="PFS_event",
+  model.type=c("Common shape", "Separate"),
+  distr = c('weibull',
+            'gamma'),
+  strata_var = "ARMCD",
+  int_name="A",
+  ref_name = "B"
+)
+
+PSM_boot_data_PFS <- bootPSMtidy(PSM_bootstraps_PFS)
+
+PSM_bootstraps_PFS$seed
+
+
+PSM_bootstraps_PFS$t0
+PSM_bootstraps_PFS$t
+
+PSM_bootstraps_PFS$call$int_name
+
+PSM_boot_data_PFS <- as.data.frame(PSM_bootstraps_PFS$t)
+colnames(PSM_boot_data_PFS) <- names(PSM_bootstraps_PFS$t0)
+head(PSM_boot_data_PFS)
+
+PSM_boot_data_PFS
+
+# add some meta data
+PSM_boot_data_PFS
+
+
+# Read in ADaM data and rename variables of interest
+
+
+adtte <- sim_adtte(seed = 2020, rho = 0.6)
+
+# subset OS data and rename
+OS_data <- adtte %>%
+  filter(PARAMCD=="OS") %>%
+  transmute(USUBJID,
+            ARMCD,
+            OS_days = AVAL,
+            OS_event = 1- CNSR
+  )
+
+data=OS_data
+time_var="OS_days"
+event_var="OS_event"
+model.type= c("Common shape", "Independent shape", "Separate")
+distr = c('exp',
+                 'weibull',
+                 'gompertz',
+                 'lnorm',
+                 'llogis',
+                 'gengamma',
+                 'gamma')
+strata_var = "ARMCD"
+int_name="A"
+ref_name = "B"
+
+i = 1:500
+data_boot <- data[i,]
+
+
+
+bootPSM <- function(data, i, ...){
+  boot_data = data[i,]
+  output <- runPSM(data = boot_data, ...)
+  return(output$parameters_vector)
+}
+
+
+
+
+
+
+
+a <- runPSM(data=OS_data,
                      time_var="OS_days",
                      event_var="OS_event",
-                     model.type= c("Common shape", 
-                                   "Independent shape", 
-                                   "Separate"),
-                     distr = c('exp',
-                               'weibull',
-                               'gompertz',
-                               'lnorm',
-                               'llogis',
-                               'gengamma',
-                               'gamma'),
+                     model.type= c("Common shape", "Independent shape"),
+                     distr = c('exp'),
                      strata_var = "ARMCD",
                      int_name="A",
                      ref_name = "B")
+
+data_standard=Format_data(data, time_var, event_var, strata_var, int_name, ref_name)
+dist = "exp"
+model.formula=Surv(Time, Event==1) ~ ARM
+flexsurv::flexsurvreg(formula=model.formula, data=data_standard, dist="exp")
+
+data_standard$ARM
+levels(data_standard$ARM)
+
+models <- fit_models(model.formula=model.formula, distr = "exp", data=data_standard)
+
+flexsurvPlus:::fit_models(data = dat, distr = "exp", model.formula = model.formula)
+  
+b <- runPSM(data_boot, time_var, event_var, 
+                 model.type = "Separate", distr,
+                 strata_var, int_name, ref_name)
+flexsurv.dists
+a$parameters
 psm_OS_all
 
+i=1:500
 
 adata <- tibble(x=1:10,y=x^2)
 
-fx <- function(data, opt1 = "tibble", i){
-  stats <- summarise(data, x = sum(x), y = sum(y))
+fx <- function(data, i, opt1 = "tibble"){
+  
+  data_boot = data[i,]
+  
+  stats <- summarise(data_boot, x = sum(x), y = sum(y))
   
   if (opt1 == "tibble"){
     rc <- stats 
@@ -72,12 +170,26 @@ fx <- function(data, opt1 = "tibble", i){
 
 fx(adata)
 fx(adata, opt1 = "v")
+seed = 1234
+a <- boot(data = adata, statistic = fx, R = 5)
 
-a <- boot(data = adata, statistic = fx, R = 10)
-b <- boot(data = adata, statistic = fx, R = 10, opt1 = "v")
+set.seed(1234)
+b <- boot(data = adata, statistic = fx, R = 5, opt1 = "v")
+set.seed(1234)
+c <- boot(data = adata, statistic = fx, R = 5, opt1 = "v")
+
+boot.array(b)
+boot.array(c)
+
+
 b$t0
-
+b$t
+names(b)
+b$data
+b$stype
 selected_models <- c("weibull.comshp","weibull.indshp","gamma.comshp")
+boot.array(b, indices = TRUE)
+
 
 # Create data set for plots
 curvefits_PFS <- get_curvefits(models = psm_PFS_all$models[selected_models],
@@ -345,3 +457,209 @@ mdf <- parameters_all %>%
 mdf %>%
   transmute(variable, `Independent shape`, Independent, diff = abs(`Independent shape`-Independent)) %>%
   filter(diff > 0.001)
+
+
+
+
+
+
+
+
+
+
+
+
+
+###############################################################
+
+devtools::install()
+
+rm(list = ls())
+
+# simulate data with a medium correlation between PFS & OS on the patient level
+adtte <- sim_adtte(seed = 2020, rho = 0.6) 
+
+# subset OS data and rename
+OS_data <- adtte %>%
+  filter(PARAMCD=="OS") %>%
+  transmute(USUBJID,
+            ARMCD,
+            OS_days = AVAL,
+            OS_event = 1- CNSR
+  )
+
+# subset PFS data and rename
+PFS_data <- adtte %>%
+  filter(PARAMCD=="PFS") %>%
+  transmute(USUBJID,
+            ARMCD,
+            PFS_days = AVAL,
+            PFS_event = 1- CNSR
+  )
+
+analysis_data <- left_join(OS_data, PFS_data, by = c("USUBJID", "ARMCD"))
+
+
+
+
+# Bootstrapping the endpoints
+
+## Ignoring correlation between endpoints
+
+
+set.seed(2358)
+n.sim <- 100
+
+PSM_bootstraps_PFS <- boot(
+  statistic = bootPSM, # bootstrap function
+  R=n.sim, # number of bootstrap samples
+  data=analysis_data,
+  time_var="PFS_days",
+  event_var="PFS_event",
+  model.type=c("Common shape"),
+  distr = c('weibull'),
+  strata_var = "ARMCD",
+  int_name="B",
+  ref_name = "A"
+)
+
+PSM_bootstraps_OS <- boot(
+  statistic = bootPSM, # bootstrap function
+  R=n.sim, # number of bootstrap samples
+  data=analysis_data,
+  time_var="OS_days",
+  event_var="OS_event",
+  model.type=c("Separate"),
+  distr = c('gamma'),
+  strata_var = "ARMCD",
+  int_name="B",
+  ref_name = "A"
+)
+
+# we can see these are using different bootstrap samples by looking at the bootstrap indexes
+
+index_PFS <- boot.array(PSM_bootstraps_PFS, indices = TRUE)
+index_OS  <- boot.array(PSM_bootstraps_OS, indices = TRUE)
+
+all(index_OS == index_PFS)
+
+
+
+
+n.sim <- 100
+
+set.seed(2020)
+
+PSM_bootstraps_PFScor <- boot(
+  statistic = bootPSM, # bootstrap function
+  R=n.sim, # number of bootstrap samples
+  data=analysis_data,
+  time_var="PFS_days",
+  event_var="PFS_event",
+  model.type=c("Common shape"),
+  distr = c('weibull'),
+  strata_var = "ARMCD",
+  int_name="B",
+  ref_name = "A"
+)
+
+set.seed(2020)
+
+PSM_bootstraps_OScor <- boot(
+  statistic = bootPSM, # bootstrap function
+  R=n.sim, # number of bootstrap samples
+  data=analysis_data,
+  time_var="OS_days",
+  event_var="OS_event",
+  model.type=c("Separate"),
+  distr = c('gamma'),
+  strata_var = "ARMCD",
+  int_name= "B",
+  ref_name = "A"
+)
+
+
+# we can check these are using the same bootstrap samples by comparing the indexes selected
+
+index_PFScor <- boot.array(PSM_bootstraps_PFScor, indices = TRUE)
+index_OScor  <- boot.array(PSM_bootstraps_OScor, indices = TRUE)
+
+all(index_OScor == index_PFScor)
+
+
+
+# To illustrate the impact we will look at plotting the difference between the extrapolated mean PFS and mean OS. To do this we need
+# to calculate the mean PFS and mean OS for the reference and intervention arm for each sample
+
+os_means <- bind_rows(
+  mutate(bootPSMtidy(PSM_bootstraps_OS), Bootstrap = "Uncorrelated"), 
+  mutate(bootPSMtidy(PSM_bootstraps_OScor), Bootstrap = "Correlated")
+  ) %>%
+  transmute(SampleID, Bootstrap, 
+    os_mean_time_ref = flexsurv::mean_gamma(shape = gamma.shape.ref, rate = gamma.rate.ref),
+    os_mean_time_int = flexsurv::mean_gamma(shape = gamma.shape.int, rate = gamma.rate.int),
+    os_mean_delta = os_mean_time_int - os_mean_time_ref
+  ) 
+
+pfs_means <- bind_rows(
+  mutate(bootPSMtidy(PSM_bootstraps_PFS), Bootstrap = "Uncorrelated"), 
+  mutate(bootPSMtidy(PSM_bootstraps_PFScor), Bootstrap = "Correlated")
+) %>%
+  transmute(SampleID, Bootstrap, 
+            pfs_mean_time_ref = flexsurv::mean_weibull(shape = weibull.shape.ref, scale = weibull.scale.ref),
+            pfs_mean_time_int = flexsurv::mean_weibull(shape = weibull.shape.int, scale = weibull.scale.int),
+            pfs_mean_delta = pfs_mean_time_int - pfs_mean_time_ref
+  ) 
+
+
+mean_durations <- pfs_means %>%
+  left_join(os_means, by = c("SampleID", "Bootstrap"))
+
+# we now transform the data so we have PFS and OS data in one row
+
+mean_durations %>% 
+  ggplot(aes(x = pfs_mean_delta, y = os_mean_delta, color = Bootstrap)) +
+  theme_bw() +
+  geom_point() +
+  stat_ellipse() +
+  coord_cartesian(xlim = c(100, 300), ylim = c(0, 2500)) +
+  xlab("Difference in mean (weibull) PFS (B vs A)") +
+  ylab("Difference in mean (gamma) OS (B vs A)") +
+  ggtitle("Each point is a bootstrap sample")
+
+  
+
+
+expfir <- flexsurvreg(Surv(OS_days, event = OS_event == 1) ~ARMCD, dist ="exp", data = analysis_data )
+expfir$coefficients
+mean_exp(expfi$parameters$exp.rate.ref)
+mean_exp(expfi$parameters$exp.rate.int)
+mean_exp(-7.09)
+mean_exp(-7.09-0.56)
+
+survfit(Surv(OS_days, event = OS_event == 1) ~ARMCD, data = analysis_data) %>%
+  plot()
+
+get_curvefits(expfi$models, time = 200)$curvefits
+
+flexsurv:::summary.flexsurvreg() 
+summary(expfir, type = "mean")
+exp(coef(expfir))
+mean_exp
+plot(expfir)
+
+require(flexsurv)
+mean_weibullPH(0.086, 7.5)
+mean_weibull(0.086, 7.5)
+
+coefs.flexsurvreg
+
+flexsurv.dists()
+
+
+flexsurv::mean_weibull(shape, scale = 1)
+
+flexsurv::meam
+
+
+

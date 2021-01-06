@@ -19,7 +19,8 @@ Format_data <- function(data, time_var, event_var, strata_var, int_name, ref_nam
   dat <- dat %>%
     filter(ARM %in% c(int_name, ref_name)) %>% 
     mutate(ARM = ifelse(ARM==int_name, "Int", "Ref"),
-           ARM = factor(ARM, levels = c("Ref", "Int", ordered = TRUE)))
+           ARM = factor(ARM, levels = c("Ref", "Int")),
+           ARM = relevel(ARM, ref = "Ref"))
   
     return(dat)
 }
@@ -52,16 +53,23 @@ validate_standard_data <- function(data, time_var, event_var, strata_var, ref_na
   filt_dat <- dat %>%
     dplyr::filter(ARM %in% c(ref_name, int_name))
   
-  included.trts <- unique(dat$ARM)
+  included.trts <- unique(dat$ARM) %>%
+    as.character()
+  
+  this.msg = paste0("int_name = '", int_name, "' is not found in ", strata_var,
+                    ". Possible values are: '", paste(included.trts, collapse = "', '"), "'")
   
   assertthat::assert_that(
     all(int_name %in% included.trts),
-    msg = paste0("int_name = ", int_name, " is not found in ", strata_var, ". Possible values are: ", included.trts)
+    msg = this.msg
   )
+  
+  this.msg = paste0("ref_name = '", ref_name, "' is not found in ", strata_var, 
+                    ". Possible values are: '", paste(included.trts, collapse = "', '"), "'")
   
   assertthat::assert_that(
     all(ref_name %in% included.trts),
-    msg = paste0("ref_name = ", ref_name, " is not found in ", strata_var, ". Possible values are: ", included.trts)
+    msg = this.msg
   )
   
   assertthat::assert_that(
@@ -74,6 +82,38 @@ validate_standard_data <- function(data, time_var, event_var, strata_var, ref_na
     msg = paste0("Invalid event values found. All values of event_var = ", event_var, " must be 0 or 1 only. With 1 indicating event.")
   )
   
+}
+
+
+# modify the param_out data frame to exp coefs on the log scale
+# this data frame is created in all the run... functions
+# however, coef has some values on log scale so need to post process
+
+post_process_param_out <- function(param_out){
+  
+  # these parameters are returned on log scale by coef.flexsurvreg so need update
+  
+  logpars <- c(
+    "exp.rate", 
+    "weibull.shape","weibull.scale",
+    "gompertz.rate",
+    "lnorm.sdlog",
+    "llogis.shape","llogis.scale",
+    "gengamma.sigma",
+    "gamma.shape", "gamma.rate") 
+  
+  logpars.ref <- paste0(logpars, ".ref") 
+  logpars.int <- paste0(logpars, ".int")
+  
+  # identify columns needing changes
+  columns_to_exp <- names(param_out) %in% c(logpars.ref, logpars.int)
+  
+  # exponentiate those values
+  rc <- param_out
+  rc[,columns_to_exp] <- exp(rc[,columns_to_exp])
+  
+  return(rc)
+
 }
 
 
