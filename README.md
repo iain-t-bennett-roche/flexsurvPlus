@@ -3,14 +3,15 @@
 
 This is a repository for the development of package flexsurvPlus which extends flexsurv with convenience functions for HE modelling.
 
-NOTE: development package - errors likely exist!
+NOTE: this is early in development package - errors likely exist!
+
+When updated will be available at https://github.com/Roche/Global-HTA-Evidence-Open
 
 ## install
 
 ```
 devtools::install_github(
-  repo = "MORSE/flexsurvPlus",
-  host = "https://github.roche.com/api/v3"
+  repo = "iain-t-bennett/flexsurvPlus"
 )
 ```
 
