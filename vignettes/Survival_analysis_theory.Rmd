@@ -271,7 +271,7 @@ for the fitted models is as follows:
 The estimated rate parameter from each of these models can be then used
 within the following Excel formula to estimate survival at different time points:
 
-`EXP(-EXP(rate)*time)`
+`EXP(-rate*time)`
 
 This is equivalent to running the following code in R:
 
@@ -315,7 +315,7 @@ knitr::kable(all.params,
 Survival can then be estimated in Excel using these two rate parameters, as for
 the separate models, with formula:
 
-`EXP(-EXP(rate)*time)`
+`EXP(-rate*time)`
 
 This is equivalent to running the following code in R:
 
@@ -346,7 +346,7 @@ for the fitted models is as follows:
 Estimated shape and scale parameters from each of these models can be then used
 within the following Excel formula to estimate survival at different time points:
 
-`1-WEIBULL(time,EXP(shape),EXP(scale),TRUE)`
+`1-WEIBULL(time,shape,scale,TRUE)`
 
 This is equivalent to running the following code in R:
 
@@ -397,7 +397,7 @@ knitr::kable(all.params,
 Survival can then be estimated in Excel using the shape and scale parameters
 specific to each treatment with formula:
 
-`1-WEIBULL(time,EXP(shape),EXP(scale),TRUE)`
+`1-WEIBULL(time,shape,scale,TRUE)`
 
 This is equivalent to running the following code in R:
 
@@ -449,7 +449,7 @@ knitr::kable(all.params,
 Survival can then be estimated in Excel using the shape and scale parameters
 specific to each treatment with formula:
 
-`1-WEIBULL(time,EXP(shape),EXP(scale),TRUE)`
+`1-WEIBULL(time,shape,scale,TRUE)`
 
 This is equivalent to running the following code in R:
 
@@ -475,7 +475,7 @@ for the fitted models is as follows:
 Estimation of the rate and shape parameters from each of these models can be then used
 within the following Excel formula to estimate survival at different time points:
 
-`EXP((-1/shape) * EXP(rate) * (EXP(shape*time)-1))`
+`EXP((-1/shape) * rate * (EXP(shape*time)-1))`
 
 This is equivalent to running the following code in R:
 
@@ -526,7 +526,7 @@ knitr::kable(all.params,
 Survival can then be estimated in Excel using the rate and shape parameters
 specific to each treatment with formula:
 
-`EXP((-1/shape) * EXP(rate) * (EXP(shape*time)-1))`
+`EXP((-1/shape) * rate * (EXP(shape*time)-1))`
 
 This is equivalent to running the following code in R:
 
@@ -578,7 +578,7 @@ knitr::kable(all.params,
 Survival can then be estimated in Excel using the rate and shape parameters
 specific to each treatment with formula:
 
-`EXP((-1/shape) * EXP(rate) * (EXP(shape*time)-1))`
+`EXP((-1/shape) * rate * (EXP(shape*time)-1))`
 
 This is equivalent to running the following code in R:
 
@@ -604,7 +604,7 @@ for the fitted models is as follows:
 Estimation of the shape and scale parameters from each of these models can be then used
 within the following Excel formula to estimate survival at different time points:
 
-`1 /(1+(((time * EXP(-1 * scale))^(1/EXP(-1 * shape)))))`
+`1 /(1+((time / scale)^shape))`
 
 This is equivalent to running the following code in R:
 
@@ -655,7 +655,7 @@ knitr::kable(all.params,
 Survival can then be estimated in Excel using the rate and shape parameters
 specific to each treatment with formula:
 
-`1 /(1+(((time * EXP(-1 * scale))^(1/EXP(-1 * shape)))))`
+`1 /(1+((time / scale)^shape))`
 
 This is equivalent to running the following code in R:
 
@@ -708,7 +708,7 @@ knitr::kable(all.params,
 Survival can then be estimated in Excel using the rate and shape parameters
 specific to each treatment with formula:
 
-`1 /(1+(((time * EXP(-1 * scale))^(1/EXP(-1 * shape)))))`
+`1 /(1+((time / scale)^shape))`
 
 This is equivalent to running the following code in R:
 
@@ -735,7 +735,7 @@ Estimation of the meanlog and sdlog parameters from each of these models can be
 then used within the following Excel formula to estimate survival at different
 time points:
 
-`1-LOGNORMDIST(time,meanlog,1/EXP(-1*sdlog))`
+`1-LOGNORMDIST(time, meanlog, sdlog))`
 
 This is equivalent to running the following code in R:
 
@@ -786,7 +786,7 @@ knitr::kable(all.params,
 Survival can then be estimated in Excel using the meanlog and sdlog parameters
 specific to each treatment with formula:
 
-`1-LOGNORMDIST(time,meanlog,1/EXP(-1*sdlog))`
+`1-LOGNORMDIST(time, meanlog, sdlog))`
 
 This is equivalent to running the following code in R:
 
@@ -840,7 +840,7 @@ knitr::kable(all.params,
 Survival can then be estimated in Excel using the meanlog and sdlog parameters
 specific to each treatment with formula:
 
-`1-LOGNORMDIST(time,meanlog,1/EXP(-1*sdlog))`
+`1-LOGNORMDIST(time, meanlog, sdlog))`
 
 This is equivalent to running the following code in R:
 
@@ -866,7 +866,7 @@ for the fitted models is as follows:
 Estimation of the rate and shape parameters from each of these models can be then used
 within the following Excel formula to estimate survival at different time points:
 
-`1-((EXP(GAMMALN(EXP(rate))) * GAMMA.DIST(EXP(shape) * time,EXP(rate),1,TRUE))/GAMMA(EXP(rate))`
+`1-((EXP(GAMMALN(rate)) * GAMMA.DIST(shape * time,rate,1,TRUE))/GAMMA(rate)`
 
 This is equivalent to running the following code in R:
 
@@ -917,7 +917,7 @@ knitr::kable(all.params,
 Survival can then be estimated in Excel using the rate and shape parameters
 specific to each treatment with formula:
 
-`1-((EXP(GAMMALN(EXP(rate))) * GAMMA.DIST(EXP(shape) * time,EXP(rate),1,TRUE))/GAMMA(EXP(rate))`
+`1-((EXP(GAMMALN(rate)) * GAMMA.DIST(shape * time,rate,1,TRUE))/GAMMA(rate)`
 
 This is equivalent to running the following code in R:
 
@@ -969,7 +969,7 @@ knitr::kable(all.params,
 Survival can then be estimated in Excel using the rate and shape parameters
 specific to each treatment with formula:
 
-`1-((EXP(GAMMALN(EXP(rate))) * GAMMA.DIST(EXP(shape) * time,EXP(rate),1,TRUE))/GAMMA(EXP(rate))`
+`1-((EXP(GAMMALN(rate)) * GAMMA.DIST(shape * time,rate,1,TRUE))/GAMMA(rate)`
 
 This is equivalent to running the following code in R:
 
@@ -995,7 +995,7 @@ for the fitted models is as follows:
 Estimation of the mu, sigma and Q parameters from each of these models can be then used
 within the following Excel formula to estimate survival at different time points:
 
-`IF(Q<0,GAMMADIST((-Q^-2) * EXP(-Q* -((LN(time)-(mu))/EXP(sigma))),-Q^-2,1,1),1-GAMMADIST((-Q^-2) * EXP(-Q * -((LN(time)-(mu))/EXP(sigma))),-Q^-2,1,1))`
+`IF(Q<0,GAMMADIST((-Q^-2) * EXP(-Q* -((LN(time)-(mu))/sigma)),-Q^-2,1,1),1-GAMMADIST((-Q^-2) * EXP(-Q * -((LN(time)-(mu))/sigma)),-Q^-2,1,1))`
 
 This is equivalent to running the following code in R:
 
@@ -1051,7 +1051,7 @@ knitr::kable(all.params,
 Survival can then be estimated in Excel using the mu, sigma and Q parameters
 specific to each treatment with formula:
 
-`IF(Q<0,GAMMADIST((-Q^-2) * EXP(-Q* -((LN(time)-(mu))/EXP(sigma))),-Q^-2,1,1),1-GAMMADIST((-Q^-2) * EXP(-Q * -((LN(time)-(mu))/EXP(sigma))),-Q^-2,1,1))`
+`IF(Q<0,GAMMADIST((-Q^-2) * EXP(-Q* -((LN(time)-(mu))/sigma)),-Q^-2,1,1),1-GAMMADIST((-Q^-2) * EXP(-Q * -((LN(time)-(mu))/sigma)),-Q^-2,1,1))`
 
 This is equivalent to running the following code in R:
 
@@ -1109,7 +1109,7 @@ knitr::kable(all.params,
 Survival can then be estimated in Excel using the mu, sigma and Q parameters
 specific to each treatment with formula:
 
-`IF(Q<0,GAMMADIST((-Q^-2) * EXP(-Q* -((LN(time)-(mu))/EXP(sigma))),-Q^-2,1,1),1-GAMMADIST((-Q^-2) * EXP(-Q * -((LN(time)-(mu))/EXP(sigma))),-Q^-2,1,1))`
+`IF(Q<0,GAMMADIST((-Q^-2) * EXP(-Q* -((LN(time)-(mu))/sigma)),-Q^-2,1,1),1-GAMMADIST((-Q^-2) * EXP(-Q * -((LN(time)-(mu))/sigma)),-Q^-2,1,1))`
 
 This is equivalent to running the following code in R:
 
