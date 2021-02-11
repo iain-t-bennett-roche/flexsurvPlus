@@ -100,7 +100,8 @@ post_process_param_out <- function(param_out){
     "lnorm.sdlog",
     "llogis.shape","llogis.scale",
     "gengamma.sigma",
-    "gamma.shape", "gamma.rate") 
+    "gamma.shape", "gamma.rate",
+    "genf.sigma", "genf.P") 
   
   logpars.ref <- paste0(logpars, ".ref") 
   logpars.int <- paste0(logpars, ".int")

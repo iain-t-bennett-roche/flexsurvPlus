@@ -6,7 +6,8 @@
 \usage{
 fit_models(
   model.formula,
-  distr = c("exp", "weibull", "gompertz", "lnorm", "llogis", "gengamma", "gamma"),
+  distr = c("exp", "weibull", "gompertz", "lnorm", "llogis", "gengamma", "gamma",
+    "genf"),
   data
 )
 }
@@ -46,6 +47,7 @@ Possible distributions include:
 \item Log-logistic ('llogis')
 \item Generalized gamma ('gengamma')
 \item Gamma ('gamma')
+\item Generalised F ('genf')
 }
 }
 \seealso{

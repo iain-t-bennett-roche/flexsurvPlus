@@ -36,6 +36,7 @@
 #'   \item Log-logistic ('llogis')
 #'   \item Generalized gamma ('gengamma')
 #'   \item Gamma ('gamma')
+#'   \item Generalised F ('genf')
 #'   }
 #'
 #' @return A list containing 'models' (output from \code{\link{fit_models}}), 'model_summary' (output from \code{\link{get_params}}) and
@@ -69,17 +70,19 @@ runPSM <- function(data,
                              'lnorm',
                              'llogis',
                              'gengamma',
-                             'gamma'),
+                             'gamma',
+                             'genf'
+                             ),
                    strata_var,
                    int_name, ref_name){
 
 
   #test that only valid distributions have been provided
   #This is also tested within fit_models. Consider eliminating here to avoid redundancy
-  allowed_dist <- c('exp', 'weibull', 'gompertz', 'lnorm', 'llogis', 'gengamma', 'gamma')
+  allowed_dist <- c('exp', 'weibull', 'gompertz', 'lnorm', 'llogis', 'gengamma', 'gamma', 'genf')
   assertthat::assert_that(
     all(distr %in% allowed_dist),
-    msg = "Only the following distributions are supported: 'exp', 'weibull', 'gompertz', 'lnorm', 'llogis', 'gengamma', 'gamma' "
+    msg = "Only the following distributions are supported: 'exp', 'weibull', 'gompertz', 'lnorm', 'llogis', 'gengamma', 'gamma', 'genf' "
   )
 
 

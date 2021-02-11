@@ -29,6 +29,7 @@
 #'   \item Log-logistic ('llogis')
 #'   \item Generalized gamma ('gengamma')
 #'   \item Gamma ('gamma')
+#'   \item Generalised F ('genf')
 #'   }
 #'
 #'   The model fit is in the form Surv(Time, Event==1) ~ ARM + shape(ARM). The
@@ -59,16 +60,17 @@ run_independent_shape <- function(data,
                              'lnorm',
                              'llogis',
                              'gengamma',
-                             'gamma'),
+                             'gamma', 
+                             'genf'),
                    strata_var,
                    int_name, ref_name){
 
   #test that only valid distributions have been provided
   #This is also tested within fit_models. Consider eliminating here to avoid redundancy
-  allowed_dist <- c('exp', 'weibull', 'gompertz', 'lnorm', 'llogis', 'gengamma', 'gamma')
+  allowed_dist <- c('exp', 'weibull', 'gompertz', 'lnorm', 'llogis', 'gengamma', 'gamma', 'genf')
   assertthat::assert_that(
     all(distr %in% allowed_dist),
-    msg = "Only the following distributions are supported: 'exp', weibull', 'gompertz', 'lnorm', 'llogis', 'gengamma', 'gamma' "
+    msg = "Only the following distributions are supported: 'exp', weibull', 'gompertz', 'lnorm', 'llogis', 'gengamma', 'gamma', 'genf' "
   )
 
   # standardise variable names
@@ -79,7 +81,8 @@ run_independent_shape <- function(data,
   model.formula.shape = Surv(Time, Event==1) ~ ARM + shape(ARM)
   model.formula.sdlog = Surv(Time, Event==1) ~ ARM + sdlog(ARM)
   model.formula.sigma_Q = Surv(Time, Event==1) ~ ARM + sigma(ARM) + Q(ARM)
-
+  model.formula.sigma_Q_P = Surv(Time, Event==1) ~ ARM + sigma(ARM) + Q(ARM) + P(ARM)
+  
   models <- list()
   params <- tibble()
   params_out <- tibble(.rows = 1)
@@ -223,6 +226,32 @@ run_independent_shape <- function(data,
     params_out <- dplyr::bind_cols(params_out, param_out.gengamma)
     params.gengamma$name <- "indshp.gengamma"
     params <- dplyr::bind_rows(params, params.gengamma)
+  }
+  
+  if('genf' %in% distr){
+    models.genf <- fit_models(model.formula=model.formula.sigma_Q_P, distr = "genf", data=data_standard)
+    params.genf <- get_params(models=models.genf)
+    param_out.genf <- t(unlist(params.genf$coef)) %>% as.data.frame() %>%
+      dplyr::mutate(
+        genf.mu.int = genf.mu + genf.ARMInt,
+        genf.mu.ref = genf.mu,
+        genf.sigma.int = genf.sigma + `genf.sigma(ARMInt)`,
+        genf.sigma.ref = genf.sigma,
+        genf.Q.int = genf.Q + `genf.Q(ARMInt)`,
+        genf.Q.ref = genf.Q,
+        genf.P.int = genf.P + `genf.P(ARMInt)`,
+        genf.P.ref = genf.P,
+        genf.mu.TE = genf.ARMInt,
+        genf.sigma.TE = `genf.sigma(ARMInt)`,
+        genf.Q.TE = `genf.Q(ARMInt)`,
+        genf.P.TE = `genf.P(ARMInt)`) %>%
+      select(-genf.mu, -genf.sigma, -genf.Q, -genf.P, -genf.ARMInt, -`genf.sigma(ARMInt)`, -`genf.Q(ARMInt)`, -`genf.P(ARMInt)`)
+    
+    # append this model to output 
+    models$indshp.genf <- models.genf$genf
+    params_out <- dplyr::bind_cols(params_out, param_out.genf)
+    params.genf$name <- "indshp.genf"
+    params <- dplyr::bind_rows(params, params.genf)
   }
 
   #######################################################

@@ -28,6 +28,7 @@
 #'   \item Log-logistic ('llogis')
 #'   \item Generalized gamma ('gengamma')
 #'   \item Gamma ('gamma')
+#'   \item Generalised F ('genf')
 #'   }
 #'   The model fit is in the form Surv(Time, Event==1) ~ ARM.
 #'   The shape parameter is the same for each treatment, and derived directly from the model (no additional manipulation is required).
@@ -54,17 +55,18 @@ run_common_shape <- function(data,
                              'lnorm',
                              'llogis',
                              'gengamma',
-                             'gamma'),
+                             'gamma',
+                             'genf'),
                    strata_var,
                    int_name, ref_name){
 
 
   #test that only valid distributions have been provided
   #This is also tested within fit_models. Consider eliminating here to avoid redundancy
-  allowed_dist <- c('exp', 'weibull', 'gompertz', 'lnorm', 'llogis', 'gengamma', 'gamma')
+  allowed_dist <- c('exp', 'weibull', 'gompertz', 'lnorm', 'llogis', 'gengamma', 'gamma', 'genf')
   assertthat::assert_that(
     all(distr %in% allowed_dist),
-    msg = "Only the following distributions are supported: 'exp', 'weibull', 'gompertz', 'lnorm', 'llogis', 'gengamma', 'gamma' "
+    msg = "Only the following distributions are supported: 'exp', 'weibull', 'gompertz', 'lnorm', 'llogis', 'gengamma', 'gamma, 'genf' "
   )
 
   # standardise variable names
@@ -164,6 +166,22 @@ run_common_shape <- function(data,
         gengamma.mu.TE = gengamma.ARMInt) %>%
       select(-gengamma.mu, -gengamma.sigma, -gengamma.Q, -gengamma.ARMInt)
 
+  }
+  
+  if('genf' %in% distr){
+    param_out <- param_out %>%
+      dplyr::mutate(
+        genf.mu.int = genf.mu + genf.ARMInt,
+        genf.mu.ref = genf.mu,
+        genf.sigma.int = genf.sigma,
+        genf.sigma.ref = genf.sigma,
+        genf.Q.int = genf.Q,
+        genf.Q.ref = genf.Q,
+        genf.P.int = genf.P,
+        genf.P.ref = genf.P,
+        genf.mu.TE = genf.ARMInt) %>%
+      select(-genf.mu, -genf.sigma, -genf.Q, -genf.P, -genf.ARMInt)
+    
   }
 
   # rename models so can bind with others without conflicts

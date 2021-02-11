@@ -62,6 +62,8 @@ distribution must also be considered. This document therefore details the
 characteristics of each of these distributions and demonstrates how the
 parameters from each distribution, outputted using the flexsurvPlus package, can be
 implemented within an economic model.[@cadth2020]
+The Generalized F distribution is not commonly used, however it has been included in 
+this package in case it is required.
 
 The flexsurvPlus package allows the inclusion of a treatment effect in the following
 three ways:
@@ -198,6 +200,7 @@ Each type of model can be fitted with a multiple distributions. The distribution
 * Log-logistic ('llogis')
 * Generalized gamma ('gengamma')
 * Gamma ('gamma')
+* Generalized F ('genf')
 
 
 For more information on the different types of models, please see the survival analysis theory vignette included in the <tt>flexsurvPlus</tt> package.
@@ -230,7 +233,8 @@ psm_PFS_all <- runPSM(data=PFS_data,
                                'lnorm',
                                'llogis',
                                'gengamma',
-                               'gamma'),
+                               'gamma',
+                               'genf'),
                      strata_var = "ARMCD",
                      int_name="A",
                      ref_name = "B")

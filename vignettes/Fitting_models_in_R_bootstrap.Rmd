@@ -63,6 +63,8 @@ distribution must also be considered. This document therefore details the
 characteristics of each of these distributions and demonstrates how the
 parameters from each distribution, outputted using the flexsurvPlus package, can be
 implemented within an economic model.[@cadth2020]
+The Generalized F distribution is not commonly used, however it has been included in 
+this package in case it is required.
 
 # Handling uncertainty
 

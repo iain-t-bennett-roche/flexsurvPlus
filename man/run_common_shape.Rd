@@ -8,7 +8,8 @@ run_common_shape(
   data,
   time_var,
   event_var,
-  distr = c("exp", "weibull", "gompertz", "lnorm", "llogis", "gengamma", "gamma"),
+  distr = c("exp", "weibull", "gompertz", "lnorm", "llogis", "gengamma", "gamma",
+    "genf"),
   strata_var,
   int_name,
   ref_name
@@ -66,6 +67,7 @@ Possible distributions include:
 \item Log-logistic ('llogis')
 \item Generalized gamma ('gengamma')
 \item Gamma ('gamma')
+\item Generalised F ('genf')
 }
 The model fit is in the form Surv(Time, Event==1) ~ ARM.
 The shape parameter is the same for each treatment, and derived directly from the model (no additional manipulation is required).
