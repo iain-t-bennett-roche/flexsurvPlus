@@ -18,7 +18,7 @@
 #'    the parameters.
 #' @param distr A vector string of distributions, see dist argument in
 #'   \code{\link{flexsurvreg}}. This is passed to the \code{distr} argument of
-#'   the \code{\link{fit_models}} function
+#'   the \code{\link{fit_models}} function. Default is all available distributions (see below).
 #' @details Possible distributions include:
 #' \itemize{
 #'   \item Exponential ('exp')

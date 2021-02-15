@@ -9,6 +9,16 @@ Format_data_separate <- function(data, time_var, event_var, strata_var, int_name
   return(list(dat.int=dat.int,dat.ref=dat.ref))
 }
 
+# Format data for analysis
+Format_data_onearm <- function(data, time_var, event_var, int_name) {
+  validate_standard_data_one_arm(data = data, time_var = time_var, event_var = event_var, int_name = int_name)
+  dat <- data[,c(time_var, event_var)] 
+  colnames(dat) <- c("Time", "Event")
+  dat.int <- dat %>%
+    dplyr::mutate(ARM=int_name)
+    return(list(dat.int=dat.int))
+}
+
 # with variable for ARM
 Format_data <- function(data, time_var, event_var, strata_var, int_name, ref_name) {
   validate_standard_data(data = data, time_var = time_var, event_var = event_var, strata_var = strata_var, int_name = int_name, ref_name = ref_name)
@@ -83,6 +93,33 @@ validate_standard_data <- function(data, time_var, event_var, strata_var, ref_na
   )
   
 }
+
+# validates data for one-arm models - doesn't need validation around the name
+validate_standard_data_one_arm <- function(data, time_var, event_var, int_name){
+  
+  assertthat::assert_that(
+    time_var %in% names(data),
+    msg = paste0("time_var = ", time_var, " is not found in data.")
+  )
+  
+  assertthat::assert_that(
+    event_var %in% names(data),
+    msg = paste0("event_var = ", event_var, " is not found in data.")
+  )
+  
+
+  assertthat::assert_that(
+    all(data$Time > 0),
+    msg = paste0("Invalid time values found. All values of time_var = ", time_var, " must be greater than 0")
+  )
+  
+  assertthat::assert_that(
+    all(data$Event %in% c(0,1)),
+    msg = paste0("Invalid event values found. All values of event_var = ", event_var, " must be 0 or 1 only. With 1 indicating event.")
+  )
+  
+}
+
 
 
 # modify the param_out data frame to exp coefs on the log scale

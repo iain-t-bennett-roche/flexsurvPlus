@@ -1,6 +1,6 @@
-#' Run a complete parametric survival analysis for a separate model
+#' Run a complete parametric survival analysis for one-arm
 #'
-#' Fits 2 separate \code{\link{flexsurv}} models using \code{\link{flexsurvreg}} (one for each treatment).
+#' Fits a single \code{\link{flexsurv}} models using \code{\link{flexsurvreg}}.
 #'
 #' @param data A data frame containing individual patient data for the relevant
 #'   time to event outcomes. This is passed to the \code{data} argument of the
@@ -8,12 +8,7 @@
 #' @param time_var Name of time variable in 'data'. Variable must be numerical and >0.
 #' @param  event_var Name of event variable in 'data'. Variable must be
 #'   numerical and contain 1's to indicate an event and 0 to indicate a censor.
-#' @param  strata_var Name of stratification variable in "data". This is usually
-#'   the treatment variable and must be categorical.
 #' @param int_name Character to indicate the name of the treatment of interest,
-#'   must be a level of the "strata_var" column in "data", used for labeling
-#'   the parameters.
-#' @param ref_name Character to indicate the name of the reference treatment,
 #'   must be a level of the "strata_var" column in "data", used for labeling
 #'   the parameters.
 #' @param distr A vector string of distributions, see dist argument in
@@ -31,8 +26,7 @@
 #'   \item Generalised F ('genf')
 #'   }
 #'
-#'   The model fit is in the form Surv(Time, Event==1) ~ 1 and is fit twice (one
-#'   separate model for each of the two treatments). The parameters for each
+#'   The model fit is in the form Surv(Time, Event==1) ~ 1 and is fit to the entire data (no strata). The parameters for each
 #'   treatment, are derived directly from the model (no additional manipulation
 #'   is required).
 #' @return A list containing 'models' (output from \code{\link{fit_models}}), 'model_summary' (output from\code{\link{get_params}}) and
@@ -44,11 +38,10 @@
 #'   from flexsurv objects.
 #'   \item 'parameters' is a data frame with with one row which contains the coefficients for all of the flexsurv models specified.
 #'    The column names are in the format 'distribution.parameter.TreatmentName', for example, weibull.shape.Intervention refers to the shape parameter
-#'     of the weibull distribution for the intervention treatment and 'gengamma.mu.Reference' refers to the mu parameter
-#'     of the generalised gamma distribution for the reference treatment.}
+#'     of the weibull distribution for the intervention treatment.}
 #'
 #' @export
-run_separate <- function(data,
+run_one_arm <- function(data,
                    time_var, event_var,
                    distr = c('exp',
                              'weibull',
@@ -58,8 +51,7 @@ run_separate <- function(data,
                              'gengamma',
                              'gamma', 
                              'genf'),
-                   strata_var,
-                   int_name, ref_name){
+                      int_name){
 
 
   #test that only valid distributions have been provided
@@ -71,43 +63,34 @@ run_separate <- function(data,
   )
 
   # standardise variable names
-  data_standard=Format_data_separate(data, time_var, event_var, strata_var, int_name, ref_name)
-  model.formula.sep=Surv(Time, Event==1) ~ 1
+  data_standard=Format_data_onearm(data, time_var, event_var, int_name)
+  model.formula.one.arm=Surv(Time, Event==1) ~ 1
 
   #Fit the models for seven standard distributions
-  models.int <- fit_models(model.formula=model.formula.sep, distr = distr, data=data_standard$dat.int)
-  models.ref <- fit_models(model.formula=model.formula.sep, distr = distr, data=data_standard$dat.ref)
+  models.int <- fit_models(model.formula=model.formula.one.arm, distr = distr, data=data_standard$dat.int)
 
   #get parameter estimates and model fit statistics
   params.int <- get_params(models=models.int)
-  params.ref <- get_params(models=models.ref)
 
   #Extract parameter estimates
   param_out.int <- t(unlist(params.int$coef))
-  param_out.ref <- t(unlist(params.ref$coef))
 
-  # If this is a separate model fitted to each treatment group, rename the parameter from the
-  # exponential model to be consistent with output from Common shape models
+  # Rename the parameter from the
+  # exponential model to be consistent with output from other models
   suppressWarnings(colnames(param_out.int)[colnames(param_out.int) == 'exp'] <- "exp.rate")
   suppressWarnings(colnames(param_out.int) <- paste0(colnames(param_out.int),".int"))
 
-  suppressWarnings(colnames(param_out.ref)[colnames(param_out.ref) == 'exp'] <- "exp.rate")
-  suppressWarnings(colnames(param_out.ref) <- paste0(colnames(param_out.ref),".ref"))
-
-  
 
   # rename for output
-  names(models.int) <- paste0("sep.int.", names(models.int))
-  names(models.ref) <- paste0("sep.ref.", names(models.ref))
+  names(models.int) <- paste0("onearm.int.", names(models.int))
+
+  models <- c(models.int)
   
-  models <- c(models.int, models.ref)
+  params.int$name <-  paste0("onearm.int.", params.int$name)
+
+  params <- dplyr::bind_rows(params.int)
   
-  params.int$name <-  paste0("sep.int.", params.int$name)
-  params.ref$name <-  paste0("ref.int.", params.ref$name)
-  
-  params <- dplyr::bind_rows(params.int, params.ref)
-  
-  param_out <- cbind(param_out.int, param_out.ref)  %>%
+  param_out <- cbind(param_out.int)  %>%
     as.data.frame() 
   
   #######################################################
@@ -119,11 +102,11 @@ run_separate <- function(data,
   
   # as a data frame with metadata 
   param_df <- param_final %>%
-    dplyr::mutate(Model="Seperate", Intervention_name=int_name, Reference_name=ref_name)
+    dplyr::mutate(Model="One arm", Intervention_name=int_name)
   
   # as a vector version with just numerics - needed for bootstrapping
   paramV <- as.numeric(param_final)
-  names(paramV) <- paste0("sep.", colnames(param_final))
+  names(paramV) <- paste0("onearm.", colnames(param_final))
   
   #######################################################
   #collect and return output
