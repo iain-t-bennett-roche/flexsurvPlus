@@ -72,7 +72,7 @@ characteristics of each of these distributions and demonstrates how the
 parameters from each distribution, outputted using the flexsurvPlus package, can be
 implemented within an economic model.[@cadth2020]
 The Generalized F distribution is not commonly used, however it has been included in 
-this package in case it is required.
+this package in case more flexible modeling is required.
 
 The flexsurvPlus package allows the inclusion of a treatment effect in the following
 three ways:
@@ -133,7 +133,7 @@ model ($Q=0$).
 
 ## Initial diagnostics
 Before fitting any models, the following initial diagnostic plots are helpful to
-understand which distribution might be the best fit to the data being modelled:
+understand which distribution might be the best fit to the data being modeled:
 
 *  Kaplan–Meier plot
     *  To display the survival function for each treatment
@@ -229,13 +229,23 @@ gengamma <- c("Generalized gamma",
               #"Reduces to an exponential model, Weibull model (Q=1) and log-normal model (Q=0)"
               )
 
+# genf <- c("Generalized F", 
+#               "$4: \\ \\mu, \\sigma, Q, P$", 
+#               "mu ($\\mu$)",
+#               "sigma ($\\sigma$), Q, P",
+#               "$\\int_{\\infty}^{t}  dx$ ",
+#               "",
+#               "Constant, monotonically increasing, decreasing, bathtub, arc-shaped",
+#               "AFT")
+
 all.dists <- rbind.data.frame(exponential, 
                               weibull,
                               gompertz,
                               llogistic,
                               lnormal,
                               gamma,
-                              gengamma)
+                              gengamma,
+                              genf)
 knitr::kable(all.dists, 
              col.names = c("Distribution",
                            "Number of parameters",
