@@ -16,7 +16,7 @@ Format_data_onearm <- function(data, time_var, event_var, int_name) {
   colnames(dat) <- c("Time", "Event")
   dat.int <- dat %>%
     dplyr::mutate(ARM=int_name)
-    return(list(dat.int=dat.int))
+    return(dat.int)
 }
 
 # with variable for ARM

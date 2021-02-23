@@ -81,7 +81,6 @@ runPSM <- function(data,
 
 
 
-
   #test that a legitimate value for model type has been provided
   assertthat::assert_that(
     all(model.type %in% c('Common shape', 'Independent shape', 'Separate', 'One arm')),

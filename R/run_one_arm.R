@@ -67,7 +67,7 @@ run_one_arm <- function(data,
   model.formula.one.arm=Surv(Time, Event==1) ~ 1
 
   #Fit the models for seven standard distributions
-  models.int <- fit_models(model.formula=model.formula.one.arm, distr = distr, data=data_standard$dat.int)
+  models.int <- fit_models(model.formula=model.formula.one.arm, distr = distr, data=data_standard)
 
   #get parameter estimates and model fit statistics
   params.int <- get_params(models=models.int)
