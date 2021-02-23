@@ -48,12 +48,6 @@ fit_models <- function(model.formula,
                        data) {
 
 
-  #test that only valid distributions have been provided
-  allowed_dist <- c('exp', 'weibull', 'gompertz', 'lnorm', 'llogis', 'gengamma', 'gamma', 'genf')
-  assertthat::assert_that(
-    all(distr %in% allowed_dist),
-    msg = "Only the following distributions are supported: 'exp', 'weibull', 'gompertz', 'lnorm', 'llogis', 'gengamma', 'gamma', 'genf'"
-  )
 
   runFLEX <- function(dist
                       ) {

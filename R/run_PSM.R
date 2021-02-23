@@ -80,13 +80,6 @@ runPSM <- function(data,
                    int_name, ref_name){
 
 
-  #test that only valid distributions have been provided
-  #This is also tested within fit_models. Consider eliminating here to avoid redundancy
-  allowed_dist <- c('exp', 'weibull', 'gompertz', 'lnorm', 'llogis', 'gengamma', 'gamma', 'genf')
-  assertthat::assert_that(
-    all(distr %in% allowed_dist),
-    msg = "Only the following distributions are supported: 'exp', 'weibull', 'gompertz', 'lnorm', 'llogis', 'gengamma', 'gamma', 'genf' "
-  )
 
 
   #test that a legitimate value for model type has been provided
