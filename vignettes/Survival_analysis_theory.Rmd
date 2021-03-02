@@ -78,6 +78,7 @@ The flexsurvPlus package allows the inclusion of a treatment effect in the follo
 three ways:
 
 * Separate models - Models fitted to each treatment arm separately
+  * Similarly, a separate model can be fitted to data from a single treatment arm
   
 *  Independent shape models - Models fitted to both/all treatment arms including
 a treatment covariate to model the effect of treatment on both the scale and
@@ -129,6 +130,7 @@ Gompertz shape parameter equals 0 ($a=0$).
 *  The Generalized Gamma distribution reduces to an exponential model
 ($Q=\sigma=1$), Weibull model ($Q=1$), gamma model ($Q=\sigma$) and log-normal
 model ($Q=0$).
+*  The Generalized F distribution reduces to the Generalized Gamma distribution ($P=1$)
 
 
 ## Initial diagnostics
@@ -229,14 +231,14 @@ gengamma <- c("Generalized gamma",
               #"Reduces to an exponential model, Weibull model (Q=1) and log-normal model (Q=0)"
               )
 
-# genf <- c("Generalized F", 
-#               "$4: \\ \\mu, \\sigma, Q, P$", 
-#               "mu ($\\mu$)",
-#               "sigma ($\\sigma$), Q, P",
-#               "$\\int_{\\infty}^{t}  dx$ ",
-#               "",
-#               "Constant, monotonically increasing, decreasing, bathtub, arc-shaped",
-#               "AFT")
+ genf <- c("Generalized F", 
+               "$4: \\ \\mu, \\sigma, Q, P$", 
+               "mu ($\\mu$)",
+               "sigma ($\\sigma$), Q, P",
+               "$$ \\int_{0}^{s_{1}(s_{2}+s_{1}e^{w})^{-1}} \\frac{x^{s_{2}-1}(1-x)^{s_{1}-1}}{B(s_{2}, s_{1})} \\ dx $$",
+               "$$ \\frac{\\delta (s_{1}/s_{2})^{s_{1}}e^{s_{1}w}}{\\sigma x (1 + s_{1} e^{w}/s_{2})^{(s_{1} + s_{2})}B(s_{1}, s_{2})S(t)}$$",
+               "Decreasing, arc-shaped",
+               "AFT")
 
 all.dists <- rbind.data.frame(exponential, 
                               weibull,
