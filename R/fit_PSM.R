@@ -49,9 +49,17 @@ fit_models <- function(model.formula,
 
 
 
-  runFLEX <- function(dist
-                      ) {
-    model <- flexsurv::flexsurvreg(formula=model.formula, data=data, dist=dist)
+  runFLEX <- function(dist){
+    tryCatch(model <- flexsurv::flexsurvreg(formula=model.formula, data=data, dist=dist),
+             error = function(e){
+               message("An error occurred in ",dist,":\n", e)
+             },
+             warning = function(w){
+               message("A warning occured in ",dist,":\n",  w)
+             },
+             finally = {
+               message("Fitting model ", dist)
+             })
   }
 
   #list of flexsurv objects
@@ -74,19 +82,23 @@ fit_models <- function(model.formula,
 #'
 #' @export
 get_params <- function(models) {
-
+  
+  # Filter on 
+  flexsurvreg.test <- sapply(models, function(x) class(x)=="flexsurvreg")
+  models.flexsurv  <- models[flexsurvreg.test]
+  
   #test inputs before proceeding
-  input.class <- sapply(models, class)
+  input.class <- sapply(models.flexsurv, class)
   assertthat::assert_that(
     all(input.class == "flexsurvreg"),
     msg = "get_params expects a list of 'flexsurvreg' objects as input. At least one of your inputs is not a flexsurvreg object"
   )
 
-  output <-   tibble::enframe(models) %>%
+  output <-   tibble::enframe(models.flexsurv) %>%
     dplyr::mutate(
-      coef= lapply(models, coef), #get coefficient estimates for each model
-      AIC = sapply(models, AIC), #get AIC
-      BIC = sapply(models, BIC) #get BIC
+      coef= lapply(models.flexsurv, coef), #get coefficient estimates for each model
+      AIC = sapply(models.flexsurv, AIC), #get AIC
+      BIC = sapply(models.flexsurv, BIC) #get BIC
     )
 }
 
