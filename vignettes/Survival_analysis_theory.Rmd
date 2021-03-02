@@ -1131,5 +1131,168 @@ This is equivalent to running the following code in R:
 
 
 
+
+# Generalized F
+
+## Separate models
+
+The _run_PSM_ function in the _flexsurvPlus_ package with the following arguments:
+
+*  model.type = "Separate"
+*  distr = "genf" 
+
+uses the flexsurv package to fit two generalized F models (one to data for the
+intervention treatment and one to data for the reference treatment). The R code
+for the fitted models is as follows:
+
+`flexsurvreg(formula = Surv(Time, Event)~1, data =` _data for intervention treatment _`, dist = "genf")`
+`flexsurvreg(formula = Surv(Time, Event)~1, data =` _data for reference treatment _`, dist = "genf")`
+
+Estimation of the mu, sigma, Q and P parameters from each of these models can be then used
+within the following Excel formulas to estimate survival at different time points:
+
+`BETA.DIST(h_m2/(h_m2 + h_m1*time^(h_d/sigma)/EXP(h_d/sigma*mu)),h_m2,h_m1,TRUE)`
+
+* `h_m1 = 2/(Q*Q + 2*P + Q*SQRT(Q*Q + 2*P))`
+* `h_m2 = 2/(Q*Q + 2*P - Q*SQRT(Q*Q + 2*P))`
+* `h_d = SQRT(Q*Q + 2*P)`
+
+
+This is equivalent to running the following code in R:
+
+`summary(` _flexsurvreg Generalized F model _`, type="survival", B=0, t=time)`
+
+
+## Common shape models
+
+The _run_PSM_ function in the _flexsurvPlus_ package with the following arguments:
+
+*  model.type = "Common shape"
+*  distr = "genf" 
+
+uses the flexsurv package to fit one Generalized F model with a covariate for
+treatment. The R code for the fitted model is as follows:
+
+`flexsurvreg(formula = Surv(Time, Event)~ARM, data =` _data with a treatment variable named "ARM" _`, dist = "genf")`
+
+This model outputs mu, sigma Q and P parameters and a treatment coefficient. Mu,
+sigma Q and P parameters for each treatment are estimated in _run_PSM_ as follows:
+
+```{r genf_common_shape_params, echo=FALSE}
+
+mu_calc <- c("mu",
+             "mu coefficient + treatment coefficient",
+             "mu coefficient"
+                 )
+
+sigma_calc <- c("Sigma",
+               "sigma coefficient",
+               "sigma coefficient"
+                 )
+
+Q_calc <- c("Q",
+            "Q coefficient",
+            "Q coefficient"
+                 )
+
+P_calc <- c("P",
+            "P coefficient",
+            "P coefficient"
+                 )
+
+all.params <- rbind.data.frame(mu_calc, sigma_calc, Q_calc, P_calc)
+knitr::kable(all.params, 
+             col.names = c("Parameter",
+                           "Intervention",
+                           "Reference"
+                           ),
+             escape = FALSE,
+             caption = "Mu, sigma, Q and P parameters for intervention and reference treatments from a common shape model",
+             format = "html") 
+
+```
+
+
+Survival can then be estimated in Excel using the mu, sigma, Q and P parameters
+specific to each treatment with formula:
+
+`BETA.DIST(h_m2/(h_m2 + h_m1*time^(h_d/sigma)/EXP(h_d/sigma*mu)),h_m2,h_m1,TRUE)`
+
+* `h_m1 = 2/(Q*Q + 2*P + Q*SQRT(Q*Q + 2*P))`
+* `h_m2 = 2/(Q*Q + 2*P - Q*SQRT(Q*Q + 2*P))`
+* `h_d = SQRT(Q*Q + 2*P)`
+
+This is equivalent to running the following code in R:
+
+`summary(` _flexsurvreg Generalized f model _`, type="survival", B=0, t=time)`
+
+
+## Independent shape models
+
+The _run_PSM_ function in the _flexsurvPlus_ package with the following arguments:
+
+*  model.type = "Independent shape"
+*  distr = "genf" 
+
+uses the flexsurv package to fit one Generalized F model with a covariate for
+treatment on both the mu, sigma, Q and P parameters. The R code for the fitted
+model is as follows:
+
+`flexsurvreg(formula = Surv(Time, Event) ~ ARM + sigma(ARM) + Q(ARM) + P(ARM), data =` _data with a treatment variable named "ARM" _`, dist = "genf")`
+
+This model outputs mu, sigma, Q and P parameters and a treatment coefficient for
+mu, sigma, Q and P. Parameters for each treatment are estimated in _run_PSM_ as
+follows:
+
+```{r genf_independent_shape_params, echo=FALSE}
+
+mu_calc <- c("mu",
+             "mu coefficient + treatment coefficient for mu",
+             "mu coefficient"
+                 )
+
+sigma_calc <- c("Scale",
+               "sigma coefficient + treatment coefficient for sigma",
+               "sigma coefficient"
+                 )
+
+Q_calc <- c("Q",
+            "Q coefficient + treatment coefficient for Q",
+            "Q coefficient"
+                 )
+
+P_calc <- c("P",
+            "P coefficient + treatment coefficient for P",
+            "P coefficient"
+                 )
+
+
+all.params <- rbind.data.frame(mu_calc, sigma_calc, Q_calc, P_calc)
+knitr::kable(all.params, 
+             col.names = c("Parameter",
+                           "Intervention",
+                           "Reference"
+                           ),
+             escape = FALSE,
+             caption = "Mu, sigma, Q and P parameters for intervention and reference treatments from an independent shape model",
+             format = "html") 
+
+```
+
+
+Survival can then be estimated in Excel using the mu, sigma, Q and P parameters
+specific to each treatment with formula:
+
+`BETA.DIST(h_m2/(h_m2 + h_m1*time^(h_d/sigma)/EXP(h_d/sigma*mu)),h_m2,h_m1,TRUE)`
+
+* `h_m1 = 2/(Q*Q + 2*P + Q*SQRT(Q*Q + 2*P))`
+* `h_m2 = 2/(Q*Q + 2*P - Q*SQRT(Q*Q + 2*P))`
+* `h_d = SQRT(Q*Q + 2*P)`
+
+This is equivalent to running the following code in R:
+
+`summary(` _flexsurvreg Generalized F model _`, type="survival", B=0, t=time)`
+
+
 # References
 
