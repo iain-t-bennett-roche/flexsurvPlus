@@ -25,7 +25,7 @@ numerical and contain 1's to indicate an event and 0 to indicate a censor.}
 
 \item{distr}{A vector string of distributions, see dist argument in
 \code{\link{flexsurvreg}}. This is passed to the \code{distr} argument of
-the \code{\link{fit_models}} function}
+the \code{\link{fit_models}} function. Default is all available distributions (see below).}
 
 \item{int_name}{Character to indicate the name of the treatment of interest,
 must be a level of the "strata_var" column in "data", used for labeling

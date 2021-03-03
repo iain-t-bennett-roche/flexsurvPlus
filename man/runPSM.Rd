@@ -35,13 +35,16 @@ treatment on the scale parameter of the model
 that affects both the scale and shape parameters of the model
 \item 'Separate' a model with no covariates typically fitted separately to
 data from each treatment group in a study
-}}
+\item 'One arm' a model with no covariates typically fitted to the entire data
+set without a strata variable
+}
+Default is c("Separate", "Common shape", "Independent shape").}
 
 \item{distr}{A vector string of distributions, see dist argument in
-\code{\link{flexsurvreg}}.}
+\code{\link{flexsurvreg}}. Default is all available distributions (see below).}
 
 \item{strata_var}{Name of stratification variable in "data". This is usually
-the treatment variable and must be categorical.}
+the treatment variable and must be categorical. Not required when model.type='One arm'.}
 
 \item{int_name}{Character to indicate the name of the treatment of interest,
 must be a level of the "strata_var" column in "data", used for labelling
@@ -49,7 +52,7 @@ the parameters.}
 
 \item{ref_name}{Character to indicate the name of the reference treatment,
 must be a level of the "strata_var" column in "data", used for labelling
-the parameters.}
+the parameters. Not required when model.type='One arm'.}
 }
 \value{
 A list containing 'models' (output from \code{\link{fit_models}}), 'model_summary' (output from \code{\link{get_params}}) and
@@ -64,13 +67,13 @@ The column names are in the format 'distribution.parameter.TreatmentName', for e
 of the weibull distribution for the intervention treatment and 'gengamma.mu.Reference' refers to the mu parameter
 of the generalised gamma distribution for the reference treatment. Columns with 'TE' at the end are the treatment effect coefficients
 (applicable to the scale and shape parameters for independent shape models, applicable to the scale parameter only for the common shape
-model and not applicable for the separate model).
+model and not applicable for the separate or one-arm model).
 \item 'parameters_vector' is a vector which contains the coefficients for all of the flexsurv models specified.
 The column names are in the format 'modeltype.distribution.parameter.TreatmentName', for example, comshp.weibull.shape.Int refers to the shape parameter
 of the common shape weibull distribution for the intervention treatment and 'indshp.gengamma.mu.ref' refers to the mu parameter
 of the independent shape generalised gamma distribution for the reference treatment. Columns with 'TE' at the end are the treatment effect coefficients
 (applicable to the scale and shape parameters for independent shape models, applicable to the scale parameter only for the common shape
-model and not applicable for the separate model).
+model and not applicable for the separate or one-arm model).
 }
 }
 \description{
