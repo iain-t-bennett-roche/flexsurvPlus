@@ -122,6 +122,24 @@ bootPSMtidy <- function(X){
     params <- dplyr::bind_rows(params, sep.samples)
   }
   
+  # any one arm models?
+  if (any(grepl("onearm.",names(samples), fixed = TRUE))){
+    
+    onearm.samples <- samples[,grepl("onearm.",names(samples), fixed = TRUE)]
+    
+    # rename  
+    names(onearm.samples) <- gsub("onearm.", "", names(onearm.samples))  
+    
+    # add metadata
+    onearm.samples <- onearm.samples %>%
+      mutate(SampleID = 0:X$R,
+             Model = "One arm", 
+             Reference_name = X$call$ref_name,
+             Intervention_name = X$call$int_name
+      )
+    
+    params <- dplyr::bind_rows(params, onearm.samples)
+  }
   
   # return the processed dataframe and reorder
   metadata.cols <- which(names(params) %in% c("Model", "Reference_name", "Intervention_name", "SampleID"))

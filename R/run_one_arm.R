@@ -155,12 +155,12 @@ run_one_arm <- function(data,
 
   }
   
-  params_all2 <- params_all %>%
+  params_all <- params_all %>%
     select(-Model, -Intervention_name)
   
   # as a vector version with just numerics - needed for bootstrapping
-  paramV <- as.numeric(params_all2)
-  names(paramV) <- paste0("onearm.", colnames(params_all2))
+  paramV <- as.numeric(params_all)
+  names(paramV) <- paste0("onearm.", colnames(params_all))
 
 
   
