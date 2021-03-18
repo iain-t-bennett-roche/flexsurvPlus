@@ -48,19 +48,19 @@
 #'   }
 #' @export
 run_common_shape <- function(data,
-                   time_var, event_var,
-                   distr = c('exp',
-                             'weibull',
-                             'gompertz',
-                             'lnorm',
-                             'llogis',
-                             'gengamma',
-                             'gamma',
-                             'genf'),
-                   strata_var,
-                   int_name, ref_name){
-
-
+                             time_var, event_var,
+                             distr = c('exp',
+                                       'weibull',
+                                       'gompertz',
+                                       'lnorm',
+                                       'llogis',
+                                       'gengamma',
+                                       'gamma',
+                                       'genf'),
+                             strata_var,
+                             int_name, ref_name){
+  
+  
   #test that only valid distributions have been provided
   #This is also tested within fit_models. Consider eliminating here to avoid redundancy
   allowed_dist <- c('exp', 'weibull', 'gompertz', 'lnorm', 'llogis', 'gengamma', 'gamma', 'genf')
@@ -68,32 +68,33 @@ run_common_shape <- function(data,
     all(distr %in% allowed_dist),
     msg = "Only the following distributions are supported: 'exp', 'weibull', 'gompertz', 'lnorm', 'llogis', 'gengamma', 'gamma, 'genf' "
   )
-
+  
   # standardise variable names
   data_standard=Format_data(data, time_var, event_var, strata_var, int_name, ref_name)
   model.formula=Surv(Time, Event==1) ~ ARM
-
+  
   #Fit the models for seven standard distributions
+  message("Fitting common shape models")
   models <- fit_models(model.formula=model.formula, distr = distr, data=data_standard)
   
   #get parameter estimates and model fit statistics
   params <- get_params(models=models)
-
+  
   #Extract parameter estimates
   param_out <- t(unlist(params$coef)) %>% as.data.frame()
-
-  if('exp' %in% distr){
+  
+  if('exp' %in% params$name){
     param_out <- param_out %>%
       dplyr::mutate(
         exp.rate.int = exp.rate + exp.ARMInt,
         exp.rate.ref = exp.rate,
         exp.rate.TE = exp.ARMInt) %>%
       dplyr::select(-exp.rate, -exp.ARMInt)
-
-      
+    
+    
   }
-
-  if('weibull' %in% distr){
+  
+  if('weibull' %in% params$name){
     param_out <- param_out %>%
       dplyr::mutate(
         weibull.scale.int = weibull.scale + weibull.ARMInt,
@@ -104,8 +105,8 @@ run_common_shape <- function(data,
       select(-weibull.scale, -weibull.shape, -weibull.ARMInt)
     
   }
-
-  if('gompertz' %in% distr){
+  
+  if('gompertz' %in% params$name){
     param_out <- param_out %>%
       dplyr::mutate(
         gompertz.rate.int = gompertz.rate + gompertz.ARMInt,
@@ -114,11 +115,11 @@ run_common_shape <- function(data,
         gompertz.shape.ref = gompertz.shape,
         gompertz.rate.TE = gompertz.ARMInt) %>%
       select(-gompertz.rate, -gompertz.shape, -gompertz.ARMInt)
-  
+    
     
   }
-
-  if('llogis' %in% distr){
+  
+  if('llogis' %in% params$name){
     param_out <- param_out %>%
       dplyr::mutate(
         llogis.scale.int = llogis.scale + llogis.ARMInt,
@@ -127,10 +128,10 @@ run_common_shape <- function(data,
         llogis.shape.ref = llogis.shape,
         llogis.scale.TE = llogis.ARMInt) %>%
       select(-llogis.scale, -llogis.shape, -llogis.ARMInt)
-
+    
   }
-
-  if('gamma' %in% distr){
+  
+  if('gamma' %in% params$name){
     param_out <- param_out %>%
       dplyr::mutate(
         gamma.rate.int = gamma.rate + gamma.ARMInt,
@@ -141,8 +142,8 @@ run_common_shape <- function(data,
       select(-gamma.rate, -gamma.shape, -gamma.ARMInt)
     
   }
-
-  if('lnorm' %in% distr){
+  
+  if('lnorm' %in% params$name){
     param_out <- param_out %>%
       dplyr::mutate(
         lnorm.meanlog.int = lnorm.meanlog + lnorm.ARMInt,
@@ -151,10 +152,10 @@ run_common_shape <- function(data,
         lnorm.sdlog.ref = lnorm.sdlog,
         lnorm.meanlog.TE = lnorm.ARMInt) %>%
       select(-lnorm.meanlog, -lnorm.sdlog, -lnorm.ARMInt)
-
+    
   }
-
-  if('gengamma' %in% distr){
+  
+  if('gengamma' %in% params$name){
     param_out <- param_out %>%
       dplyr::mutate(
         gengamma.mu.int = gengamma.mu + gengamma.ARMInt,
@@ -165,10 +166,10 @@ run_common_shape <- function(data,
         gengamma.Q.ref = gengamma.Q,
         gengamma.mu.TE = gengamma.ARMInt) %>%
       select(-gengamma.mu, -gengamma.sigma, -gengamma.Q, -gengamma.ARMInt)
-
+    
   }
   
-  if('genf' %in% distr){
+  if('genf' %in% params$name){
     param_out <- param_out %>%
       dplyr::mutate(
         genf.mu.int = genf.mu + genf.ARMInt,
@@ -183,7 +184,7 @@ run_common_shape <- function(data,
       select(-genf.mu, -genf.sigma, -genf.Q, -genf.P, -genf.ARMInt)
     
   }
-
+  
   # rename models so can bind with others without conflicts
   models.out <- models
   names(models.out) <- paste0("comshp.", names(models.out))
@@ -201,10 +202,87 @@ run_common_shape <- function(data,
   # as a data frame with metadata 
   param_df <- param_final %>%
     dplyr::mutate(Model="Common shape", Intervention_name=int_name, Reference_name=ref_name)
+  
+  params_all <- param_df 
+  
+  if('exp' %in% distr){
+    params_all$exp.rate.int <- ifelse("exp.rate.int" %in% names(params_all), params_all$exp.rate.int, NA) 
+    params_all$exp.rate.ref <- ifelse("exp.rate.ref" %in% names(params_all), params_all$exp.rate.ref, NA) 
+    params_all$exp.rate.TE <- ifelse("exp.rate.TE" %in% names(params_all), params_all$exp.rate.TE, NA) 
+  }
+  
+  if('weibull' %in% distr){
+    params_all$weibull.shape.int <- ifelse("weibull.shape.int" %in% names(params_all), params_all$weibull.shape.int, NA) 
+    params_all$weibull.scale.int <- ifelse("weibull.scale.int" %in% names(params_all), params_all$weibull.scale.int, NA) 
+    params_all$weibull.shape.ref <- ifelse("weibull.shape.ref" %in% names(params_all), params_all$weibull.shape.ref, NA) 
+    params_all$weibull.scale.ref <- ifelse("weibull.scale.ref" %in% names(params_all), params_all$weibull.scale.ref, NA) 
+    params_all$weibull.scale.TE <- ifelse("weibull.scale.TE" %in% names(params_all), params_all$weibull.scale.TE, NA) 
+  }
+  
+  if('gompertz' %in% distr){
+    params_all$gompertz.shape.int <- ifelse("gompertz.shape.int" %in% names(params_all), params_all$gompertz.shape.int, NA) 
+    params_all$gompertz.rate.int <- ifelse("gompertz.rate.int" %in% names(params_all), params_all$gompertz.rate.int, NA) 
+    params_all$gompertz.shape.ref <- ifelse("gompertz.shape.ref" %in% names(params_all), params_all$gompertz.shape.ref, NA) 
+    params_all$gompertz.rate.ref <- ifelse("gompertz.rate.ref" %in% names(params_all), params_all$gompertz.rate.ref, NA) 
+    params_all$gompertz.rate.TE <- ifelse("gompertz.rate.TE" %in% names(params_all), params_all$gompertz.rate.TE, NA) 
+    
+  }
+  
+  if('llogis' %in% distr){
+    params_all$llogis.shape.int <- ifelse("llogis.shape.int" %in% names(params_all), params_all$llogis.shape.int, NA) 
+    params_all$llogis.scale.int <- ifelse("llogis.scale.int" %in% names(params_all), params_all$llogis.scale.int, NA) 
+    params_all$llogis.shape.ref <- ifelse("llogis.shape.ref" %in% names(params_all), params_all$llogis.shape.ref, NA) 
+    params_all$llogis.scale.ref <- ifelse("llogis.scale.ref" %in% names(params_all), params_all$llogis.scale.ref, NA) 
+    params_all$llogis.scale.TE <- ifelse("llogis.scale.TE" %in% names(params_all), params_all$llogis.scale.TE, NA) 
+  }
+  
+  if('gamma' %in% distr){
+    params_all$gamma.shape.int <- ifelse("gamma.shape.int" %in% names(params_all), params_all$gamma.shape.int, NA) 
+    params_all$gamma.rate.int <- ifelse("gamma.rate.int" %in% names(params_all), params_all$gamma.rate.int, NA) 
+    params_all$gamma.shape.ref <- ifelse("gamma.shape.ref" %in% names(params_all), params_all$gamma.shape.ref, NA) 
+    params_all$gamma.rate.ref <- ifelse("gamma.rate.ref" %in% names(params_all), params_all$gamma.rate.ref, NA) 
+    params_all$gamma.rate.TE <- ifelse("gamma.rate.TE" %in% names(params_all), params_all$gamma.rate.TE, NA) 
+     }
+  
+  if('lnorm' %in% distr){
+    params_all$lnorm.meanlog.int <- ifelse("lnorm.meanlog.int" %in% names(params_all), params_all$lnorm.meanlog.int, NA) 
+    params_all$lnorm.sdlog.int <- ifelse("lnorm.sdlog.int" %in% names(params_all), params_all$lnorm.sdlog.int, NA) 
+    params_all$lnorm.meanlog.ref <- ifelse("lnorm.meanlog.ref" %in% names(params_all), params_all$lnorm.meanlog.ref, NA) 
+    params_all$lnorm.sdlog.ref <- ifelse("lnorm.sdlog.ref" %in% names(params_all), params_all$lnorm.sdlog.ref, NA) 
+    params_all$lnorm.meanlog.TE <- ifelse("lnorm.meanlog.TE" %in% names(params_all), params_all$lnorm.meanlog.TE, NA) 
 
+  }
+  
+  if('gengamma' %in% distr){
+    params_all$gengamma.mu.int <- ifelse("gengamma.mu.int" %in% names(params_all), params_all$gengamma.mu.int, NA) 
+    params_all$gengamma.sigma.int <- ifelse("gengamma.sigma.int" %in% names(params_all), params_all$gengamma.sigma.int, NA) 
+    params_all$gengamma.Q.int <- ifelse("gengamma.Q.int" %in% names(params_all), params_all$gengamma.Q.int, NA) 
+    params_all$gengamma.mu.ref <- ifelse("gengamma.mu.ref" %in% names(params_all), params_all$gengamma.mu.ref, NA) 
+    params_all$gengamma.sigma.ref <- ifelse("gengamma.sigma.ref" %in% names(params_all), params_all$gengamma.sigma.ref, NA) 
+    params_all$gengamma.Q.ref <- ifelse("gengamma.Q.ref" %in% names(params_all), params_all$gengamma.Q.ref, NA) 
+    params_all$gengamma.mu.TE <- ifelse("gengamma.mu.TE" %in% names(params_all), params_all$gengamma.mu.TE, NA) 
+  }
+  
+  if('genf' %in% distr){
+    params_all$genf.mu.int <- ifelse("genf.mu.int" %in% names(params_all), params_all$genf.mu.int, as.numeric(NA)) 
+    params_all$genf.sigma.int <- ifelse("genf.sigma.int" %in% names(params_all), params_all$genf.sigma.int, as.numeric(NA)) 
+    params_all$genf.Q.int <- ifelse("genf.Q.int" %in% names(params_all), params_all$genf.Q.int, as.numeric(NA)) 
+    params_all$genf.P.int <- ifelse("genf.P.int" %in% names(params_all), params_all$genf.P.int, as.numeric(NA)) 
+    params_all$genf.mu.ref <- ifelse("genf.mu.ref" %in% names(params_all), params_all$genf.mu.ref, as.numeric(NA)) 
+    params_all$genf.sigma.ref <- ifelse("genf.sigma.ref" %in% names(params_all), params_all$genf.sigma.ref, as.numeric(NA)) 
+    params_all$genf.Q.ref <- ifelse("genf.Q.ref" %in% names(params_all), params_all$genf.Q.ref, as.numeric(NA)) 
+    params_all$genf.P.ref <- ifelse("genf.P.ref" %in% names(params_all), params_all$genf.P.ref, as.numeric(NA)) 
+    params_all$genf.mu.TE <- ifelse("genf.mu.TE" %in% names(params_all), params_all$genf.mu.TE, as.numeric(NA)) 
+
+  }
+  
+  params_all <- params_all %>%
+    select(-Model, -Intervention_name, -Reference_name)
+  
+  
   # as a vector version with just numerics - needed for bootstrapping
-  paramV <- as.numeric(param_final)
-  names(paramV) <- paste0("comshp.", colnames(param_final))
+  paramV <- as.numeric(params_all)
+  names(paramV) <- paste0("comshp.", colnames(params_all))
   
   #######################################################
   

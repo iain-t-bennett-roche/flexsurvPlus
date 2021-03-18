@@ -49,19 +49,19 @@
 #'
 #' @export
 run_separate <- function(data,
-                   time_var, event_var,
-                   distr = c('exp',
-                             'weibull',
-                             'gompertz',
-                             'lnorm',
-                             'llogis',
-                             'gengamma',
-                             'gamma', 
-                             'genf'),
-                   strata_var,
-                   int_name, ref_name){
-
-
+                         time_var, event_var,
+                         distr = c('exp',
+                                   'weibull',
+                                   'gompertz',
+                                   'lnorm',
+                                   'llogis',
+                                   'gengamma',
+                                   'gamma', 
+                                   'genf'),
+                         strata_var,
+                         int_name, ref_name){
+  
+  
   #test that only valid distributions have been provided
   #This is also tested within fit_models. Consider eliminating here to avoid redundancy
   allowed_dist <- c('exp', 'weibull', 'gompertz', 'lnorm', 'llogis', 'gengamma', 'gamma', 'genf')
@@ -69,33 +69,35 @@ run_separate <- function(data,
     all(distr %in% allowed_dist),
     msg = "Only the following distributions are supported: 'exp', 'weibull', 'gompertz', 'lnorm', 'llogis', 'gengamma', 'gamma', 'genf' "
   )
-
+  
   # standardise variable names
   data_standard=Format_data_separate(data, time_var, event_var, strata_var, int_name, ref_name)
   model.formula.sep=Surv(Time, Event==1) ~ 1
-
+  
   #Fit the models for seven standard distributions
+  message("Fitting separate shape models - intervention arm") 
   models.int <- fit_models(model.formula=model.formula.sep, distr = distr, data=data_standard$dat.int)
+  message("Fitting separate shape models - reference arm") 
   models.ref <- fit_models(model.formula=model.formula.sep, distr = distr, data=data_standard$dat.ref)
-
+  
   #get parameter estimates and model fit statistics
   params.int <- get_params(models=models.int)
   params.ref <- get_params(models=models.ref)
-
+  
   #Extract parameter estimates
   param_out.int <- t(unlist(params.int$coef))
   param_out.ref <- t(unlist(params.ref$coef))
-
+  
   # If this is a separate model fitted to each treatment group, rename the parameter from the
   # exponential model to be consistent with output from Common shape models
   suppressWarnings(colnames(param_out.int)[colnames(param_out.int) == 'exp'] <- "exp.rate")
   suppressWarnings(colnames(param_out.int) <- paste0(colnames(param_out.int),".int"))
-
+  
   suppressWarnings(colnames(param_out.ref)[colnames(param_out.ref) == 'exp'] <- "exp.rate")
   suppressWarnings(colnames(param_out.ref) <- paste0(colnames(param_out.ref),".ref"))
-
   
-
+  
+  
   # rename for output
   names(models.int) <- paste0("sep.int.", names(models.int))
   names(models.ref) <- paste0("sep.ref.", names(models.ref))
@@ -120,10 +122,84 @@ run_separate <- function(data,
   # as a data frame with metadata 
   param_df <- param_final %>%
     dplyr::mutate(Model="Seperate", Intervention_name=int_name, Reference_name=ref_name)
+  params_all <- param_df 
+  
+  if('exp' %in% distr){
+    params_all$exp.rate.int <- ifelse("exp.rate.int" %in% names(params_all), params_all$exp.rate.int, NA) 
+    params_all$exp.rate.ref <- ifelse("exp.rate.ref" %in% names(params_all), params_all$exp.rate.ref, NA) 
+    
+  }
+  
+  if('weibull' %in% distr){
+    params_all$weibull.shape.int <- ifelse("weibull.shape.int" %in% names(params_all), params_all$weibull.shape.int, NA) 
+    params_all$weibull.scale.int <- ifelse("weibull.scale.int" %in% names(params_all), params_all$weibull.scale.int, NA) 
+    params_all$weibull.shape.ref <- ifelse("weibull.shape.ref" %in% names(params_all), params_all$weibull.shape.ref, NA) 
+    params_all$weibull.scale.ref <- ifelse("weibull.scale.ref" %in% names(params_all), params_all$weibull.scale.ref, NA) 
+  }
+  
+  if('gompertz' %in% distr){
+    params_all$gompertz.shape.int <- ifelse("gompertz.shape.int" %in% names(params_all), params_all$gompertz.shape.int, NA) 
+    params_all$gompertz.rate.int <- ifelse("gompertz.rate.int" %in% names(params_all), params_all$gompertz.rate.int, NA) 
+    params_all$gompertz.shape.ref <- ifelse("gompertz.shape.ref" %in% names(params_all), params_all$gompertz.shape.ref, NA) 
+    params_all$gompertz.rate.ref <- ifelse("gompertz.rate.ref" %in% names(params_all), params_all$gompertz.rate.ref, NA) 
+    
+  }
+  
+  if('llogis' %in% distr){
+    params_all$llogis.shape.int <- ifelse("llogis.shape.int" %in% names(params_all), params_all$llogis.shape.int, NA) 
+    params_all$llogis.scale.int <- ifelse("llogis.scale.int" %in% names(params_all), params_all$llogis.scale.int, NA) 
+    params_all$llogis.shape.ref <- ifelse("llogis.shape.ref" %in% names(params_all), params_all$llogis.shape.ref, NA) 
+    params_all$llogis.scale.ref <- ifelse("llogis.scale.ref" %in% names(params_all), params_all$llogis.scale.ref, NA) 
+  }
+  
+  if('gamma' %in% distr){
+    params_all$gamma.shape.int <- ifelse("gamma.shape.int" %in% names(params_all), params_all$gamma.shape.int, NA) 
+    params_all$gamma.rate.int <- ifelse("gamma.rate.int" %in% names(params_all), params_all$gamma.rate.int, NA) 
+    params_all$gamma.shape.ref <- ifelse("gamma.shape.ref" %in% names(params_all), params_all$gamma.shape.ref, NA) 
+    params_all$gamma.rate.ref <- ifelse("gamma.rate.ref" %in% names(params_all), params_all$gamma.rate.ref, NA) 
+    
+    
+  }
+  
+  if('lnorm' %in% distr){
+    params_all$lnorm.meanlog.int <- ifelse("lnorm.meanlog.int" %in% names(params_all), params_all$lnorm.meanlog.int, NA) 
+    params_all$lnorm.sdlog.int <- ifelse("lnorm.sdlog.int" %in% names(params_all), params_all$lnorm.sdlog.int, NA) 
+    params_all$lnorm.meanlog.ref <- ifelse("lnorm.meanlog.ref" %in% names(params_all), params_all$lnorm.meanlog.ref, NA) 
+    params_all$lnorm.sdlog.ref <- ifelse("lnorm.sdlog.ref" %in% names(params_all), params_all$lnorm.sdlog.ref, NA) 
+
+  }
+  
+  if('gengamma' %in% distr){
+    params_all$gengamma.mu.int <- ifelse("gengamma.mu.int" %in% names(params_all), params_all$gengamma.mu.int, NA) 
+    params_all$gengamma.sigma.int <- ifelse("gengamma.sigma.int" %in% names(params_all), params_all$gengamma.sigma.int, NA) 
+    params_all$gengamma.Q.int <- ifelse("gengamma.Q.int" %in% names(params_all), params_all$gengamma.Q.int, NA) 
+    params_all$gengamma.mu.ref <- ifelse("gengamma.mu.ref" %in% names(params_all), params_all$gengamma.mu.ref, NA) 
+    params_all$gengamma.sigma.ref <- ifelse("gengamma.sigma.ref" %in% names(params_all), params_all$gengamma.sigma.ref, NA) 
+    params_all$gengamma.Q.ref <- ifelse("gengamma.Q.ref" %in% names(params_all), params_all$gengamma.Q.ref, NA) 
+    
+  }
+  
+  if('genf' %in% distr){
+    params_all$genf.mu.int <- ifelse("genf.mu.int" %in% names(params_all), params_all$genf.mu.int, as.numeric(NA)) 
+    params_all$genf.sigma.int <- ifelse("genf.sigma.int" %in% names(params_all), params_all$genf.sigma.int, as.numeric(NA)) 
+    params_all$genf.Q.int <- ifelse("genf.Q.int" %in% names(params_all), params_all$genf.Q.int, as.numeric(NA)) 
+    params_all$genf.P.int <- ifelse("genf.P.int" %in% names(params_all), params_all$genf.P.int, as.numeric(NA)) 
+    params_all$genf.mu.ref <- ifelse("genf.mu.ref" %in% names(params_all), params_all$genf.mu.ref, as.numeric(NA)) 
+    params_all$genf.sigma.ref <- ifelse("genf.sigma.ref" %in% names(params_all), params_all$genf.sigma.ref, as.numeric(NA)) 
+    params_all$genf.Q.ref <- ifelse("genf.Q.ref" %in% names(params_all), params_all$genf.Q.ref, as.numeric(NA)) 
+    params_all$genf.P.ref <- ifelse("genf.P.ref" %in% names(params_all), params_all$genf.P.ref, as.numeric(NA)) 
+    
+  }
+  
+  params_all <- params_all %>%
+    select(-Model, -Intervention_name, -Reference_name)
   
   # as a vector version with just numerics - needed for bootstrapping
-  paramV <- as.numeric(param_final)
-  names(paramV) <- paste0("sep.", colnames(param_final))
+  paramV <- as.numeric(params_all)
+  names(paramV) <- paste0("sep.", colnames(params_all))
+  
+  
+  
   
   #######################################################
   #collect and return output
@@ -133,6 +209,6 @@ run_separate <- function(data,
     parameters = param_df,
     parameters_vector = paramV
   )
-
+  
   return(output)
-}
+  }
