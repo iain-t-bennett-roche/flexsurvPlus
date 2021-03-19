@@ -46,22 +46,25 @@ fit_models <- function(model.formula,
                                  'gamma',
                                  'genf'),
                        data) {
-
-
-
+  
+  
+  
   runFLEX <- function(dist){
     tryCatch(model <- flexsurv::flexsurvreg(formula=model.formula, data=data, dist=dist),
              error = function(e){
                message("An error occurred in ",dist,":\n", e)
+               return("error")
              },
              warning = function(w){
                message("A warning occured in ",dist,":\n",  w)
+               return("warning")
              },
              finally = {
                message("Fitting model ", dist)
+               
              })
   }
-
+  
   #list of flexsurv objects
   output <- lapply(distr, function(x) runFLEX(x))
   names(output) <- distr
@@ -74,18 +77,20 @@ fit_models <- function(model.formula,
 #'
 #' @param models Object from \code{\link{fit_models}}
 #'
-#' @return A tibble object containing the fitted model objects, the parameter
-#'   estimates (\code{\link{coef}}),  \code{\link{AIC}} and \code{\link{BIC}}
-#'   from flexsurv objects.
+#' @return A data frame containing the \code{\link{AIC}}, \code{\link{BIC}}
+#'   from flexsurv objects and a status column of whether the model converged or produced an error or warning.
 #'
 #' @seealso \code{\link{fit_models}} \code{\link{flexsurvreg}}
 #'
 #' @export
 get_params <- function(models) {
   
-  # Filter on 
+  # Filter on flexsurv models
   flexsurvreg.test <- sapply(models, function(x) class(x)=="flexsurvreg")
   models.flexsurv  <- models[flexsurvreg.test]
+  
+  #models that produced an error or warning
+  models.nonconverge <- models[flexsurvreg.test==FALSE]
   
   #test inputs before proceeding
   input.class <- sapply(models.flexsurv, class)
@@ -93,13 +98,29 @@ get_params <- function(models) {
     all(input.class == "flexsurvreg"),
     msg = "get_params expects a list of 'flexsurvreg' objects as input. At least one of your inputs is not a flexsurvreg object"
   )
-
+  
   output <-   tibble::enframe(models.flexsurv) %>%
     dplyr::mutate(
-      coef= lapply(models.flexsurv, coef), #get coefficient estimates for each model
+      Dist = name,
       AIC = sapply(models.flexsurv, AIC), #get AIC
-      BIC = sapply(models.flexsurv, BIC) #get BIC
-    )
+      BIC = sapply(models.flexsurv, BIC), #get BIC
+      Status = "Converged"
+    ) %>%
+    dplyr::select(-value, -name) %>% 
+    as.data.frame()
+  
+  if(length(models.nonconverge)>0){
+  non_converged_output  <- data.frame(
+    Dist = names(models.nonconverge),
+    AIC = NA,
+    BIC = NA,
+    Status = unlist(models.nonconverge))
+  rownames(non_converged_output) <- c()
+  
+  output <- rbind(output, non_converged_output)
+  }
+  
+  output
+  
 }
-
 

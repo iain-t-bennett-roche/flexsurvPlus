@@ -10,9 +10,8 @@ get_params(models)
 \item{models}{Object from \code{\link{fit_models}}}
 }
 \value{
-A tibble object containing the fitted model objects, the parameter
-estimates (\code{\link{coef}}),  \code{\link{AIC}} and \code{\link{BIC}}
-from flexsurv objects.
+A data frame containing the \code{\link{AIC}}, \code{\link{BIC}}
+from flexsurv objects and a status column of whether the model converged or produced an error or warning.
 }
 \description{
 Manipulates \code{\link{fit_models}} objects to get the parameter estimates and AIC and BIC values.
