@@ -68,29 +68,37 @@ run_one_arm <- function(data,
 
   #Fit the models for seven standard distributions
   message("Fitting one arm models")
-  models.int <- fit_models(model.formula=model.formula.one.arm, distr = distr, data=data_standard)
+  models <- fit_models(model.formula=model.formula.one.arm, distr = distr, data=data_standard)
 
   #get parameter estimates and model fit statistics
-  params.int <- get_params(models=models.int)
+  params <- get_params(models=models)
 
+  # Filter on flexsurv models
+  flexsurvreg.test <- sapply(models, function(x) class(x)=="flexsurvreg")
+  models.flexsurv  <- models[flexsurvreg.test]
+  converged_models <- names(models.flexsurv)
+  
+  
   #Extract parameter estimates
-  param_out.int <- t(unlist(params.int$coef))
+  coef <- lapply(models.flexsurv, coef)
+  param_out <- t(unlist(coef)) %>% as.data.frame()
+  
 
   # Rename the parameter from the
   # exponential model to be consistent with output from other models
-  suppressWarnings(colnames(param_out.int)[colnames(param_out.int) == 'exp'] <- "exp.rate")
-  suppressWarnings(colnames(param_out.int) <- paste0(colnames(param_out.int),".int"))
+  suppressWarnings(colnames(param_out)[colnames(param_out) == 'exp'] <- "exp.rate")
+  suppressWarnings(colnames(param_out) <- paste0(colnames(param_out),".int"))
   
   # rename for output
-  names(models.int) <- paste0("onearm.int.", names(models.int))
+  names(models) <- paste0("onearm.int.", names(models))
 
-  models <- c(models.int)
+  models <- c(models)
   
-  params.int$name <-  paste0("onearm.int.", params.int$name)
+  params$name <-  paste0("onearm.int.", params$name)
 
-  params <- dplyr::bind_rows(params.int)
+  params <- dplyr::bind_rows(params)
   
-  param_out <- cbind(param_out.int)  %>%
+  param_out <- cbind(param_out)  %>%
     as.data.frame() 
   
   #######################################################

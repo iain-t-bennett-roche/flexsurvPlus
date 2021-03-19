@@ -84,9 +84,24 @@ run_separate <- function(data,
   params.int <- get_params(models=models.int)
   params.ref <- get_params(models=models.ref)
   
+
+  # Filter on flexsurv models
+  flexsurvreg.test.int <- sapply(models.int, function(x) class(x)=="flexsurvreg")
+  models.flexsurv.int  <- models.int[flexsurvreg.test.int]
+  converged_models.int <- names(models.flexsurv.int)
+  
+  flexsurvreg.test.ref <- sapply(models.ref, function(x) class(x)=="flexsurvreg")
+  models.flexsurv.ref  <- models.ref[flexsurvreg.test.ref]
+  converged_models.ref <- names(models.flexsurv.ref)
+  
+  
   #Extract parameter estimates
-  param_out.int <- t(unlist(params.int$coef))
-  param_out.ref <- t(unlist(params.ref$coef))
+  coef.int <- lapply(models.flexsurv.int, coef)
+  param_out.int <- t(unlist(coef.int)) %>% as.data.frame()
+  
+  coef.ref <- lapply(models.flexsurv.ref, coef)
+  param_out.ref <- t(unlist(coef.ref)) %>% as.data.frame()
+  
   
   # If this is a separate model fitted to each treatment group, rename the parameter from the
   # exponential model to be consistent with output from Common shape models

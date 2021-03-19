@@ -127,10 +127,17 @@ run_independent_shape <- function(data,
   #get parameter estimates and model fit statistics
   params <- get_params(models=models)
   
-  #Extract parameter estimates
-  param_out <- t(unlist(params$coef)) %>% as.data.frame()
+  # Filter on flexsurv models
+  flexsurvreg.test <- sapply(models, function(x) class(x)=="flexsurvreg")
+  models.flexsurv  <- models[flexsurvreg.test]
+  converged_models <- names(models.flexsurv)
   
-  if('exp' %in% params$name){
+  
+  #Extract parameter estimates
+  coef <- lapply(models.flexsurv, coef)
+  param_out <- t(unlist(coef)) %>% as.data.frame()
+  
+  if('exp' %in% converged_models){
     param_out <- param_out %>%
       dplyr::mutate(
         exp.rate.int = exp.rate + exp.ARMInt,
@@ -141,7 +148,7 @@ run_independent_shape <- function(data,
     
   }
   
-  if('weibull' %in% params$name){
+  if('weibull' %in% converged_models){
     param_out <- param_out %>%
       dplyr::mutate(
         weibull.scale.int = weibull.scale + weibull.ARMInt,
@@ -154,7 +161,7 @@ run_independent_shape <- function(data,
     
   }
   
-  if('gompertz' %in% params$name){
+  if('gompertz' %in% converged_models){
     param_out <- param_out %>%
       dplyr::mutate(
         gompertz.rate.int = gompertz.rate + gompertz.ARMInt,
@@ -168,7 +175,7 @@ run_independent_shape <- function(data,
     
   }
   
-  if('llogis' %in% params$name){
+  if('llogis' %in% converged_models){
     param_out <- param_out %>%
       dplyr::mutate(
         llogis.scale.int = llogis.scale + llogis.ARMInt,
@@ -181,7 +188,7 @@ run_independent_shape <- function(data,
     
   }
   
-  if('gamma' %in% params$name){
+  if('gamma' %in% converged_models){
     param_out <- param_out %>%
       dplyr::mutate(
         gamma.rate.int = gamma.rate + gamma.ARMInt,
@@ -194,7 +201,7 @@ run_independent_shape <- function(data,
     
   }
   
-  if('lnorm' %in% params$name){
+  if('lnorm' %in% converged_models){
     param_out <- param_out %>%
       dplyr::mutate(
         lnorm.meanlog.int = lnorm.meanlog + lnorm.ARMInt,
@@ -207,7 +214,7 @@ run_independent_shape <- function(data,
     
   }
   
-  if('gengamma' %in% params$name){
+  if('gengamma' %in% converged_models){
     param_out <- param_out %>%
       dplyr::mutate(
         gengamma.mu.int = gengamma.mu + gengamma.ARMInt,
@@ -223,7 +230,7 @@ run_independent_shape <- function(data,
     
   }
   
-  if('genf' %in% params$name){
+  if('genf' %in% converged_models){
     param_out <- param_out %>%
       dplyr::mutate(
         genf.mu.int = genf.mu + genf.ARMInt,
@@ -246,7 +253,7 @@ run_independent_shape <- function(data,
   names(models.out) <- paste0("indshp.", names(models.out))
   
   params.out <- params
-  params.out$name <- paste0("indshp.", params.out$name)
+  params.out$Dist <- paste0("indshp.", params.out$Dist)
   
 
 

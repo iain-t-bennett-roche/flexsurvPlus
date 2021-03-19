@@ -80,10 +80,17 @@ run_common_shape <- function(data,
   #get parameter estimates and model fit statistics
   params <- get_params(models=models)
   
-  #Extract parameter estimates
-  param_out <- t(unlist(params$coef)) %>% as.data.frame()
+  # Filter on flexsurv models
+  flexsurvreg.test <- sapply(models, function(x) class(x)=="flexsurvreg")
+  models.flexsurv  <- models[flexsurvreg.test]
+  converged_models <- names(models.flexsurv)
   
-  if('exp' %in% params$name){
+  
+  #Extract parameter estimates
+  coef <- lapply(models.flexsurv, coef)
+  param_out <- t(unlist(coef)) %>% as.data.frame()
+  
+  if('exp' %in% converged_models){
     param_out <- param_out %>%
       dplyr::mutate(
         exp.rate.int = exp.rate + exp.ARMInt,
@@ -94,7 +101,7 @@ run_common_shape <- function(data,
     
   }
   
-  if('weibull' %in% params$name){
+  if('weibull' %in% converged_models){
     param_out <- param_out %>%
       dplyr::mutate(
         weibull.scale.int = weibull.scale + weibull.ARMInt,
@@ -106,7 +113,7 @@ run_common_shape <- function(data,
     
   }
   
-  if('gompertz' %in% params$name){
+  if('gompertz' %in% converged_models){
     param_out <- param_out %>%
       dplyr::mutate(
         gompertz.rate.int = gompertz.rate + gompertz.ARMInt,
@@ -119,7 +126,7 @@ run_common_shape <- function(data,
     
   }
   
-  if('llogis' %in% params$name){
+  if('llogis' %in% converged_models){
     param_out <- param_out %>%
       dplyr::mutate(
         llogis.scale.int = llogis.scale + llogis.ARMInt,
@@ -131,7 +138,7 @@ run_common_shape <- function(data,
     
   }
   
-  if('gamma' %in% params$name){
+  if('gamma' %in% converged_models){
     param_out <- param_out %>%
       dplyr::mutate(
         gamma.rate.int = gamma.rate + gamma.ARMInt,
@@ -143,7 +150,7 @@ run_common_shape <- function(data,
     
   }
   
-  if('lnorm' %in% params$name){
+  if('lnorm' %in% converged_models){
     param_out <- param_out %>%
       dplyr::mutate(
         lnorm.meanlog.int = lnorm.meanlog + lnorm.ARMInt,
@@ -155,7 +162,7 @@ run_common_shape <- function(data,
     
   }
   
-  if('gengamma' %in% params$name){
+  if('gengamma' %in% converged_models){
     param_out <- param_out %>%
       dplyr::mutate(
         gengamma.mu.int = gengamma.mu + gengamma.ARMInt,
@@ -169,7 +176,7 @@ run_common_shape <- function(data,
     
   }
   
-  if('genf' %in% params$name){
+  if('genf' %in% converged_models){
     param_out <- param_out %>%
       dplyr::mutate(
         genf.mu.int = genf.mu + genf.ARMInt,
@@ -190,7 +197,7 @@ run_common_shape <- function(data,
   names(models.out) <- paste0("comshp.", names(models.out))
   
   params.out <- params
-  params.out$name <- paste0("comshp.", params.out$name)
+  params.out$Dist <- paste0("comshp.", params.out$Dist)
   
   #######################################################
   # prepare parameter outputs
@@ -277,9 +284,15 @@ run_common_shape <- function(data,
   }
   
   params_all <- params_all %>%
-    select(-Model, -Intervention_name, -Reference_name)
-  
-  
+    select(exp.rate.int, exp.rate.ref, exp.rate.TE, 
+           weibull.scale.int, weibull.scale.ref, weibull.shape.int, weibull.shape.ref, weibull.scale.TE, 
+           gompertz.rate.int,  gompertz.rate.ref, gompertz.shape.int, gompertz.shape.ref, gompertz.rate.TE,
+           llogis.scale.int, llogis.scale.ref, llogis.shape.int, llogis.shape.ref, llogis.scale.TE,  
+           gamma.rate.int, gamma.rate.ref, gamma.shape.int, gamma.shape.ref, gamma.rate.TE, 
+           lnorm.meanlog.int, lnorm.meanlog.ref, lnorm.sdlog.int, lnorm.sdlog.ref, lnorm.meanlog.TE, 
+           gengamma.mu.int, gengamma.mu.ref, gengamma.sigma.int, gengamma.sigma.ref, gengamma.Q.int, gengamma.Q.ref, gengamma.mu.TE,
+           genf.mu.int, genf.mu.ref, genf.sigma.int, genf.sigma.ref, genf.Q.int, genf.Q.ref, genf.P.int, genf.P.ref, genf.mu.TE)
+
   # as a vector version with just numerics - needed for bootstrapping
   paramV <- as.numeric(params_all)
   names(paramV) <- paste0("comshp.", colnames(params_all))
