@@ -119,8 +119,8 @@ run_separate <- function(data,
   
   models <- c(models.int, models.ref)
   
-  params.int$name <-  paste0("sep.int.", params.int$name)
-  params.ref$name <-  paste0("ref.int.", params.ref$name)
+  params.int$Dist <-  paste0("sep.int.", params.int$Dist)
+  params.ref$Dist <-  paste0("ref.int.", params.ref$Dist)
   
   params <- dplyr::bind_rows(params.int, params.ref)
   
@@ -206,8 +206,20 @@ run_separate <- function(data,
     
   }
   
+  col_names <- c("exp.rate.int", "exp.rate.ref",  
+                               "weibull.scale.int", "weibull.scale.ref", "weibull.shape.int", "weibull.shape.ref", 
+                               "gompertz.rate.int",  "gompertz.rate.ref", "gompertz.shape.int", "gompertz.shape.ref",
+                               "llogis.scale.int", "llogis.scale.ref", "llogis.shape.int", "llogis.shape.ref", 
+                               "gamma.rate.int", "gamma.rate.ref", "gamma.shape.int", "gamma.shape.ref",
+                               "lnorm.meanlog.int", "lnorm.meanlog.ref", "lnorm.sdlog.int", "lnorm.sdlog.ref",  
+                               "gengamma.mu.int", "gengamma.mu.ref", "gengamma.sigma.int", "gengamma.sigma.ref", "gengamma.Q.int", "gengamma.Q.ref",
+                               "genf.mu.int", "genf.mu.ref", "genf.sigma.int", "genf.sigma.ref", "genf.Q.int", "genf.Q.ref", "genf.P.int", "genf.P.ref")
+
+  col_names_final <- col_names[col_names %in%  names(params_all) ]
+
   params_all <- params_all %>%
-    select(-Model, -Intervention_name, -Reference_name)
+    select(col_names_final)
+  
   
   # as a vector version with just numerics - needed for bootstrapping
   paramV <- as.numeric(params_all)

@@ -94,7 +94,7 @@ run_one_arm <- function(data,
 
   models <- c(models)
   
-  params$name <-  paste0("onearm.int.", params$name)
+  params$Dist <-  paste0("onearm.int.", params$Dist)
 
   params <- dplyr::bind_rows(params)
   
@@ -164,8 +164,19 @@ run_one_arm <- function(data,
 
   }
   
+  col_names <- c("exp.rate.int",  
+                 "weibull.scale.int", "weibull.shape.int",
+                 "gompertz.rate.int", "gompertz.shape.int",
+                 "llogis.scale.int", "llogis.shape.int",
+                 "gamma.rate.int",  "gamma.shape.int",
+                 "lnorm.meanlog.int", "lnorm.sdlog.int",
+                 "gengamma.mu.int", "gengamma.sigma.int", "gengamma.Q.int",
+                 "genf.mu.int",  "genf.sigma.int", "genf.Q.int", "genf.P.int")
+  
+  col_names_final <- col_names[col_names %in%  names(params_all) ]
+  
   params_all <- params_all %>%
-    select(-Model, -Intervention_name)
+    select(col_names_final)
   
   # as a vector version with just numerics - needed for bootstrapping
   paramV <- as.numeric(params_all)

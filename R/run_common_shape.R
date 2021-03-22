@@ -283,16 +283,23 @@ run_common_shape <- function(data,
 
   }
   
-  params_all <- params_all %>%
-    select(exp.rate.int, exp.rate.ref, exp.rate.TE, 
-           weibull.scale.int, weibull.scale.ref, weibull.shape.int, weibull.shape.ref, weibull.scale.TE, 
-           gompertz.rate.int,  gompertz.rate.ref, gompertz.shape.int, gompertz.shape.ref, gompertz.rate.TE,
-           llogis.scale.int, llogis.scale.ref, llogis.shape.int, llogis.shape.ref, llogis.scale.TE,  
-           gamma.rate.int, gamma.rate.ref, gamma.shape.int, gamma.shape.ref, gamma.rate.TE, 
-           lnorm.meanlog.int, lnorm.meanlog.ref, lnorm.sdlog.int, lnorm.sdlog.ref, lnorm.meanlog.TE, 
-           gengamma.mu.int, gengamma.mu.ref, gengamma.sigma.int, gengamma.sigma.ref, gengamma.Q.int, gengamma.Q.ref, gengamma.mu.TE,
-           genf.mu.int, genf.mu.ref, genf.sigma.int, genf.sigma.ref, genf.Q.int, genf.Q.ref, genf.P.int, genf.P.ref, genf.mu.TE)
 
+  
+  col_names <- c("exp.rate.int", "exp.rate.ref", "exp.rate.TE", 
+                 "weibull.scale.int", "weibull.scale.ref", "weibull.shape.int", "weibull.shape.ref", "weibull.scale.TE", 
+                 "gompertz.rate.int",  "gompertz.rate.ref", "gompertz.shape.int", "gompertz.shape.ref", "gompertz.rate.TE",
+                 "llogis.scale.int", "llogis.scale.ref", "llogis.shape.int", "llogis.shape.ref", "llogis.scale.TE",  
+                 "gamma.rate.int", "gamma.rate.ref", "gamma.shape.int", "gamma.shape.ref", "gamma.rate.TE", 
+                 "lnorm.meanlog.int", "lnorm.meanlog.ref", "lnorm.sdlog.int", "lnorm.sdlog.ref", "lnorm.meanlog.TE", 
+                 "gengamma.mu.int", "gengamma.mu.ref", "gengamma.sigma.int", "gengamma.sigma.ref", "gengamma.Q.int", "gengamma.Q.ref", "gengamma.mu.TE",
+                 "genf.mu.int", "genf.mu.ref", "genf.sigma.int", "genf.sigma.ref", "genf.Q.int", "genf.Q.ref", "genf.P.int", "genf.P.ref", "genf.mu.TE")
+  
+  
+  col_names_final <- col_names[col_names %in%  names(params_all) ]
+  
+  params_all <- params_all %>%
+    select(col_names_final)
+  
   # as a vector version with just numerics - needed for bootstrapping
   paramV <- as.numeric(params_all)
   names(paramV) <- paste0("comshp.", colnames(params_all))

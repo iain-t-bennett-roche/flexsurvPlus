@@ -53,18 +53,18 @@
 #'
 #' @export
 run_independent_shape <- function(data,
-                   time_var, event_var,
-                   distr = c('exp',
-                             'weibull',
-                             'gompertz',
-                             'lnorm',
-                             'llogis',
-                             'gengamma',
-                             'gamma', 
-                             'genf'),
-                   strata_var,
-                   int_name, ref_name){
-
+                                  time_var, event_var,
+                                  distr = c('exp',
+                                            'weibull',
+                                            'gompertz',
+                                            'lnorm',
+                                            'llogis',
+                                            'gengamma',
+                                            'gamma', 
+                                            'genf'),
+                                  strata_var,
+                                  int_name, ref_name){
+  
   #test that only valid distributions have been provided
   #This is also tested within fit_models. Consider eliminating here to avoid redundancy
   allowed_dist <- c('exp', 'weibull', 'gompertz', 'lnorm', 'llogis', 'gengamma', 'gamma', 'genf')
@@ -72,10 +72,10 @@ run_independent_shape <- function(data,
     all(distr %in% allowed_dist),
     msg = "Only the following distributions are supported: 'exp', weibull', 'gompertz', 'lnorm', 'llogis', 'gengamma', 'gamma', 'genf' "
   )
-
+  
   # standardise variable names
   data_standard=Format_data(data, time_var, event_var, strata_var, int_name, ref_name)
-
+  
   # Model formulas
   model.formula.int = Surv(Time, Event==1) ~ ARM
   model.formula.shape = Surv(Time, Event==1) ~ ARM + shape(ARM)
@@ -91,283 +91,232 @@ run_independent_shape <- function(data,
   
   if('exp' %in% distr){
     models.exp <- fit_models(model.formula=model.formula.int, distr = "exp", data=data_standard)
-  }
-  
-  if('weibull' %in% distr){
-    models.weib <- fit_models(model.formula=model.formula.shape, distr = "weibull", data=data_standard)
-  }
-  
-  if('gompertz' %in% distr){
-    models.gomp <- fit_models(model.formula=model.formula.shape, distr = "gompertz", data=data_standard)
-  }
-  
-  if('llogis' %in% distr){
-    models.llogis <- fit_models(model.formula=model.formula.shape, distr = "llogis", data=data_standard)
-  }
-  
-  if('gamma' %in% distr){
-    models.gamma <- fit_models(model.formula=model.formula.shape, distr = "gamma", data=data_standard)
-  }
-  
-  if('lnorm' %in% distr){
-    models.lnorm <- fit_models(model.formula=model.formula.sdlog, distr = "lnorm", data=data_standard)
-  }
-  
-  if('gengamma' %in% distr){
-    models.gengamma <- fit_models(model.formula=model.formula.sigma_Q, distr = "gengamma", data=data_standard)
-  }
-    
-  if('genf' %in% distr){
-    models.genf <- fit_models(model.formula=model.formula.sigma_Q_P, distr = "genf", data=data_standard)
-  }
-  
-  #Combine models
-  models <- c(models.exp, models.weib, models.gomp, models.llogis, models.gamma, models.lnorm, models.gengamma, models.genf)  
-  
-  #get parameter estimates and model fit statistics
-  params <- get_params(models=models)
-  
-  # Filter on flexsurv models
-  flexsurvreg.test <- sapply(models, function(x) class(x)=="flexsurvreg")
-  models.flexsurv  <- models[flexsurvreg.test]
-  converged_models <- names(models.flexsurv)
-  
-  
-  #Extract parameter estimates
-  coef <- lapply(models.flexsurv, coef)
-  param_out <- t(unlist(coef)) %>% as.data.frame()
-  
-  if('exp' %in% converged_models){
-    param_out <- param_out %>%
+    params.exp <- get_params(models=models.exp)
+    params.exp$Dist <- "indshp.exp"
+    params <- dplyr::bind_rows(params, params.exp)
+    if(class(models.exp$exp)=="flexsurvreg"){
+      coef.exp <- lapply(models.exp, coef)
+      param_out.exp <- t(unlist(coef.exp)) %>% as.data.frame() %>%
       dplyr::mutate(
         exp.rate.int = exp.rate + exp.ARMInt,
         exp.rate.ref = exp.rate,
         exp.rate.TE = exp.ARMInt) %>%
       dplyr::select(-exp.rate, -exp.ARMInt)
     
-    
+    # append this model to output 
+    models$indshp.exp <- models.exp$exp
+    params_out <- dplyr::bind_cols(params_out, param_out.exp)
+    }
   }
   
-  if('weibull' %in% converged_models){
-    param_out <- param_out %>%
-      dplyr::mutate(
+  if('weibull' %in% distr){
+    models.weib <- fit_models(model.formula=model.formula.shape, distr = "weibull", data=data_standard)
+    params.weib <- get_params(models=models.weib)
+    params.weib$Dist <- "indshp.weibull"
+    params <- dplyr::bind_rows(params, params.weib)
+    if(class(models.weib$weibull)=="flexsurvreg"){
+      coef.weib <- lapply(models.weib, coef)
+      param_out.weib <- t(unlist(coef.weib)) %>% as.data.frame() %>%
+        dplyr::mutate(
         weibull.scale.int = weibull.scale + weibull.ARMInt,
         weibull.scale.ref = weibull.scale,
-        weibull.shape.int = weibull.shape,
+        weibull.shape.int = weibull.shape + `weibull.shape(ARMInt)`,
         weibull.shape.ref = weibull.shape,
         weibull.scale.TE = weibull.ARMInt,
         weibull.shape.TE = `weibull.shape(ARMInt)`) %>%
       select(-weibull.scale, -weibull.shape, -weibull.ARMInt, -`weibull.shape(ARMInt)`)
     
+    # append this model to output 
+    models$indshp.weibull <- models.weib$weibull
+    params_out <- dplyr::bind_cols(params_out, param_out.weib)
+    }
   }
   
-  if('gompertz' %in% converged_models){
-    param_out <- param_out %>%
-      dplyr::mutate(
+  if('gompertz' %in% distr){
+    models.gomp <- fit_models(model.formula=model.formula.shape, distr = "gompertz", data=data_standard)
+    params.gomp <- get_params(models=models.gomp)
+    params.gomp$Dist <- "indshp.gompertz"
+    params <- dplyr::bind_rows(params, params.gomp)
+    if(class(models.gomp$gompertz)=="flexsurvreg"){
+      coef.gomp <- lapply(models.gomp, coef)
+      param_out.gomp <- t(unlist(coef.gomp)) %>% as.data.frame() %>%
+        dplyr::mutate(
         gompertz.rate.int = gompertz.rate + gompertz.ARMInt,
         gompertz.rate.ref = gompertz.rate,
-        gompertz.shape.int = gompertz.shape,
+        gompertz.shape.int = gompertz.shape + `gompertz.shape(ARMInt)`,
         gompertz.shape.ref = gompertz.shape,
         gompertz.rate.TE = gompertz.ARMInt,
         gompertz.shape.TE = `gompertz.shape(ARMInt)`) %>%
-      select(-gompertz.rate, -gompertz.shape, -gompertz.ARMInt, -`gompertz.shape(ARMInt)`)
+      select(-gompertz.rate, -gompertz.shape, -gompertz.ARMInt,-`gompertz.shape(ARMInt)`)
     
-    
+    # append this model to output 
+    models$indshp.gompertz <- models.gomp$gompertz
+    params_out <- dplyr::bind_cols(params_out, param_out.gomp)
   }
-  
-  if('llogis' %in% converged_models){
-    param_out <- param_out %>%
-      dplyr::mutate(
+  }
+  if('llogis' %in% distr){
+    models.llogis <- fit_models(model.formula=model.formula.shape, distr = "llogis", data=data_standard)
+    params.llogis <- get_params(models=models.llogis)
+    params.llogis$Dist <- "indshp.llogis"
+    params <- dplyr::bind_rows(params, params.llogis)
+    if(class(models.llogis$llogis)=="flexsurvreg"){
+      coef.llogis <- lapply(models.llogis, coef)
+      param_out.llogis <- t(unlist(coef.llogis)) %>% as.data.frame() %>%
+        dplyr::mutate(
         llogis.scale.int = llogis.scale + llogis.ARMInt,
         llogis.scale.ref = llogis.scale,
-        llogis.shape.int = llogis.shape,
+        llogis.shape.int = llogis.shape + `llogis.shape(ARMInt)`,
         llogis.shape.ref = llogis.shape,
         llogis.scale.TE = llogis.ARMInt,
         llogis.shape.TE = `llogis.shape(ARMInt)`) %>%
       select(-llogis.scale, -llogis.shape, -llogis.ARMInt, -`llogis.shape(ARMInt)`)
     
+    # append this model to output 
+    models$indshp.llogis <- models.llogis$llogis
+    params_out <- dplyr::bind_cols(params_out, param_out.llogis)
+    }
   }
   
-  if('gamma' %in% converged_models){
-    param_out <- param_out %>%
-      dplyr::mutate(
+  if('gamma' %in% distr){
+    models.gamma <- fit_models(model.formula=model.formula.shape, distr = "gamma", data=data_standard)
+    params.gamma <- get_params(models=models.gamma)
+    params.gamma$Dist <- "indshp.gamma"
+    params <- dplyr::bind_rows(params, params.gamma)
+    if(class(models.gamma$gamma)=="flexsurvreg"){
+      coef.gamma <- lapply(models.gamma, coef)
+      param_out.gamma <- t(unlist(coef.gamma)) %>% as.data.frame() %>%
+        dplyr::mutate(
         gamma.rate.int = gamma.rate + gamma.ARMInt,
         gamma.rate.ref = gamma.rate,
-        gamma.shape.int = gamma.shape,
+        gamma.shape.int = gamma.shape + `gamma.shape(ARMInt)`,
         gamma.shape.ref = gamma.shape,
         gamma.rate.TE = gamma.ARMInt,
         gamma.shape.TE = `gamma.shape(ARMInt)`) %>%
       select(-gamma.rate, -gamma.shape, -gamma.ARMInt, -`gamma.shape(ARMInt)`)
     
+    # append this model to output 
+    models$indshp.gamma <- models.gamma$gamma
+    params_out <- dplyr::bind_cols(params_out, param_out.gamma)
+    }
   }
   
-  if('lnorm' %in% converged_models){
-    param_out <- param_out %>%
-      dplyr::mutate(
+  if('lnorm' %in% distr){
+    models.lnorm <- fit_models(model.formula=model.formula.sdlog, distr = "lnorm", data=data_standard)
+    params.lnorm <- get_params(models=models.lnorm)
+    params.lnorm$Dist <- "indshp.lnorm"
+    params <- dplyr::bind_rows(params, params.lnorm)
+    if(class(models.lnorm$lnorm)=="flexsurvreg"){
+      coef.lnorm <- lapply(models.lnorm, coef)
+      param_out.lnorm <- t(unlist(coef.lnorm)) %>% as.data.frame() %>%
+        dplyr::mutate(
         lnorm.meanlog.int = lnorm.meanlog + lnorm.ARMInt,
         lnorm.meanlog.ref = lnorm.meanlog,
-        lnorm.sdlog.int = lnorm.sdlog,
+        lnorm.sdlog.int = lnorm.sdlog + `lnorm.sdlog(ARMInt)`,
         lnorm.sdlog.ref = lnorm.sdlog,
         lnorm.meanlog.TE = lnorm.ARMInt,
         lnorm.sdlog.TE = `lnorm.sdlog(ARMInt)`) %>%
       select(-lnorm.meanlog, -lnorm.sdlog, -lnorm.ARMInt, -`lnorm.sdlog(ARMInt)`)
     
+    # append this model to output 
+    models$indshp.lnorm <- models.lnorm$lnorm
+    params_out <- dplyr::bind_cols(params_out, param_out.lnorm)
+    }
   }
   
-  if('gengamma' %in% converged_models){
-    param_out <- param_out %>%
-      dplyr::mutate(
+  if('gengamma' %in% distr){
+    models.gengamma <- fit_models(model.formula=model.formula.sigma_Q, distr = "gengamma", data=data_standard)
+    params.gengamma <- get_params(models=models.gengamma)
+    params.gengamma$Dist <- "indshp.gengamma"
+    params <- dplyr::bind_rows(params, params.gengamma)
+if(class(models.gengamma$gengamma)=="flexsurvreg"){
+      coef.gengamma <- lapply(models.gengamma, coef)
+      param_out.gengamma <- t(unlist(coef.gengamma)) %>% as.data.frame() %>%
+        dplyr::mutate(
         gengamma.mu.int = gengamma.mu + gengamma.ARMInt,
         gengamma.mu.ref = gengamma.mu,
-        gengamma.sigma.int = gengamma.sigma,
+        gengamma.sigma.int = gengamma.sigma + `gengamma.sigma(ARMInt)`,
         gengamma.sigma.ref = gengamma.sigma,
-        gengamma.Q.int = gengamma.Q,
+        gengamma.Q.int = gengamma.Q + `gengamma.Q(ARMInt)`,
         gengamma.Q.ref = gengamma.Q,
         gengamma.mu.TE = gengamma.ARMInt,
         gengamma.sigma.TE = `gengamma.sigma(ARMInt)`,
         gengamma.Q.TE = `gengamma.Q(ARMInt)`) %>%
       select(-gengamma.mu, -gengamma.sigma, -gengamma.Q, -gengamma.ARMInt, -`gengamma.sigma(ARMInt)`, -`gengamma.Q(ARMInt)`)
     
+    # append this model to output 
+    models$indshp.gengamma <- models.gengamma$gengamma
+    params_out <- dplyr::bind_cols(params_out, param_out.gengamma)
   }
-  
-  if('genf' %in% converged_models){
-    param_out <- param_out %>%
-      dplyr::mutate(
+  }
+    
+  if('genf' %in% distr){
+    models.genf <- fit_models(model.formula=model.formula.sigma_Q_P, distr = "genf", data=data_standard)
+    params.genf <- get_params(models=models.genf)
+    params.genf$Dist <- "indshp.genf"
+    params <- dplyr::bind_rows(params, params.genf)
+  if(class(models.genf$genf)=="flexsurvreg"){
+      coef.genf <- lapply(models.genf, coef)
+      param_out.genf <- t(unlist(coef.genf)) %>% as.data.frame() %>%
+        dplyr::mutate(
         genf.mu.int = genf.mu + genf.ARMInt,
         genf.mu.ref = genf.mu,
-        genf.sigma.int = genf.sigma,
+        genf.sigma.int = genf.sigma + `genf.sigma(ARMInt)`,
         genf.sigma.ref = genf.sigma,
-        genf.Q.int = genf.Q,
+        genf.Q.int = genf.Q + `genf.Q(ARMInt)`,
         genf.Q.ref = genf.Q,
-        genf.P.int = genf.P,
+        genf.P.int = genf.P + `genf.P(ARMInt)`,
         genf.P.ref = genf.P,
         genf.mu.TE = genf.ARMInt,
         genf.sigma.TE = `genf.sigma(ARMInt)`,
         genf.Q.TE = `genf.Q(ARMInt)`,
         genf.P.TE = `genf.P(ARMInt)`) %>%
       select(-genf.mu, -genf.sigma, -genf.Q, -genf.P, -genf.ARMInt, -`genf.sigma(ARMInt)`, -`genf.Q(ARMInt)`, -`genf.P(ARMInt)`)
+    
+    # append this model to output 
+    models$indshp.genf <- models.genf$genf
+    params_out <- dplyr::bind_cols(params_out, param_out.genf)
   }
-  
-  # rename models so can bind with others without conflicts
-  models.out <- models
-  names(models.out) <- paste0("indshp.", names(models.out))
-  
-  params.out <- params
-  params.out$Dist <- paste0("indshp.", params.out$Dist)
-  
-
-
+  }
   #######################################################
   # prepare parameter outputs
   # this function exponentiates values that coef returns on the log scale
   # e.g. weibull shape and scale
   # this further simplifies other function use
-  param_final <- post_process_param_out(param_out)
+  param_final <- post_process_param_out(params_out)
   
   # as a data frame with metadata 
   param_df <- param_final %>%
     dplyr::mutate(Model="Independent shape", Intervention_name=int_name, Reference_name=ref_name)
   
-  params_all <- param_df 
+  col_names <- c("exp.rate.int", "exp.rate.ref", "exp.rate.TE", 
+                 "weibull.scale.int", "weibull.scale.ref", "weibull.shape.int", "weibull.shape.ref", "weibull.scale.TE", "weibull.shape.TE",
+                 "gompertz.rate.int",  "gompertz.rate.ref", "gompertz.shape.int", "gompertz.shape.ref", "gompertz.rate.TE", "gompertz.shape.TE",
+                 "llogis.scale.int", "llogis.scale.ref", "llogis.shape.int", "llogis.shape.ref", "llogis.scale.TE", "llogis.shape.TE",
+                 "gamma.rate.int", "gamma.rate.ref", "gamma.shape.int", "gamma.shape.ref", "gamma.rate.TE", "gamma.shape.TE",
+                 "lnorm.meanlog.int", "lnorm.meanlog.ref", "lnorm.sdlog.int", "lnorm.sdlog.ref", "lnorm.meanlog.TE", "lnorm.sdlog.TE", 
+                 "gengamma.mu.int", "gengamma.mu.ref", "gengamma.sigma.int", "gengamma.sigma.ref", "gengamma.Q.int", "gengamma.Q.ref", "gengamma.mu.TE","gengamma.sigma.TE", "indshp.gengamma.Q.TE", 
+                 "genf.mu.int", "genf.mu.ref", "genf.sigma.int", "genf.sigma.ref", "genf.Q.int", "genf.Q.ref", "genf.P.int", "genf.P.ref", "genf.mu.TE", "genf.sigma.TE", "genf.Q.TE" , "genf.P.TE")
   
-  if('exp' %in% distr){
-    params_all$exp.rate.int <- ifelse("exp.rate.int" %in% names(params_all), params_all$exp.rate.int, NA) 
-    params_all$exp.rate.ref <- ifelse("exp.rate.ref" %in% names(params_all), params_all$exp.rate.ref, NA) 
-    params_all$exp.rate.TE <- ifelse("exp.rate.TE" %in% names(params_all), params_all$exp.rate.TE, NA) 
-  }
   
-  if('weibull' %in% distr){
-    params_all$weibull.shape.int <- ifelse("weibull.shape.int" %in% names(params_all), params_all$weibull.shape.int, NA) 
-    params_all$weibull.scale.int <- ifelse("weibull.scale.int" %in% names(params_all), params_all$weibull.scale.int, NA) 
-    params_all$weibull.shape.ref <- ifelse("weibull.shape.ref" %in% names(params_all), params_all$weibull.shape.ref, NA) 
-    params_all$weibull.scale.ref <- ifelse("weibull.scale.ref" %in% names(params_all), params_all$weibull.scale.ref, NA) 
-    params_all$weibull.scale.TE <- ifelse("weibull.scale.TE" %in% names(params_all), params_all$weibull.scale.TE, NA) 
-    params_all$weibull.shape.TE <- ifelse("weibull.shape.TE" %in% names(params_all), params_all$weibull.shape.TE, NA) 
-  }
+  col_names_final <- col_names[col_names %in%  names(param_final) ]
   
-  if('gompertz' %in% distr){
-    params_all$gompertz.shape.int <- ifelse("gompertz.shape.int" %in% names(params_all), params_all$gompertz.shape.int, NA) 
-    params_all$gompertz.rate.int <- ifelse("gompertz.rate.int" %in% names(params_all), params_all$gompertz.rate.int, NA) 
-    params_all$gompertz.shape.ref <- ifelse("gompertz.shape.ref" %in% names(params_all), params_all$gompertz.shape.ref, NA) 
-    params_all$gompertz.rate.ref <- ifelse("gompertz.rate.ref" %in% names(params_all), params_all$gompertz.rate.ref, NA) 
-    params_all$gompertz.rate.TE <- ifelse("gompertz.rate.TE" %in% names(params_all), params_all$gompertz.rate.TE, NA) 
-    params_all$gompertz.shape.TE <- ifelse("gompertz.shape.TE" %in% names(params_all), params_all$gompertz.shape.TE, NA) 
-    
-  }
-  
-  if('llogis' %in% distr){
-    params_all$llogis.shape.int <- ifelse("llogis.shape.int" %in% names(params_all), params_all$llogis.shape.int, NA) 
-    params_all$llogis.scale.int <- ifelse("llogis.scale.int" %in% names(params_all), params_all$llogis.scale.int, NA) 
-    params_all$llogis.shape.ref <- ifelse("llogis.shape.ref" %in% names(params_all), params_all$llogis.shape.ref, NA) 
-    params_all$llogis.scale.ref <- ifelse("llogis.scale.ref" %in% names(params_all), params_all$llogis.scale.ref, NA) 
-    params_all$llogis.scale.TE <- ifelse("llogis.scale.TE" %in% names(params_all), params_all$llogis.scale.TE, NA) 
-    params_all$llogis.shape.TE <- ifelse("llogis.shape.TE" %in% names(params_all), params_all$llogis.shape.TE, NA) 
-  }
-  
-  if('gamma' %in% distr){
-    params_all$gamma.shape.int <- ifelse("gamma.shape.int" %in% names(params_all), params_all$gamma.shape.int, NA) 
-    params_all$gamma.rate.int <- ifelse("gamma.rate.int" %in% names(params_all), params_all$gamma.rate.int, NA) 
-    params_all$gamma.shape.ref <- ifelse("gamma.shape.ref" %in% names(params_all), params_all$gamma.shape.ref, NA) 
-    params_all$gamma.rate.ref <- ifelse("gamma.rate.ref" %in% names(params_all), params_all$gamma.rate.ref, NA) 
-    params_all$gamma.rate.TE <- ifelse("gamma.rate.TE" %in% names(params_all), params_all$gamma.rate.TE, NA) 
-    params_all$gamma.shape.TE <- ifelse("gamma.shape.TE" %in% names(params_all), params_all$gamma.shape.TE, NA) 
-  }
-  
-  if('lnorm' %in% distr){
-    params_all$lnorm.meanlog.int <- ifelse("lnorm.meanlog.int" %in% names(params_all), params_all$lnorm.meanlog.int, NA) 
-    params_all$lnorm.sdlog.int <- ifelse("lnorm.sdlog.int" %in% names(params_all), params_all$lnorm.sdlog.int, NA) 
-    params_all$lnorm.meanlog.ref <- ifelse("lnorm.meanlog.ref" %in% names(params_all), params_all$lnorm.meanlog.ref, NA) 
-    params_all$lnorm.sdlog.ref <- ifelse("lnorm.sdlog.ref" %in% names(params_all), params_all$lnorm.sdlog.ref, NA) 
-    params_all$lnorm.meanlog.TE <- ifelse("lnorm.meanlog.TE" %in% names(params_all), params_all$lnorm.meanlog.TE, NA) 
-    params_all$lnorm.sdlog.TE <- ifelse("lnorm.sdlog.TE" %in% names(params_all), params_all$lnorm.sdlog.TE, NA) 
-    
-  }
-  
-  if('gengamma' %in% distr){
-    params_all$gengamma.mu.int <- ifelse("gengamma.mu.int" %in% names(params_all), params_all$gengamma.mu.int, NA) 
-    params_all$gengamma.sigma.int <- ifelse("gengamma.sigma.int" %in% names(params_all), params_all$gengamma.sigma.int, NA) 
-    params_all$gengamma.Q.int <- ifelse("gengamma.Q.int" %in% names(params_all), params_all$gengamma.Q.int, NA) 
-    params_all$gengamma.mu.ref <- ifelse("gengamma.mu.ref" %in% names(params_all), params_all$gengamma.mu.ref, NA) 
-    params_all$gengamma.sigma.ref <- ifelse("gengamma.sigma.ref" %in% names(params_all), params_all$gengamma.sigma.ref, NA) 
-    params_all$gengamma.Q.ref <- ifelse("gengamma.Q.ref" %in% names(params_all), params_all$gengamma.Q.ref, NA) 
-    params_all$gengamma.mu.TE <- ifelse("gengamma.mu.TE" %in% names(params_all), params_all$gengamma.mu.TE, NA) 
-    params_all$gengamma.sigma.TE <- ifelse("gengamma.sigma.TE" %in% names(params_all), params_all$gengamma.sigma.TE, NA) 
-    params_all$gengamma.Q.TE <- ifelse("gengamma.Q.TE" %in% names(params_all), params_all$gengamma.Q.TE, NA) 
-  }
-  
-  if('genf' %in% distr){
-    params_all$genf.mu.int <- ifelse("genf.mu.int" %in% names(params_all), params_all$genf.mu.int, as.numeric(NA)) 
-    params_all$genf.sigma.int <- ifelse("genf.sigma.int" %in% names(params_all), params_all$genf.sigma.int, as.numeric(NA)) 
-    params_all$genf.Q.int <- ifelse("genf.Q.int" %in% names(params_all), params_all$genf.Q.int, as.numeric(NA)) 
-    params_all$genf.P.int <- ifelse("genf.P.int" %in% names(params_all), params_all$genf.P.int, as.numeric(NA)) 
-    params_all$genf.mu.ref <- ifelse("genf.mu.ref" %in% names(params_all), params_all$genf.mu.ref, as.numeric(NA)) 
-    params_all$genf.sigma.ref <- ifelse("genf.sigma.ref" %in% names(params_all), params_all$genf.sigma.ref, as.numeric(NA)) 
-    params_all$genf.Q.ref <- ifelse("genf.Q.ref" %in% names(params_all), params_all$genf.Q.ref, as.numeric(NA)) 
-    params_all$genf.P.ref <- ifelse("genf.P.ref" %in% names(params_all), params_all$genf.P.ref, as.numeric(NA)) 
-    params_all$genf.mu.TE <- ifelse("genf.mu.TE" %in% names(params_all), params_all$genf.mu.TE, as.numeric(NA)) 
-    params_all$genf.sigma.TE <- ifelse("genf.sigma.TE" %in% names(params_all), params_all$genf.sigma.TE, as.numeric(NA)) 
-    params_all$genf.Q.TE <- ifelse("genf.Q.TE" %in% names(params_all), params_all$genf.Q.TE, as.numeric(NA)) 
-    params_all$genf.P.TE <- ifelse("genf.P.TE" %in% names(params_all), params_all$genf.P.TE, as.numeric(NA)) 
-    
-  }
-  
-  params_all <- params_all %>%
-    select(-Model, -Intervention_name, -Reference_name)
-  
+  param_final <- param_final %>%
+    select(col_names_final)
   
   # as a vector version with just numerics - needed for bootstrapping
-  paramV <- as.numeric(params_all)
-  names(paramV) <- paste0("indshp.", colnames(params_all))
+  paramV <- as.numeric(param_final)
+  names(paramV) <- paste0("indshp.", colnames(param_final))
   
   #######################################################
   
-  #collect and return output
+  
+  # prepare parameter outputs
+  
   output <- list(
-    models = models.out,
-    model_summary = params.out,
+    models = models,
+    model_summary = params,
     parameters = param_df,
     parameters_vector = paramV
   )
   return(output)
-  
 }
