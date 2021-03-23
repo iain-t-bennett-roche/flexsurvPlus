@@ -10,35 +10,36 @@ vignette: >
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
-
+  
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
   fig.width = 7,
-  fig.height = 6
+  fig.height = 6,
+  message = FALSE
 )
 ```
 
 <style type="text/css">
-
-body{ /* Normal  */
+  
+  body{ /* Normal  */
       font-size: 14px;
   }
 td {  /* Table  */
-  font-size: 10px;
+    font-size: 10px;
 }
 h1.title {
   font-size: 38px;
 }
 h1 { /* Header 1 */
-  font-size: 28px;
-  }
+    font-size: 28px;
+}
 h2 { /* Header 2 */
     font-size: 22px;
 }
 h3 { /* Header 3 */
-  font-size: 18px;
+    font-size: 18px;
 }
 code.r{ /* Code block */
     font-size: 12px;
@@ -47,7 +48,7 @@ pre { /* Code block - determines code spacing between lines */
     font-size: 14px;
 }
 </style>
-
+  
 # Introduction
 Parametric survival models are often the preferred method of extrapolating
 survival data for use in economic models. The National Institute for Health and
@@ -60,27 +61,30 @@ this package.[@rutherford2020nice] The Canadian Agency for Drugs and
 Technologies in Health (CADTH) additionally specifies that the Gamma
 distribution must also be considered. This document therefore details the
 characteristics of each of these distributions and demonstrates how the
-parameters from each distribution, outputted using the flexsurvPlus package, can be
-implemented within an economic model.[@cadth2020]
-The Generalized F distribution is not commonly used, however it has been included in 
-this package in case it is required.
+parameters from each distribution, outputted using the flexsurvPlus package, can
+be implemented within an economic model.[@cadth2020] The Generalized F
+distribution is not commonly used, however it has been included in this package
+in case it is required.
 
-The flexsurvPlus package allows the inclusion of a treatment effect in the following
-three ways:
-
-* Separate models - Models fitted to each treatment arm separately
+The flexsurvPlus package allows the inclusion of a treatment effect in the
+following three ways:
   
+  * Separate models - Models fitted to each treatment arm separately
+
 *  Independent shape models - Models fitted to both/all treatment arms including
 a treatment covariate to model the effect of treatment on both the scale and
 shape parameter(s) of the distribution.
-    
+
 *  Common shape models - Models fitted to both/all treatment arms including a
 treatment covariate to model the effect of treatment on the scale parameter of
 the distribution. The shape parameter(s) of the distribution is common across
 treatments which reflects an assumption of proportional hazards or accelerated
 failure time between treatments depending on the distribution
-    
-This document details how to use the <tt>flexsurvPlus</tt> package to perform these models. A separate vignette; "Parametric survival analysis using the flexsurvPlus package: understanding the theory" details the theory behind the models.
+
+This document details how to use the <tt>flexsurvPlus</tt> package to perform
+these models. A separate vignette; "Parametric survival analysis using the
+flexsurvPlus package: understanding the theory" details the theory behind the
+models.
 
 
 # Set up packages and data
@@ -88,8 +92,9 @@ This document details how to use the <tt>flexsurvPlus</tt> package to perform th
 ## Install packages
 
 The following packages are required to run this example:
-
+  
 ```{r setup}
+# Libraries
 library(flexsurvPlus)
 library(tibble)
 library(dplyr)
@@ -98,43 +103,36 @@ library(survminer)
 library(tidyr)
 library(boot)
 
+# Non-scientific notation
+options(scipen=999) 
 
+# Colours for plots
 blue = rgb(69, 185, 209, max=255)
-red = rgb(225, 55, 60, max=255)
-yellow = rgb(238, 224, 30, max=255)
 pink = rgb(211,78,147,max=255)
-Dblue = rgb(0,45,92,max=255)
 Dyellow = rgb(214, 200, 16, max=255)
-green = rgb(0,1,0)
-Dyellow = rgb(214, 200, 16, max=255)
-black<-rgb(0,0,0,max=255)
-grey1<-rgb(0,0,0,max=30)
-grey2<-rgb(10,10,10,max=30)
-grey3<-rgb(20,20,20,max=30)
-grey3_dup<-rgb(19,20,20,max=30)
-lightPink<-rgb(229,151,192,max=255)
 orange<-rgb(247,139,21,max=255)
 
 ```
 
 ## Read in the data
 
-To perform survival analyses, patient level data is required for the survival endpoints. 
+To perform survival analyses, patient level data is required for the survival
+endpoints.
 
-This example uses a standard simulated data set
-(adtte). There is no standard naming that is
-needed for this package however, there are some set variables that are needed:
-
+This example uses a standard simulated data set (adtte). There is no standard
+naming that is needed for this package however, there are some set variables
+that are needed:
+  
 * Time - a numeric variable
 * Event - a binary variable (event=1, censor=0)
 * Treatment - a character variable with the name of the intervention treatment 
 
-The data must be in "wide" format such that there is one row per patient and columns for each endpoint separately.
-In this example, we use progression-free survival (PFS). 
+The data must be in "wide" format such that there is one row per patient and
+columns for each endpoint separately. In this example, we analyze
+progression-free survival (PFS).
 ```{r}
-
-
 adtte <- sim_adtte(seed = 2020, rho = 0.6)
+head(adtte)
 
 # subset PFS data and rename
 PFS_data <- adtte %>%
@@ -144,83 +142,121 @@ PFS_data <- adtte %>%
             PFS_days = AVAL,
             PFS_event = 1- CNSR
   )
+head(PFS_data)
 
 ```
 
 # Exploratory analysis
 Before performing any statistical analysis, it is important to explore the data.
-
-Most importantly is a Kaplan-Meier plot and code to do this using <tt>ggsurvplot</tt> is presented below.
+Most importantly is a Kaplan-Meier plot. A simple Kaplan-Meier plot has been
+produced here:
 
 
 ```{r, warning=FALSE}
 
-km.est.PFS <- survfit(Surv(PFS_days, PFS_event) ~ ARMCD , data = PFS_data, conf.type = 'plain')
+# Create survfit object
+km.est.PFS <- survfit(Surv(PFS_days, PFS_event) ~ ARMCD, 
+                      data = PFS_data, 
+                      conf.type = 'plain')
 
-#KM_list <- list(OS = km.est.OS, PFS = km.est.PFS)
+# Plot Kaplan-Meier
+plot(km.est.PFS, 
+     col = c(blue, pink), # plot colours
+     lty = c(1:2), # line type
+     xlab = "Time (Days)", # x-axis label
+     ylab = "Progression-free survival", # y-axis label
+     xlim = c(0, 800)) 
 
-KM_plot_PFS <- ggsurvplot(km.est.PFS, risk.table = TRUE, data = PFS_data,
-           break.time.by = 200,
-           conf.int = FALSE,
-           censor=FALSE,
-           legend.title = '',
-           xlab = paste0('Progression-free survival (Days)'),
-           size = 0.72,
-           xlim = c(0, 800))
-KM_plot_PFS
+legend(x = 500, 
+       y = .9, 
+       legend = c("Arm A", "Arm B"), 
+       lty = c(1:2), 
+       col = c(blue, pink))
 
 ```
 
 # Fitting the models
 
-The <tt>runPSM</tt> function fits parametric survival models for multiple distributions using the <tt>flexsurv</tt> package (using the <tt>flexsurvPlus</tt> function <tt>fit_models</tt>),  manipulates the flexsurv objects to get the parameter estimates and AIC and BIC value (using the <tt>flexsurvPlus</tt> function <tt>get_params</tt>) and rearranges the parameter estimates such that they can easily be output to excel to calculate survival for both the intervention and reference treatment in an economic model.
-
-
+The <tt>runPSM</tt> function fits parametric survival models for multiple
+distributions using the <tt>flexsurv</tt> package (using the
+<tt>flexsurvPlus</tt> function <tt>fit_models</tt>),  manipulates the flexsurv
+objects to get the parameter estimates and AIC and BIC value (using the
+<tt>flexsurvPlus</tt> function <tt>get_params</tt>) and rearranges the parameter
+estimates such that they can easily be output to excel to calculate survival for
+both the intervention and reference treatment in an economic model.
 
 These functions can be used to estimate 3 types of model:
-
-* Separate models - Models fitted to each treatment arm separately
   
+*  Separate models - Models fitted to each treatment arm separately
+    *  These models are fitted using the <tt>runPSM</tt> function using the
+    <tt>model.type="Separate"</tt> argument.
+
 *  Independent shape models - Models fitted to both/all treatment arms including
 a treatment covariate to model the effect of treatment on both the scale and
 shape parameter(s) of the distribution.
-    
+    * They have been fit using the <tt>runPSM</tt> function using the 
+    <tt>model.type="Independent shape"</tt> argument.
+
 *  Common shape models - Models fitted to both/all treatment arms including a
 treatment covariate to model the effect of treatment on the scale parameter of
 the distribution. The shape parameter(s) of the distribution is common across
 treatments which reflects an assumption of proportional hazards or accelerated
 failure time between treatments depending on the distribution
+    * These models have been fit using the <tt>runPSM</tt> function using  the
+    <tt>model.type="Common shape"</tt> argument.
 
-
-Each type of model can be fitted with a multiple distributions. The distributions available for this package are:
-* Exponential ('exp')
-* Weibull ('weibull')
-* Gompertz ('gompertz')
-* Log-normal ('lnorm')
-* Log-logistic ('llogis')
-* Generalized gamma ('gengamma')
-* Gamma ('gamma')
-* Generalized F ('genf')
-
-
-For more information on the different types of models, please see the survival analysis theory vignette included in the <tt>flexsurvPlus</tt> package.
 
 The inputs to the <tt>runPSM</tt> function are:
-*<tt>data</tt> - A data frame containing individual patient data for the relevant time to event outcomes
-*<tt>time_var</tt> - Name of time variable in 'data'. Variable must be numerical and >0.
-*<tt>event_var</tt> - Name of event variable in 'data'. Variable must be numerical and contain 1's to indicate an event and 0 to indicate a censor.
-*<tt>model.type</tt> - Character vector indicating the types of model formula provided. Permitted values are 'Common shape', 'Independent shape' or 'Separate' as per the models explained above.
-*<tt>strata_var</tt> - Name of stratification variable in "data". This is usually the treatment variable and must be categorical.
-*<tt>int_name</tt> - Character to indicate the name of the treatment of interest, must be a level of the "strata_var" column in "data", used for labelling the parameters.
-*<tt>ref_name </tt> - Character to indicate the name of the reference treatment, must be a level of the "strata_var" column in "data", used for labelling the parameters.
 
-More information about each function can be used by running the code ?runPSM.
+*  <tt>data</tt> - A data frame containing individual patient data for the
+relevant time to event outcomes
+
+*  <tt>time_var</tt> - Name of time variable in 'data'. Variable must be numerical
+and >0.
+
+*  <tt>event_var</tt> - Name of event variable in 'data'. Variable must be
+numerical and contain 1's to indicate an event and 0 to indicate a censor.
+
+*  <tt>model.type</tt> - Character vector indicating the types of model formula
+provided. Permitted values are 'Common shape', 'Independent shape' or 'Separate'
+as per the models explained above.
+
+* <tt>distr</tt> - Each type of model can be fitted with multiple distributions.
+The distributions available for this package are:
+
+    * Exponential ('exp')
+
+    * Weibull ('weibull')
+
+    * Gompertz ('gompertz')
+
+    * Log-normal ('lnorm')
+
+    * Log-logistic ('llogis')
+
+    * Generalized gamma ('gengamma')
+
+    * Gamma ('gamma')
+
+    * Generalized F ('genf')
+
+*  <tt>strata_var</tt> - Name of stratification variable in "data". This is
+usually the treatment variable and must be categorical.
+
+*  <tt>int_name</tt> - Character to indicate the name of the treatment of
+interest, must be a level of the "strata_var" column in "data", used for
+labelling the parameters.
+
+*  <tt>ref_name </tt> - Character to indicate the name of the reference treatment,
+must be a level of the "strata_var" column in "data", used for labelling the
+parameters.
+
+More information about each function can be used by running the code <tt>?runPSM</tt>.
 
 Example code to fit all models is presented below.
 
 
 ```{r}
-
 psm_PFS_all <- runPSM(data=PFS_data,
                      time_var="PFS_days",
                      event_var="PFS_event",
@@ -240,50 +276,43 @@ psm_PFS_all <- runPSM(data=PFS_data,
                      ref_name = "B")
 psm_PFS_all
 
-
 ```
 
 
-## Separate models for each treatment
-
-These models have been fit using the <tt>runPSM</tt> function using the model.type="Separate" argument.
-
-## Independent shape models 
-
-These models are similar to the separate model for each treatment as they allow all parameters to vary by treatment, however it is performed using 1 model for 2 treatments, rather than 2 models as above. They have been fit using the <tt>runPSM</tt> function using the model.type="Independent shape" argument.
-
-
-## Fit common shape models
-These models have been fit using the <tt>runPSM</tt> function using  the model.type="Common shape" argument.
 
 
 # Estimate survival from the models and plot the curves
 
-Survival at a given time can be estimated using the <tt>get_curvefits</tt> function as shown below for treatment-effect models. 
+Survival at a given time can be estimated using the .
 
-This can be used to cross check survival in excel models.  The example is given below selects only a few models for clarity.
+This can be used to cross check survival in excel models. The example is given
+below selects only a few models for clarity.
 
 
 ```{r}
 # Landmark survival
 
-# for clarity just pick the 4 different weibull models. 
-selected_models <- c("comshp.weibull","indshp.weibull","sepint.weibull", "sepref.weibull")
+# vector of times to estimate survival (days)
+time = c(0, 100, 200, 300)
 
-curvefits_PFS_landmark <- get_curvefits(models = psm_PFS_all$models[selected_models],
-                                           time = c(0, 100, 200, 300))
-curvefits_df_PFS_landmark <- bind_rows(curvefits_PFS_landmark$curvefits, .id = "Dist")  %>%
-  pivot_wider(names_from  = c(Dist, ARM), values_from  = est) %>%
-  as.data.frame()
-curvefits_df_PFS_landmark
+# Example 1: intervention arm, weibull distribution, common shape model
+1 - pweibull(time,
+         shape = psm_PFS_all$parameters[psm_PFS_all$parameters$Model=="Common shape",]$weibull.shape.int,
+         scale = psm_PFS_all$parameters[psm_PFS_all$parameters$Model=="Common shape",]$weibull.scale.int)
+
+
+
 ```
 
 
 
-The <tt>get_curvefits</tt> function can also be used to generate the data required to plot the survival curves, overlaid on top of the KM plot.
-The time argument should reflect how long you want to the extrapolate for and the unit of time is the same as the input data (in this example, days).
+The <tt>get_curvefits</tt> function can also be used to generate the data
+required to plot the survival curves, overlaid on top of the KM plot. The time
+argument should reflect how long you want to the extrapolate for and the unit of
+time is the same as the input data (in this example, days).
 
- The <tt>ggsurvplot</tt> function from the <tt>survminer</tt> package has been used to show how the survival curves can be plotted.
+The <tt>ggsurvplot</tt> function from the <tt>survminer</tt> package has been
+used to show how the survival curves can be plotted.
 
 ```{r}
 
