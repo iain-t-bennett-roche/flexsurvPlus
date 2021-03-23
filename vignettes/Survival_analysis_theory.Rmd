@@ -107,7 +107,7 @@ accelerated failure time model or a proportional hazards model (see Table below)
 depending on how the distribution is parametrized.The other parameters are
 ancillary parameters that determine the shape, variance, or higher moments of
 the distribution. These parameters impact the hazard function, which can take a
-variety of shapes depending on the distribution:[@RbloggersPSM]
+variety of shapes depending on the distribution:[@RbloggersPSM; @cox2008]
 
 *  the exponential distribution only supports a constant hazard; 
 *  the Weibull, Gompertz, and gamma distributions support monotonically increasing and
