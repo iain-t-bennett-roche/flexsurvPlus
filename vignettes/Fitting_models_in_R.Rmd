@@ -96,10 +96,10 @@ The following packages are required to run this example:
 ```{r setup}
 # Libraries
 library(flexsurvPlus)
+library(flexsurv)
 library(tibble)
 library(dplyr)
 library(survival)
-library(survminer)
 library(tidyr)
 library(boot)
 
@@ -283,126 +283,132 @@ psm_PFS_all
 
 # Estimate survival from the models and plot the curves
 
-Survival at a given time can be estimated using the .
+Survival at a given time, t, is estimated as follows:
 
-This can be used to cross check survival in excel models. The example is given
-below selects only a few models for clarity.
+$$ S(t) = P({T>t}) = 1 - F(t) $$
 
+Where F(t) is the cumulative distribution function. 
+
+To cross check survival estimates in Excel models, the following functions in R
+can be used to estimate the cumulative distribution function at given time
+points for each distribution explored in this package (the estimates from the
+cumulative distribution function can then be subtracted from 1 to estimate the
+survival probability):
+
+* Exponential: <tt>pexp()</tt>
+
+* Weibull: <tt>pweibull()</tt>
+
+* Gompertz: <tt>pgompertz()</tt>
+
+* Log-normal: <tt>plnorm()</tt>
+
+* Log-logistic: <tt>pllogis()</tt>
+
+* Generalized gamma: <tt>pgengamma()</tt>
+
+* Gamma: <tt>pgamma()</tt>
+
+* Generalized F: <tt>pgenf()</tt>
+
+The parameters outputted from each of the fitted models are used as inputs to
+these functions. The code below gives some examples.
 
 ```{r}
 # Landmark survival
 
 # vector of times to estimate survival (days)
-time = c(0, 100, 200, 300)
-
-# Example 1: intervention arm, weibull distribution, common shape model
-1 - pweibull(time,
-         shape = psm_PFS_all$parameters[psm_PFS_all$parameters$Model=="Common shape",]$weibull.shape.int,
-         scale = psm_PFS_all$parameters[psm_PFS_all$parameters$Model=="Common shape",]$weibull.scale.int)
+landmark_times <- c(0, 100, 200, 300)
 
 
+# Example 1: intervention arm, Weibull distribution, common shape model
+surv_comshp_weibull_int <- 1 - pweibull(landmark_times,
+                                        shape = psm_PFS_all$parameters_vector["comshp.weibull.shape.int"],
+                                        scale = psm_PFS_all$parameters_vector["comshp.weibull.scale.int"])
+surv_comshp_weibull_int
+
+
+# Example 2: intervention arm, log-normal distribution, separate model
+surv_sep_lnorm_int <- 1 - plnorm(landmark_times,
+                                 meanlog = psm_PFS_all$parameters_vector["sep.lnorm.meanlog.int"],
+                                 sdlog = psm_PFS_all$parameters_vector["sep.lnorm.sdlog.int"])
+surv_sep_lnorm_int
+
+
+# Example 3: reference arm, Generalized Gamma distribution, independent shape model
+surv_indshp_gengamma_ref <- 1 - pgengamma(landmark_times,
+                                          mu = psm_PFS_all$parameters_vector["indshp.gengamma.mu.ref"],
+                                          sigma = psm_PFS_all$parameters_vector["indshp.gengamma.sigma.ref"],
+                                          Q = psm_PFS_all$parameters_vector["indshp.gengamma.Q.ref"])
+surv_indshp_gengamma_ref
 
 ```
 
 
 
-The <tt>get_curvefits</tt> function can also be used to generate the data
-required to plot the survival curves, overlaid on top of the KM plot. The time
-argument should reflect how long you want to the extrapolate for and the unit of
-time is the same as the input data (in this example, days).
+The same functions can be used to generate the data required to plot the
+survival curves, overlaid on top of the KM plot. The time argument should
+reflect how long you want to the extrapolate for and the unit of time is the
+same as the input data (in this example, days).
 
-The <tt>ggsurvplot</tt> function from the <tt>survminer</tt> package has been
-used to show how the survival curves can be plotted.
 
 ```{r}
 
-# for clarity just pick the 2 different weibull models and a Gamma. 
-selected_models <- c("comshp.weibull","comshp.gengamma","indshp.gengamma")
+# Plot the common shape models (Weibull distribution) with the Kaplan-Meier
 
-# Create data set for plots
-curvefits_PFS <- get_curvefits(models = psm_PFS_all$models[selected_models],
-                                  time = seq(from=0, to = 500, by = 10))
-
-# format data ready for the plot
-curvefits_df_PFS <- bind_rows(curvefits_PFS$curvefits, .id = "Dist") %>%
-  pivot_wider(names_from  = c(ARM), values_from  = c(est))
-
-analysis_data_TrtA <- filter(PFS_data, ARMCD=="A")
-analysis_data_TrtB <- filter(PFS_data, ARMCD=="B")
-
-# Get KM estimates
-km.est.PFS.TrtA <- survfit(Surv(PFS_days, PFS_event) ~ 1 , data = analysis_data_TrtA, conf.type = 'plain')
-km.est.PFS.TrtB <- survfit(Surv(PFS_days, PFS_event) ~ 1 , data = analysis_data_TrtB, conf.type = 'plain')
+# vector of times to estimate survival (days)
+times <- c(seq(from = 0, to = 1000, by = 0.1))
 
 
-# Plot survival curves for arm A
-plot.PFS.A <- ggsurvplot(km.est.PFS.TrtA,
-                        combine = TRUE,
-                        censor = FALSE,
-                        risk.table = TRUE,
-                        conf.int = FALSE,
-                        break.x.by = 100,
-                        xlim = c(0, 500),
-                        xlab = "Time (days)",
-                        size = 0.72,
-                        linetype = c(6,6,6,6, 1, 6, 6,6,6),
-                        title  =  'Kaplan-Meier of OS with standard distribution overlays',
-                        legend.title = '',
-                        legend.labs = c("KM"),
-                        surv.median.line = 'hv',
-                        palette = c(rgb(0,0,0,max=30)),
-                        risk.table.y.text.col = F
-)
+# Survival probabilities: intervention arm, Weibull distribution, common shape model
+surv_comshp_weibull_int <- 1 - pweibull(times,
+                                  shape = psm_PFS_all$parameters_vector["comshp.weibull.shape.int"],
+                                  scale = psm_PFS_all$parameters_vector["comshp.weibull.scale.int"])
 
+# Survival probabilities: reference arm, Weibull distribution, common shape model
+surv_comshp_weibull_ref <- 1 - pweibull(times,
+                                  shape = psm_PFS_all$parameters_vector["comshp.weibull.shape.ref"],
+                                  scale = psm_PFS_all$parameters_vector["comshp.weibull.scale.ref"])
 
-plot.PFS.A$plot <- plot.PFS.A$plot +
-  geom_line(aes(x = time, y = Int,
-                colour = Dist,
-                linetype = Dist),
-            size = 0.72,
-            data = curvefits_df_PFS) +
-  scale_color_manual(values = c(blue, pink, Dyellow, orange))
+# Create two data frames that include the survival probablaities and times
+surv_comshp_weibull_int_times <- data.frame(Time = times,
+                                            Surv = surv_comshp_weibull_int,
+                                            Trt = "Intervention")
+surv_comshp_weibull_ref_times <- data.frame(Time = times,
+                                            Surv = surv_comshp_weibull_ref,
+                                            Trt = "Reference")
 
-plot.PFS.A
+# Plot Kaplan-Meier
+plot(km.est.PFS, 
+     col = c(blue, pink), # plot colours
+     lty = c(1:2), # line type
+     xlab = "Time (Days)", # x-axis label
+     ylab = "Progression-free survival", # y-axis label
+     xlim = c(0, 1000)) 
 
-# Plot survival curves for arm B
-plot.PFS.B <- ggsurvplot(km.est.PFS.TrtB,
-                        combine = TRUE,
-                        censor = FALSE,
-                        risk.table = TRUE,
-                        conf.int = FALSE,
-                        break.x.by = 100,
-                        xlim = c(0, 500),
-                        xlab = "Time (days)",
-                        size = 0.72,
-                        linetype = c(6,6,6,6, 1, 6, 6,6,6),
-                        title  =  'Kaplan-Meier of OS with standard distribution overlays',
-                        legend.title = '',
-                        legend.labs = c("KM"),
-                        surv.median.line = 'hv',
-                        palette = c(rgb(0,0,0,max=30)),
-                        risk.table.y.text.col = F
-)
+# Add legend
+legend(x = 500, 
+       y = .9, 
+       legend = c("Arm A", "Arm B"), 
+       lty = c(1:2), 
+       col = c(blue, pink))
 
-
-plot.PFS.B$plot <- plot.PFS.B$plot +
-  geom_line(aes(x = time, y = Ref,
-                colour = Dist,
-                linetype = Dist),
-            size = 0.72,
-            data = curvefits_df_PFS) +
-  scale_color_manual(values = c(blue, pink, Dyellow, orange))
-
-plot.PFS.B
+# Add model estimates
+lines(x = surv_comshp_weibull_int_times$Time, y = surv_comshp_weibull_int_times$Surv, col = blue)
+lines(x = surv_comshp_weibull_ref_times$Time, y = surv_comshp_weibull_ref_times$Surv, col = pink)
 
 ```
 
 
 # Adressing uncertainty - Bootstrapping
 
-Bootstrapping has been used to estimate the uncertainty of the parameters from the survival models. Boostrapping is used for two reasons motivated by intent of this package to support further modeling in excel.
-1. To simplify and accelerate calculations in excel while maintaining correlations between parameters (as is commonly done for NMA)
-2. To maintain correlations across multiple endpoints (see separate vignette for details)
+Bootstrapping has been used to estimate the uncertainty of the parameters from
+the survival models. Boostrapping is used for two reasons motivated by intent of
+this package to support further modeling in excel.
+1. To simplify and accelerate calculations in excel while maintaining
+correlations between parameters (as is commonly done for NMA)
+2. To maintain correlations across multiple endpoints (see separate vignette for
+details)
 
 Bootstrapping involves:
 
@@ -416,8 +422,10 @@ For this example, bootstrap estimates of the parameters were calculated using th
 vector containing the statistic(s) of interest. The <tt>bootPSM</tt> function 
 in the <tt>flexsurvPlus</tt> package can be used for this purpose.
 
-The inputs for the <tt>bootPSM</tt> function are identical to the <tt>runPSM</tt> function, however there is one additional argument:
-*<tt>i</tt> - Index used to select a sample within <tt>boot</tt>
+The inputs for the <tt>bootPSM</tt> function are identical to the
+<tt>runPSM</tt> function, however there is one additional argument:
+
+*  <tt>i</tt> - Index used to select a sample within <tt>boot</tt>
 
 
 ```{r}
@@ -439,7 +447,11 @@ PSM_bootstraps_PFS <- boot(
 
 ```
 
-To simplify the post processing of the bootstrap samples a function \code{\link{bootPSMtidy}} is provided that does some manipulations. This returns a tibble similar to the \code{Parameters} one that is returned by \code{\link{bootPSMtidy}}. SampleID identified the bootstrap sample. SampleID of 0 are the parameters for the original data.
+To simplify the post processing of the bootstrap samples a function
+\code{\link{bootPSMtidy}} is provided that does some manipulations. This returns
+a tibble similar to the \code{Parameters} one that is returned by
+\code{\link{bootPSMtidy}}. SampleID identified the bootstrap sample. SampleID of
+0 are the parameters for the original data.
 
 
 ```{r}
@@ -450,7 +462,9 @@ head(PSM_bootstrap_PFS_data)
 
 # Estimating quantities from the sample
 
-As the <tt>flexsurv</tt> parameterisations are used any quantity of interest can be simply calculated for all models and samples through use of the flexsurv functions such as the extrapolated means via flexsurv::mean_weibull.
+As the <tt>flexsurv</tt> parameterisations are used any quantity of interest can
+be simply calculated for all models and samples through use of the flexsurv
+functions such as the extrapolated means via flexsurv::mean_weibull.
 
 ```{r}
 estimated_deltamean <- PSM_bootstrap_PFS_data %>%
@@ -461,9 +475,14 @@ estimated_deltamean <- PSM_bootstrap_PFS_data %>%
 
 head(estimated_deltamean)
 
-estimated_deltamean %>%
-  ggplot(aes(x = Weibull.Mean.delta)) + 
-  geom_density()
+density <- density(estimated_deltamean$Weibull.Mean.delta)
+plot(density, 
+     lwd = 2, 
+     main = "Density")
+
+# estimated_deltamean %>%
+#   ggplot(aes(x = Weibull.Mean.delta)) + 
+#   geom_density()
 
 ```
 
@@ -471,9 +490,13 @@ estimated_deltamean %>%
 
 # Outputing parameters to excel 
 
-The primary use of the bootstrap samples is to be used in probabilistic sensitivity analyses in economic models. 
+The primary use of the bootstrap samples is to be used in probabilistic
+sensitivity analyses in economic models.
 
-Once all the models have been fit and bootstrap samples estimated they can be output to excel. By selecting SampleID = 0 the estimates for the original data are returned. To run PSA in excel only a random number between 1 and the number of samples needs to be generated.
+Once all the models have been fit and bootstrap samples estimated they can be
+output to excel. By selecting SampleID = 0 the estimates for the original data
+are returned. To run PSA in excel only a random number between 1 and the number
+of samples needs to be generated.
 
 ```{r}
 
