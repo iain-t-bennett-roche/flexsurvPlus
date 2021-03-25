@@ -6,7 +6,7 @@ output: rmarkdown::html_vignette
 bibliography: references.bib
 csl: biomedicine.csl
 vignette: >
-  %\VignetteIndexEntryFitting parametric survival models in R}
+  %\VignetteIndexEntry{Fitting parametric survival models in R}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -67,19 +67,21 @@ distribution is not commonly used, however it has been included in this package
 in case it is required.
 
 The flexsurvPlus package allows the inclusion of a treatment effect in the
-following three ways:
+following four ways:
   
   * Separate models - Models fitted to each treatment arm separately
 
 *  Independent shape models - Models fitted to both/all treatment arms including
 a treatment covariate to model the effect of treatment on both the scale and
-shape parameter(s) of the distribution.
+shape parameter(s) of the distribution
 
 *  Common shape models - Models fitted to both/all treatment arms including a
 treatment covariate to model the effect of treatment on the scale parameter of
 the distribution. The shape parameter(s) of the distribution is common across
 treatments which reflects an assumption of proportional hazards or accelerated
 failure time between treatments depending on the distribution
+
+*  One arm models - Models fitted to the entire dataset (no treatment strata)
 
 This document details how to use the <tt>flexsurvPlus</tt> package to perform
 these models. A separate vignette; "Parametric survival analysis using the
@@ -204,6 +206,10 @@ treatments which reflects an assumption of proportional hazards or accelerated
 failure time between treatments depending on the distribution
     * These models have been fit using the <tt>runPSM</tt> function using  the
     <tt>model.type="Common shape"</tt> argument.
+    
+*  One arm models - Models fitted to the entire dataset (no treatment strata)
+    *  These models are fitted using the <tt>runPSM</tt> function using the
+    <tt>model.type="One arm"</tt> argument.
 
 
 The inputs to the <tt>runPSM</tt> function are:
@@ -241,7 +247,7 @@ The distributions available for this package are:
     * Generalized F ('genf')
 
 *  <tt>strata_var</tt> - Name of stratification variable in "data". This is
-usually the treatment variable and must be categorical.
+usually the treatment variable and must be categorical. Not required when model.type='One arm'.
 
 *  <tt>int_name</tt> - Character to indicate the name of the treatment of
 interest, must be a level of the "strata_var" column in "data", used for
@@ -249,11 +255,11 @@ labelling the parameters.
 
 *  <tt>ref_name </tt> - Character to indicate the name of the reference treatment,
 must be a level of the "strata_var" column in "data", used for labelling the
-parameters.
+parameters. Not required when model.type='One arm'.
 
 More information about each function can be used by running the code <tt>?runPSM</tt>.
 
-Example code to fit all models is presented below.
+Example code to fit all two arm models is presented below.
 
 
 ```{r}
