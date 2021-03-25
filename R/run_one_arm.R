@@ -71,7 +71,7 @@ run_one_arm <- function(data,
   models <- fit_models(model.formula=model.formula.one.arm, distr = distr, data=data_standard)
 
   #get parameter estimates and model fit statistics
-  params <- get_model_summary(models=models)
+  model_summary <- get_model_summary(models=models)
 
   # Filter on flexsurv models
   flexsurvreg.test <- sapply(models, function(x) class(x)=="flexsurvreg")
@@ -94,9 +94,8 @@ run_one_arm <- function(data,
 
   models <- c(models)
   
-  params$Dist <-  paste0("onearm.int.", params$Dist)
+  model_summary$Dist <-  paste0("onearm.int.", model_summary$Dist)
 
-  params <- dplyr::bind_rows(params)
   
   param_out <- cbind(param_out)  %>%
     as.data.frame() 
@@ -107,6 +106,11 @@ run_one_arm <- function(data,
   # e.g. weibull shape and scale
   # this further simplifies other function use
   param_final <- post_process_param_out(param_out)
+  
+  model_summary.out <- model_summary %>%
+    dplyr::mutate(Model="One arm", Intervention_name=int_name) %>%
+    dplyr::select(Model, Dist, Intervention_name, Status, AIC, BIC)
+  
   
   # as a data frame with metadata 
   param_df <- param_final %>%
@@ -189,7 +193,7 @@ run_one_arm <- function(data,
   #collect and return output
   output <- list(
     models = models,
-    model_summary = params,
+    model_summary = model_summary.out,
     parameters = param_df,
     parameters_vector = paramV
   )

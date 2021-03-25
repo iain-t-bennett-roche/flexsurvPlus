@@ -84,16 +84,16 @@ run_independent_shape <- function(data,
   model.formula.sigma_Q_P = Surv(Time, Event==1) ~ ARM + sigma(ARM) + Q(ARM) + P(ARM)
   
   models <- list()
-  params <- tibble()
+  model_summary <- tibble()
   params_out <- tibble(.rows = 1)
   
   message("Fitting independant shape models")
   
   if('exp' %in% distr){
     models.exp <- fit_models(model.formula=model.formula.int, distr = "exp", data=data_standard)
-    params.exp <- get_model_summary(models=models.exp)
-    params.exp$Dist <- "indshp.exp"
-    params <- dplyr::bind_rows(params, params.exp)
+    model_summary.exp <- get_model_summary(models=models.exp)
+    model_summary.exp$Dist <- "indshp.exp"
+    model_summary <- dplyr::bind_rows(model_summary, model_summary.exp)
     if(class(models.exp$exp)=="flexsurvreg"){
       coef.exp <- lapply(models.exp, coef)
       param_out.exp <- t(unlist(coef.exp)) %>% as.data.frame() %>%
@@ -111,9 +111,9 @@ run_independent_shape <- function(data,
   
   if('weibull' %in% distr){
     models.weib <- fit_models(model.formula=model.formula.shape, distr = "weibull", data=data_standard)
-    params.weib <- get_model_summary(models=models.weib)
-    params.weib$Dist <- "indshp.weibull"
-    params <- dplyr::bind_rows(params, params.weib)
+    model_summary.weib <- get_model_summary(models=models.weib)
+    model_summary.weib$Dist <- "indshp.weibull"
+    model_summary <- dplyr::bind_rows(model_summary, model_summary.weib)
     if(class(models.weib$weibull)=="flexsurvreg"){
       coef.weib <- lapply(models.weib, coef)
       param_out.weib <- t(unlist(coef.weib)) %>% as.data.frame() %>%
@@ -134,9 +134,9 @@ run_independent_shape <- function(data,
   
   if('gompertz' %in% distr){
     models.gomp <- fit_models(model.formula=model.formula.shape, distr = "gompertz", data=data_standard)
-    params.gomp <- get_model_summary(models=models.gomp)
-    params.gomp$Dist <- "indshp.gompertz"
-    params <- dplyr::bind_rows(params, params.gomp)
+    model_summary.gomp <- get_model_summary(models=models.gomp)
+    model_summary.gomp$Dist <- "indshp.gompertz"
+    model_summary <- dplyr::bind_rows(model_summary, model_summary.gomp)
     if(class(models.gomp$gompertz)=="flexsurvreg"){
       coef.gomp <- lapply(models.gomp, coef)
       param_out.gomp <- t(unlist(coef.gomp)) %>% as.data.frame() %>%
@@ -156,9 +156,9 @@ run_independent_shape <- function(data,
   }
   if('llogis' %in% distr){
     models.llogis <- fit_models(model.formula=model.formula.shape, distr = "llogis", data=data_standard)
-    params.llogis <- get_model_summary(models=models.llogis)
-    params.llogis$Dist <- "indshp.llogis"
-    params <- dplyr::bind_rows(params, params.llogis)
+    model_summary.llogis <- get_model_summary(models=models.llogis)
+    model_summary.llogis$Dist <- "indshp.llogis"
+    model_summary <- dplyr::bind_rows(model_summary, model_summary.llogis)
     if(class(models.llogis$llogis)=="flexsurvreg"){
       coef.llogis <- lapply(models.llogis, coef)
       param_out.llogis <- t(unlist(coef.llogis)) %>% as.data.frame() %>%
@@ -179,9 +179,9 @@ run_independent_shape <- function(data,
   
   if('gamma' %in% distr){
     models.gamma <- fit_models(model.formula=model.formula.shape, distr = "gamma", data=data_standard)
-    params.gamma <- get_model_summary(models=models.gamma)
-    params.gamma$Dist <- "indshp.gamma"
-    params <- dplyr::bind_rows(params, params.gamma)
+    model_summary.gamma <- get_model_summary(models=models.gamma)
+    model_summary.gamma$Dist <- "indshp.gamma"
+    model_summary <- dplyr::bind_rows(model_summary, model_summary.gamma)
     if(class(models.gamma$gamma)=="flexsurvreg"){
       coef.gamma <- lapply(models.gamma, coef)
       param_out.gamma <- t(unlist(coef.gamma)) %>% as.data.frame() %>%
@@ -202,9 +202,9 @@ run_independent_shape <- function(data,
   
   if('lnorm' %in% distr){
     models.lnorm <- fit_models(model.formula=model.formula.sdlog, distr = "lnorm", data=data_standard)
-    params.lnorm <- get_model_summary(models=models.lnorm)
-    params.lnorm$Dist <- "indshp.lnorm"
-    params <- dplyr::bind_rows(params, params.lnorm)
+    model_summary.lnorm <- get_model_summary(models=models.lnorm)
+    model_summary.lnorm$Dist <- "indshp.lnorm"
+    model_summary <- dplyr::bind_rows(model_summary, model_summary.lnorm)
     if(class(models.lnorm$lnorm)=="flexsurvreg"){
       coef.lnorm <- lapply(models.lnorm, coef)
       param_out.lnorm <- t(unlist(coef.lnorm)) %>% as.data.frame() %>%
@@ -225,9 +225,9 @@ run_independent_shape <- function(data,
   
   if('gengamma' %in% distr){
     models.gengamma <- fit_models(model.formula=model.formula.sigma_Q, distr = "gengamma", data=data_standard)
-    params.gengamma <- get_model_summary(models=models.gengamma)
-    params.gengamma$Dist <- "indshp.gengamma"
-    params <- dplyr::bind_rows(params, params.gengamma)
+    model_summary.gengamma <- get_model_summary(models=models.gengamma)
+    model_summary.gengamma$Dist <- "indshp.gengamma"
+    model_summary <- dplyr::bind_rows(model_summary, model_summary.gengamma)
 if(class(models.gengamma$gengamma)=="flexsurvreg"){
       coef.gengamma <- lapply(models.gengamma, coef)
       param_out.gengamma <- t(unlist(coef.gengamma)) %>% as.data.frame() %>%
@@ -251,9 +251,9 @@ if(class(models.gengamma$gengamma)=="flexsurvreg"){
     
   if('genf' %in% distr){
     models.genf <- fit_models(model.formula=model.formula.sigma_Q_P, distr = "genf", data=data_standard)
-    params.genf <- get_model_summary(models=models.genf)
-    params.genf$Dist <- "indshp.genf"
-    params <- dplyr::bind_rows(params, params.genf)
+    model_summary.genf <- get_model_summary(models=models.genf)
+    model_summary.genf$Dist <- "indshp.genf"
+    model_summary <- dplyr::bind_rows(model_summary, model_summary.genf)
   if(class(models.genf$genf)=="flexsurvreg"){
       coef.genf <- lapply(models.genf, coef)
       param_out.genf <- t(unlist(coef.genf)) %>% as.data.frame() %>%
@@ -283,6 +283,11 @@ if(class(models.gengamma$gengamma)=="flexsurvreg"){
   # e.g. weibull shape and scale
   # this further simplifies other function use
   param_final <- post_process_param_out(params_out)
+  
+  model_summary.out <- model_summary %>%
+    dplyr::mutate(Model="Independent shape", Intervention_name=int_name, Reference_name=ref_name) %>%
+    dplyr::select(Model, Dist, Intervention_name, Reference_name, Status, AIC, BIC)
+  
   
   # as a data frame with metadata 
   param_df <- param_final %>%
@@ -314,7 +319,7 @@ if(class(models.gengamma$gengamma)=="flexsurvreg"){
   
   output <- list(
     models = models,
-    model_summary = params,
+    model_summary = model_summary.out,
     parameters = param_df,
     parameters_vector = paramV
   )

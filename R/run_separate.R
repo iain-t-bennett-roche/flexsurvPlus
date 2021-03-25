@@ -81,8 +81,8 @@ run_separate <- function(data,
   models.ref <- fit_models(model.formula=model.formula.sep, distr = distr, data=data_standard$dat.ref)
   
   #get parameter estimates and model fit statistics
-  params.int <- get_model_summary(models=models.int)
-  params.ref <- get_model_summary(models=models.ref)
+  model_summary.int <- get_model_summary(models=models.int)
+  model_summary.ref <- get_model_summary(models=models.ref)
   
 
   # Filter on flexsurv models
@@ -119,10 +119,10 @@ run_separate <- function(data,
   
   models <- c(models.int, models.ref)
   
-  params.int$Dist <-  paste0("sep.int.", params.int$Dist)
-  params.ref$Dist <-  paste0("ref.int.", params.ref$Dist)
+  model_summary.int$Dist <-  paste0("sep.int.", model_summary.int$Dist)
+  model_summary.ref$Dist <-  paste0("ref.int.", model_summary.ref$Dist)
   
-  params <- dplyr::bind_rows(params.int, params.ref)
+  model_summary <- dplyr::bind_rows(model_summary.int, model_summary.ref)
   
   param_out <- cbind(param_out.int, param_out.ref)  %>%
     as.data.frame() 
@@ -133,6 +133,11 @@ run_separate <- function(data,
   # e.g. weibull shape and scale
   # this further simplifies other function use
   param_final <- post_process_param_out(param_out)
+  
+  model_summary.out <- model_summary %>%
+    dplyr::mutate(Model="Seperate", Intervention_name=int_name, Reference_name=ref_name) %>%
+    dplyr::select(Model, Dist, Intervention_name, Reference_name, Status, AIC, BIC)
+  
   
   # as a data frame with metadata 
   param_df <- param_final %>%
@@ -232,7 +237,7 @@ run_separate <- function(data,
   #collect and return output
   output <- list(
     models = models,
-    model_summary = params,
+    model_summary = model_summary.out,
     parameters = param_df,
     parameters_vector = paramV
   )

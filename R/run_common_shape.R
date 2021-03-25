@@ -78,7 +78,7 @@ run_common_shape <- function(data,
   models <- fit_models(model.formula=model.formula, distr = distr, data=data_standard)
   
   #get parameter estimates and model fit statistics
-  params <- get_model_summary(models=models)
+  model_summary <- get_model_summary(models=models)
   
   # Filter on flexsurv models
   flexsurvreg.test <- sapply(models, function(x) class(x)=="flexsurvreg")
@@ -196,8 +196,11 @@ run_common_shape <- function(data,
   models.out <- models
   names(models.out) <- paste0("comshp.", names(models.out))
   
-  params.out <- params
-  params.out$Dist <- paste0("comshp.", params.out$Dist)
+  model_summary.out <- model_summary %>%
+    dplyr::mutate(Model="Common shape", Intervention_name=int_name, Reference_name=ref_name) %>%
+    dplyr::select(Model, Dist, Intervention_name, Reference_name, Status, AIC, BIC)
+  
+  model_summary.out$Dist <- paste0("comshp.", model_summary.out$Dist)
   
   #######################################################
   # prepare parameter outputs
@@ -309,7 +312,7 @@ run_common_shape <- function(data,
   #collect and return output
   output <- list(
     models = models.out,
-    model_summary = params.out,
+    model_summary = model_summary.out,
     parameters = param_df,
     parameters_vector = paramV
   )
