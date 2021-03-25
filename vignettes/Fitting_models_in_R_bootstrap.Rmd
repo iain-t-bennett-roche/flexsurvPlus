@@ -6,7 +6,7 @@ output: rmarkdown::html_vignette
 bibliography: references.bib
 csl: biomedicine.csl
 vignette: >
-  %\VignetteIndexEntryFitting parametric survival models in R - uncertainty}
+  %\VignetteIndexEntry{PSA and correlated endpoints (bootstrap approch)}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -139,7 +139,7 @@ analysis_data <- left_join(OS_data, PFS_data, by = c("USUBJID", "ARMCD"))
 Bootstrapping has been used to estimate the uncertainty of the parameters from the survival models for multiple endpoints at once to preserve the correlation between endpoints. In this example we have used OS and PFS. For speed of execution and illustration of concept we only fit a common shape weibull model for PFS and separate gamma models for OS here but all models discussed in <tt>runPSM</tt> could be specified with a single call.
 
 
-```{r}
+```{r message = FALSE}
 
 
 set.seed(2358)
@@ -191,7 +191,7 @@ all(index_OS == index_PFS)
 If we want to maintain correlations between PFS and OS we need to use the same bootstrap samples for both the PFS and OS analysis. The easiest way to do this is to reuse the same seed before calling the boot function for the second endpoint. 
 
 
-```{r}
+```{r message = FALSE}
 
 n.sim <- 100
 
@@ -289,4 +289,4 @@ mean_durations %>%
 
 ```
 
-#References
+## References

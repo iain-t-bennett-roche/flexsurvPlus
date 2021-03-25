@@ -3,7 +3,6 @@
 export(bootPSM)
 export(bootPSMtidy)
 export(fit_models)
-export(get_curvefits)
 export(get_params)
 export(runPSM)
 export(run_common_shape)
