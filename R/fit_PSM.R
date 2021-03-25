@@ -71,9 +71,9 @@ fit_models <- function(model.formula,
   output
 }
 
-#' Get parameter estimates from \code{\link{fit_models}} objects
+#' Get model summary from \code{\link{fit_models}} objects
 #'
-#' Manipulates \code{\link{fit_models}} objects to get the parameter estimates and AIC and BIC values.
+#' Manipulates \code{\link{fit_models}} objects to get a model summary of AIC and BIC and status of whether the model converged or produced an error or warning.
 #'
 #' @param models Object from \code{\link{fit_models}}
 #'
@@ -83,7 +83,7 @@ fit_models <- function(model.formula,
 #' @seealso \code{\link{fit_models}} \code{\link{flexsurvreg}}
 #'
 #' @export
-get_params <- function(models) {
+get_model_summary <- function(models) {
   
   # Filter on flexsurv models
   flexsurvreg.test <- sapply(models, function(x) class(x)=="flexsurvreg")

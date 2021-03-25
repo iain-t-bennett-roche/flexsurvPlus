@@ -40,7 +40,7 @@ must be a level of the "strata_var" column in "data", used for labeling
 the parameters.}
 }
 \value{
-A list containing 'models' (output from \code{\link{fit_models}}), 'model_summary' (output from\code{\link{get_params}}) and
+A list containing 'models' (output from \code{\link{fit_models}}), 'model_summary' (output from\code{\link{get_model_summary}}) and
 'parameters', a data frame containing the coefficients of each flexsurv model.
 \itemize{
 \item 'models' is a list of flexsurv objects for each distribution specified

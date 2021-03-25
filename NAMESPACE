@@ -3,7 +3,7 @@
 export(bootPSM)
 export(bootPSMtidy)
 export(fit_models)
-export(get_params)
+export(get_model_summary)
 export(runPSM)
 export(run_common_shape)
 export(run_independent_shape)

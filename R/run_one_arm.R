@@ -29,7 +29,7 @@
 #'   The model fit is in the form Surv(Time, Event==1) ~ 1 and is fit to the entire data (no strata). The parameters for each
 #'   treatment, are derived directly from the model (no additional manipulation
 #'   is required).
-#' @return A list containing 'models' (output from \code{\link{fit_models}}), 'model_summary' (output from\code{\link{get_params}}) and
+#' @return A list containing 'models' (output from \code{\link{fit_models}}), 'model_summary' (output from\code{\link{get_model_summary}}) and
 #'   'parameters', a data frame containing the coefficients of each flexsurv model.
 #' \itemize{
 #'   \item 'models' is a list of flexsurv objects for each distribution specified
@@ -71,7 +71,7 @@ run_one_arm <- function(data,
   models <- fit_models(model.formula=model.formula.one.arm, distr = distr, data=data_standard)
 
   #get parameter estimates and model fit statistics
-  params <- get_params(models=models)
+  params <- get_model_summary(models=models)
 
   # Filter on flexsurv models
   flexsurvreg.test <- sapply(models, function(x) class(x)=="flexsurvreg")

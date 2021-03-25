@@ -33,7 +33,7 @@
 #'   The model fit is in the form Surv(Time, Event==1) ~ ARM.
 #'   The shape parameter is the same for each treatment, and derived directly from the model (no additional manipulation is required).
 #'   The scale parameter is derived directly from the model for the reference category, however for the intervention arm, this is calculated as reference shape + treatment effect (shape).
-#' @return A list containing 'models' (output from \code{\link{fit_models}}), 'model_summary' (output from\code{\link{get_params}}) and
+#' @return A list containing 'models' (output from \code{\link{fit_models}}), 'model_summary' (output from\code{\link{get_model_summary}}) and
 #'   'parameters', a data frame containing the coefficients of each flexsurv model.
 #' \itemize{
 #'   \item 'models' is a list of flexsurv objects for each distribution specified
@@ -78,7 +78,7 @@ run_common_shape <- function(data,
   models <- fit_models(model.formula=model.formula, distr = distr, data=data_standard)
   
   #get parameter estimates and model fit statistics
-  params <- get_params(models=models)
+  params <- get_model_summary(models=models)
   
   # Filter on flexsurv models
   flexsurvreg.test <- sapply(models, function(x) class(x)=="flexsurvreg")

@@ -35,7 +35,7 @@
 #'   separate model for each of the two treatments). The parameters for each
 #'   treatment, are derived directly from the model (no additional manipulation
 #'   is required).
-#' @return A list containing 'models' (output from \code{\link{fit_models}}), 'model_summary' (output from\code{\link{get_params}}) and
+#' @return A list containing 'models' (output from \code{\link{fit_models}}), 'model_summary' (output from\code{\link{get_model_summary}}) and
 #'   'parameters', a data frame containing the coefficients of each flexsurv model.
 #' \itemize{
 #'   \item 'models' is a list of flexsurv objects for each distribution specified
@@ -81,8 +81,8 @@ run_separate <- function(data,
   models.ref <- fit_models(model.formula=model.formula.sep, distr = distr, data=data_standard$dat.ref)
   
   #get parameter estimates and model fit statistics
-  params.int <- get_params(models=models.int)
-  params.ref <- get_params(models=models.ref)
+  params.int <- get_model_summary(models=models.int)
+  params.ref <- get_model_summary(models=models.ref)
   
 
   # Filter on flexsurv models

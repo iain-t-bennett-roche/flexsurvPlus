@@ -38,7 +38,7 @@
 #'   scale + treatment effect (scale). The shape parameter is derived directly
 #'   from the model for the reference category, however for the intervention
 #'   arm, this is calculated as reference shape + treatment effect (shape).
-#' @return A list containing 'models' (output from \code{\link{fit_models}}), 'model_summary' (output from\code{\link{get_params}}) and
+#' @return A list containing 'models' (output from \code{\link{fit_models}}), 'model_summary' (output from\code{\link{get_model_summary}}) and
 #'   'parameters', a data frame containing the coefficients of each flexsurv model.
 #' \itemize{
 #'   \item 'models' is a list of flexsurv objects for each distribution specified
@@ -91,7 +91,7 @@ run_independent_shape <- function(data,
   
   if('exp' %in% distr){
     models.exp <- fit_models(model.formula=model.formula.int, distr = "exp", data=data_standard)
-    params.exp <- get_params(models=models.exp)
+    params.exp <- get_model_summary(models=models.exp)
     params.exp$Dist <- "indshp.exp"
     params <- dplyr::bind_rows(params, params.exp)
     if(class(models.exp$exp)=="flexsurvreg"){
@@ -111,7 +111,7 @@ run_independent_shape <- function(data,
   
   if('weibull' %in% distr){
     models.weib <- fit_models(model.formula=model.formula.shape, distr = "weibull", data=data_standard)
-    params.weib <- get_params(models=models.weib)
+    params.weib <- get_model_summary(models=models.weib)
     params.weib$Dist <- "indshp.weibull"
     params <- dplyr::bind_rows(params, params.weib)
     if(class(models.weib$weibull)=="flexsurvreg"){
@@ -134,7 +134,7 @@ run_independent_shape <- function(data,
   
   if('gompertz' %in% distr){
     models.gomp <- fit_models(model.formula=model.formula.shape, distr = "gompertz", data=data_standard)
-    params.gomp <- get_params(models=models.gomp)
+    params.gomp <- get_model_summary(models=models.gomp)
     params.gomp$Dist <- "indshp.gompertz"
     params <- dplyr::bind_rows(params, params.gomp)
     if(class(models.gomp$gompertz)=="flexsurvreg"){
@@ -156,7 +156,7 @@ run_independent_shape <- function(data,
   }
   if('llogis' %in% distr){
     models.llogis <- fit_models(model.formula=model.formula.shape, distr = "llogis", data=data_standard)
-    params.llogis <- get_params(models=models.llogis)
+    params.llogis <- get_model_summary(models=models.llogis)
     params.llogis$Dist <- "indshp.llogis"
     params <- dplyr::bind_rows(params, params.llogis)
     if(class(models.llogis$llogis)=="flexsurvreg"){
@@ -179,7 +179,7 @@ run_independent_shape <- function(data,
   
   if('gamma' %in% distr){
     models.gamma <- fit_models(model.formula=model.formula.shape, distr = "gamma", data=data_standard)
-    params.gamma <- get_params(models=models.gamma)
+    params.gamma <- get_model_summary(models=models.gamma)
     params.gamma$Dist <- "indshp.gamma"
     params <- dplyr::bind_rows(params, params.gamma)
     if(class(models.gamma$gamma)=="flexsurvreg"){
@@ -202,7 +202,7 @@ run_independent_shape <- function(data,
   
   if('lnorm' %in% distr){
     models.lnorm <- fit_models(model.formula=model.formula.sdlog, distr = "lnorm", data=data_standard)
-    params.lnorm <- get_params(models=models.lnorm)
+    params.lnorm <- get_model_summary(models=models.lnorm)
     params.lnorm$Dist <- "indshp.lnorm"
     params <- dplyr::bind_rows(params, params.lnorm)
     if(class(models.lnorm$lnorm)=="flexsurvreg"){
@@ -225,7 +225,7 @@ run_independent_shape <- function(data,
   
   if('gengamma' %in% distr){
     models.gengamma <- fit_models(model.formula=model.formula.sigma_Q, distr = "gengamma", data=data_standard)
-    params.gengamma <- get_params(models=models.gengamma)
+    params.gengamma <- get_model_summary(models=models.gengamma)
     params.gengamma$Dist <- "indshp.gengamma"
     params <- dplyr::bind_rows(params, params.gengamma)
 if(class(models.gengamma$gengamma)=="flexsurvreg"){
@@ -251,7 +251,7 @@ if(class(models.gengamma$gengamma)=="flexsurvreg"){
     
   if('genf' %in% distr){
     models.genf <- fit_models(model.formula=model.formula.sigma_Q_P, distr = "genf", data=data_standard)
-    params.genf <- get_params(models=models.genf)
+    params.genf <- get_model_summary(models=models.genf)
     params.genf$Dist <- "indshp.genf"
     params <- dplyr::bind_rows(params, params.genf)
   if(class(models.genf$genf)=="flexsurvreg"){
