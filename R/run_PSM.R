@@ -92,14 +92,12 @@ runPSM <- function(data,
 
   models <- list()
   model_summary <- tibble()
-  parameters <- tibble()
   parameters_vector <- numeric()
   
   if('Common shape' %in% model.type){
     output1 <- run_common_shape(data, time_var, event_var,distr,strata_var, int_name, ref_name)
     models <- output1$models
     model_summary <- output1$model_summary
-    parameters <- output1$parameters
     parameters_vector <- output1$parameters_vector
   }
 
@@ -110,7 +108,6 @@ runPSM <- function(data,
     output2 <- run_separate(data, time_var, event_var, distr, strata_var, int_name, ref_name)
     models <- c(models, output2$models)
     model_summary <- dplyr::bind_rows(model_summary, output2$model_summary)
-    parameters <- dplyr::bind_rows(parameters, output2$parameters)
     parameters_vector <- c(parameters_vector, output2$parameters_vector)
   }
 
@@ -120,7 +117,6 @@ runPSM <- function(data,
     output3 <- run_independent_shape(data, time_var, event_var, distr, strata_var, int_name, ref_name)
     models <- c(models, output3$models)
     model_summary <- dplyr::bind_rows(model_summary, output3$model_summary)
-    parameters <- dplyr::bind_rows(parameters, output3$parameters)
     parameters_vector <- c(parameters_vector, output3$parameters_vector)
   }
   
@@ -128,14 +124,12 @@ runPSM <- function(data,
     output4 <- run_one_arm(data, time_var, event_var, distr, int_name)
     models <- c(models, output4$models)
     model_summary <- dplyr::bind_rows(model_summary, output4$model_summary)
-    parameters <- dplyr::bind_rows(parameters, output4$parameters)
     parameters_vector <- c(parameters_vector, output4$parameters_vector)
   }
 
   # combine the outputs
   output <- list(models = models,
                  model_summary = model_summary,
-                 parameters = parameters,
                  parameters_vector = parameters_vector
                  )
   

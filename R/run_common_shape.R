@@ -207,14 +207,9 @@ run_common_shape <- function(data,
   # this function exponentiates values that coef returns on the log scale
   # e.g. weibull shape and scale
   # this further simplifies other function use
-  param_final <- post_process_param_out(param_out)
+  params_all <- post_process_param_out(param_out)
   
-  # as a data frame with metadata 
-  param_df <- param_final %>%
-    dplyr::mutate(Model="Common shape", Intervention_name=int_name, Reference_name=ref_name)
-  
-  params_all <- param_df 
-  
+
   if('exp' %in% distr){
     params_all$exp.rate.int <- ifelse("exp.rate.int" %in% names(params_all), params_all$exp.rate.int, NA) 
     params_all$exp.rate.ref <- ifelse("exp.rate.ref" %in% names(params_all), params_all$exp.rate.ref, NA) 
@@ -313,7 +308,6 @@ run_common_shape <- function(data,
   output <- list(
     models = models.out,
     model_summary = model_summary.out,
-    parameters = param_df,
     parameters_vector = paramV
   )
   return(output)
