@@ -111,53 +111,43 @@ run_one_arm <- function(data,
     dplyr::mutate(Model="One arm", Intervention_name=int_name) %>%
     dplyr::select(Model, Dist, Intervention_name, Status, AIC, BIC)
   
-  
-  # as a data frame with metadata 
-  param_df <- param_final %>%
-    dplyr::mutate(Model="One arm", Intervention_name=int_name)
-  
-  params_all <- param_df 
+
+  params_all <- param_final 
   
   if('exp' %in% distr){
     params_all$exp.rate.int <- ifelse("exp.rate.int" %in% names(params_all), params_all$exp.rate.int, NA) 
-  }
+  
+    }
   
   if('weibull' %in% distr){
     params_all$weibull.shape.int <- ifelse("weibull.shape.int" %in% names(params_all), params_all$weibull.shape.int, NA) 
     params_all$weibull.scale.int <- ifelse("weibull.scale.int" %in% names(params_all), params_all$weibull.scale.int, NA) 
-      }
+  }
   
   if('gompertz' %in% distr){
     params_all$gompertz.shape.int <- ifelse("gompertz.shape.int" %in% names(params_all), params_all$gompertz.shape.int, NA) 
     params_all$gompertz.rate.int <- ifelse("gompertz.rate.int" %in% names(params_all), params_all$gompertz.rate.int, NA) 
-    
-  }
+    }
   
   if('llogis' %in% distr){
     params_all$llogis.shape.int <- ifelse("llogis.shape.int" %in% names(params_all), params_all$llogis.shape.int, NA) 
     params_all$llogis.scale.int <- ifelse("llogis.scale.int" %in% names(params_all), params_all$llogis.scale.int, NA) 
-  }
+    }
   
   if('gamma' %in% distr){
     params_all$gamma.shape.int <- ifelse("gamma.shape.int" %in% names(params_all), params_all$gamma.shape.int, NA) 
     params_all$gamma.rate.int <- ifelse("gamma.rate.int" %in% names(params_all), params_all$gamma.rate.int, NA) 
-    
-    
-  }
+      }
   
   if('lnorm' %in% distr){
     params_all$lnorm.meanlog.int <- ifelse("lnorm.meanlog.int" %in% names(params_all), params_all$lnorm.meanlog.int, NA) 
     params_all$lnorm.sdlog.int <- ifelse("lnorm.sdlog.int" %in% names(params_all), params_all$lnorm.sdlog.int, NA) 
-    
-    
-    
   }
   
   if('gengamma' %in% distr){
     params_all$gengamma.mu.int <- ifelse("gengamma.mu.int" %in% names(params_all), params_all$gengamma.mu.int, NA) 
     params_all$gengamma.sigma.int <- ifelse("gengamma.sigma.int" %in% names(params_all), params_all$gengamma.sigma.int, NA) 
     params_all$gengamma.Q.int <- ifelse("gengamma.Q.int" %in% names(params_all), params_all$gengamma.Q.int, NA) 
-
   }
   
   if('genf' %in% distr){
@@ -165,7 +155,6 @@ run_one_arm <- function(data,
     params_all$genf.sigma.int <- ifelse("genf.sigma.int" %in% names(params_all), params_all$genf.sigma.int, as.numeric(NA)) 
     params_all$genf.Q.int <- ifelse("genf.Q.int" %in% names(params_all), params_all$genf.Q.int, as.numeric(NA)) 
     params_all$genf.P.int <- ifelse("genf.P.int" %in% names(params_all), params_all$genf.P.int, as.numeric(NA)) 
-
   }
   
   col_names <- c("exp.rate.int",  
@@ -194,7 +183,6 @@ run_one_arm <- function(data,
   output <- list(
     models = models,
     model_summary = model_summary.out,
-    parameters = param_df,
     parameters_vector = paramV
   )
 

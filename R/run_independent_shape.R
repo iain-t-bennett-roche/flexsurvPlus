@@ -289,10 +289,6 @@ if(class(models.gengamma$gengamma)=="flexsurvreg"){
     dplyr::select(Model, Dist, Intervention_name, Reference_name, Status, AIC, BIC)
   
   
-  # as a data frame with metadata 
-  param_df <- param_final %>%
-    dplyr::mutate(Model="Independent shape", Intervention_name=int_name, Reference_name=ref_name)
-  
   col_names <- c("exp.rate.int", "exp.rate.ref", "exp.rate.TE", 
                  "weibull.scale.int", "weibull.scale.ref", "weibull.shape.int", "weibull.shape.ref", "weibull.scale.TE", "weibull.shape.TE",
                  "gompertz.rate.int",  "gompertz.rate.ref", "gompertz.shape.int", "gompertz.shape.ref", "gompertz.rate.TE", "gompertz.shape.TE",
@@ -320,7 +316,6 @@ if(class(models.gengamma$gengamma)=="flexsurvreg"){
   output <- list(
     models = models,
     model_summary = model_summary.out,
-    parameters = param_df,
     parameters_vector = paramV
   )
   return(output)

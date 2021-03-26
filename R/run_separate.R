@@ -138,17 +138,12 @@ run_separate <- function(data,
     dplyr::mutate(Model="Seperate", Intervention_name=int_name, Reference_name=ref_name) %>%
     dplyr::select(Model, Dist, Intervention_name, Reference_name, Status, AIC, BIC)
   
-  
-  # as a data frame with metadata 
-  param_df <- param_final %>%
-    dplyr::mutate(Model="Seperate", Intervention_name=int_name, Reference_name=ref_name)
-  params_all <- param_df 
+  params_all <- param_final 
   
   if('exp' %in% distr){
     params_all$exp.rate.int <- ifelse("exp.rate.int" %in% names(params_all), params_all$exp.rate.int, NA) 
     params_all$exp.rate.ref <- ifelse("exp.rate.ref" %in% names(params_all), params_all$exp.rate.ref, NA) 
-    
-  }
+      }
   
   if('weibull' %in% distr){
     params_all$weibull.shape.int <- ifelse("weibull.shape.int" %in% names(params_all), params_all$weibull.shape.int, NA) 
@@ -162,8 +157,7 @@ run_separate <- function(data,
     params_all$gompertz.rate.int <- ifelse("gompertz.rate.int" %in% names(params_all), params_all$gompertz.rate.int, NA) 
     params_all$gompertz.shape.ref <- ifelse("gompertz.shape.ref" %in% names(params_all), params_all$gompertz.shape.ref, NA) 
     params_all$gompertz.rate.ref <- ifelse("gompertz.rate.ref" %in% names(params_all), params_all$gompertz.rate.ref, NA) 
-    
-  }
+     }
   
   if('llogis' %in% distr){
     params_all$llogis.shape.int <- ifelse("llogis.shape.int" %in% names(params_all), params_all$llogis.shape.int, NA) 
@@ -177,16 +171,13 @@ run_separate <- function(data,
     params_all$gamma.rate.int <- ifelse("gamma.rate.int" %in% names(params_all), params_all$gamma.rate.int, NA) 
     params_all$gamma.shape.ref <- ifelse("gamma.shape.ref" %in% names(params_all), params_all$gamma.shape.ref, NA) 
     params_all$gamma.rate.ref <- ifelse("gamma.rate.ref" %in% names(params_all), params_all$gamma.rate.ref, NA) 
-    
-    
-  }
+      }
   
   if('lnorm' %in% distr){
     params_all$lnorm.meanlog.int <- ifelse("lnorm.meanlog.int" %in% names(params_all), params_all$lnorm.meanlog.int, NA) 
     params_all$lnorm.sdlog.int <- ifelse("lnorm.sdlog.int" %in% names(params_all), params_all$lnorm.sdlog.int, NA) 
     params_all$lnorm.meanlog.ref <- ifelse("lnorm.meanlog.ref" %in% names(params_all), params_all$lnorm.meanlog.ref, NA) 
     params_all$lnorm.sdlog.ref <- ifelse("lnorm.sdlog.ref" %in% names(params_all), params_all$lnorm.sdlog.ref, NA) 
-
   }
   
   if('gengamma' %in% distr){
@@ -196,8 +187,7 @@ run_separate <- function(data,
     params_all$gengamma.mu.ref <- ifelse("gengamma.mu.ref" %in% names(params_all), params_all$gengamma.mu.ref, NA) 
     params_all$gengamma.sigma.ref <- ifelse("gengamma.sigma.ref" %in% names(params_all), params_all$gengamma.sigma.ref, NA) 
     params_all$gengamma.Q.ref <- ifelse("gengamma.Q.ref" %in% names(params_all), params_all$gengamma.Q.ref, NA) 
-    
-  }
+      }
   
   if('genf' %in% distr){
     params_all$genf.mu.int <- ifelse("genf.mu.int" %in% names(params_all), params_all$genf.mu.int, as.numeric(NA)) 
@@ -208,8 +198,7 @@ run_separate <- function(data,
     params_all$genf.sigma.ref <- ifelse("genf.sigma.ref" %in% names(params_all), params_all$genf.sigma.ref, as.numeric(NA)) 
     params_all$genf.Q.ref <- ifelse("genf.Q.ref" %in% names(params_all), params_all$genf.Q.ref, as.numeric(NA)) 
     params_all$genf.P.ref <- ifelse("genf.P.ref" %in% names(params_all), params_all$genf.P.ref, as.numeric(NA)) 
-    
-  }
+      }
   
   col_names <- c("exp.rate.int", "exp.rate.ref",  
                                "weibull.scale.int", "weibull.scale.ref", "weibull.shape.int", "weibull.shape.ref", 
@@ -238,7 +227,6 @@ run_separate <- function(data,
   output <- list(
     models = models,
     model_summary = model_summary.out,
-    parameters = param_df,
     parameters_vector = paramV
   )
   
