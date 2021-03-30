@@ -81,7 +81,7 @@
       <h1 data-toc-skip>Parametric survival analysis using the flexsurvPlus package: understanding the theory</h1>
                         <h4 class="author">Roche</h4>
             
-            <h4 class="date">2021-01-06</h4>
+            <h4 class="date">2021-03-30</h4>
       
       
       <div class="hidden name"><code>Survival_analysis_theory.Rmd</code></div>
@@ -120,10 +120,15 @@ pre { /* Code block - determines code spacing between lines */
 <div id="introduction" class="section level1">
 <h1 class="hasAnchor">
 <a href="#introduction" class="anchor"></a>Introduction</h1>
-<p>Parametric survival models are often the preferred method of extrapolating survival data for use in economic models. The National Institute for Health and Care Excellence (NICE) Decision Support Unit (DSU) technical support document (TSD) 14 recommends that the Exponential, Weibull, Gompertz, log-logistic, log normal and Generalized Gamma parametric models should all be considered.<span class="citation">[1]</span> More recently, NICE also discusses more flexible models in NICE DSU TSD 21, however, more these models are not in the scope of this package.<span class="citation">[2]</span> The Canadian Agency for Drugs and Technologies in Health (CADTH) additionally specifies that the Gamma distribution must also be considered. This document therefore details the characteristics of each of these distributions and demonstrates how the parameters from each distribution, outputted using the flexsurvPlus package, can be implemented within an economic model.<span class="citation">[3]</span></p>
+<p>Parametric survival models are often the preferred method of extrapolating survival data for use in economic models. The National Institute for Health and Care Excellence (NICE) Decision Support Unit (DSU) technical support document (TSD) 14 recommends that the Exponential, Weibull, Gompertz, log-logistic, log normal and Generalized Gamma parametric models should all be considered.<span class="citation">[1]</span> More recently, NICE also discusses more flexible models in NICE DSU TSD 21, however, more these models are not in the scope of this package.<span class="citation">[2]</span> The Canadian Agency for Drugs and Technologies in Health (CADTH) additionally specifies that the Gamma distribution must also be considered. This document therefore details the characteristics of each of these distributions and demonstrates how the parameters from each distribution, outputted using the flexsurvPlus package, can be implemented within an economic model.<span class="citation">[3]</span> The Generalized F distribution is not commonly used, however it has been included in this package in case more flexible modeling is required.</p>
 <p>The flexsurvPlus package allows the inclusion of a treatment effect in the following three ways:</p>
 <ul>
-<li><p>Separate models - Models fitted to each treatment arm separately</p></li>
+<li>
+<p>Separate models - Models fitted to each treatment arm separately</p>
+<ul>
+<li>Similarly, a separate model can be fitted to data from a single treatment arm</li>
+</ul>
+</li>
 <li><p>Independent shape models - Models fitted to both/all treatment arms including a treatment covariate to model the effect of treatment on both the scale and shape parameter(s) of the distribution.</p></li>
 <li><p>Common shape models - Models fitted to both/all treatment arms including a treatment covariate to model the effect of treatment on the scale parameter of the distribution. The shape parameter(s) of the distribution is common across treatments which reflects an assumption of proportional hazards or accelerated failure time between treatments depending on the distribution</p></li>
 </ul>
@@ -133,7 +138,7 @@ pre { /* Code block - determines code spacing between lines */
 <h1 class="hasAnchor">
 <a href="#properties-of-the-distributions" class="anchor"></a>Properties of the distributions</h1>
 <p>The properties of each parametric distribution are summarized in the Table below.</p>
-<p>By default, covariates are placed on the “location” parameter of the distribution, typically the “scale” or “rate” parameter, through a linear model, or a log-linear model if this parameter must be positive. This gives an accelerated failure time model or a proportional hazards model (see Table below) depending on how the distribution is parametrized.The other parameters are ancillary parameters that determine the shape, variance, or higher moments of the distribution. These parameters impact the hazard function, which can take a variety of shapes depending on the distribution:<span class="citation">[4]</span></p>
+<p>By default, covariates are placed on the “location” parameter of the distribution, typically the “scale” or “rate” parameter, through a linear model, or a log-linear model if this parameter must be positive. This gives an accelerated failure time model or a proportional hazards model (see Table below) depending on how the distribution is parametrized.The other parameters are ancillary parameters that determine the shape, variance, or higher moments of the distribution. These parameters impact the hazard function, which can take a variety of shapes depending on the distribution:<span class="citation">[4,5]</span></p>
 <ul>
 <li>the exponential distribution only supports a constant hazard;</li>
 <li>the Weibull, Gompertz, and gamma distributions support monotonically increasing and decreasing hazards;</li>
@@ -148,12 +153,13 @@ pre { /* Code block - determines code spacing between lines */
 <li>The Weibull distribution reduces to an exponential distribution when the Weibull shape parameter equals 1 (<span class="math inline">\(a=1\)</span>) and the exponential rate parameter is 1 divided by the the Weibull scale parameter (<span class="math inline">\(\frac{1}{b}\)</span>).</li>
 <li>The Gompertz distribution reduces to an exponential distribution when the Gompertz shape parameter equals 0 (<span class="math inline">\(a=0\)</span>).</li>
 <li>The Generalized Gamma distribution reduces to an exponential model (<span class="math inline">\(Q=\sigma=1\)</span>), Weibull model (<span class="math inline">\(Q=1\)</span>), gamma model (<span class="math inline">\(Q=\sigma\)</span>) and log-normal model (<span class="math inline">\(Q=0\)</span>).</li>
+<li>The Generalized F distribution reduces to the Generalized Gamma distribution (<span class="math inline">\(P=1\)</span>)</li>
 </ul>
 </div>
 <div id="initial-diagnostics" class="section level2">
 <h2 class="hasAnchor">
 <a href="#initial-diagnostics" class="anchor"></a>Initial diagnostics</h2>
-<p>Before fitting any models, the following initial diagnostic plots are helpful to understand which distribution might be the best fit to the data being modelled:</p>
+<p>Before fitting any models, the following initial diagnostic plots are helpful to understand which distribution might be the best fit to the data being modeled:</p>
 <ul>
 <li>Kaplan–Meier plot
 <ul>
@@ -384,6 +390,32 @@ Constant, monotonically increasing, monotonically decreasing, bathtub, arc-shape
 AFT
 </td>
 </tr>
+<tr>
+<td style="text-align:left;">
+Generalized F
+</td>
+<td style="text-align:left;">
+<span class="math inline">\(4: \ \mu, \sigma, Q, P\)</span>
+</td>
+<td style="text-align:left;">
+mu (<span class="math inline">\(\mu\)</span>)
+</td>
+<td style="text-align:left;">
+sigma (<span class="math inline">\(\sigma\)</span>), Q, P
+</td>
+<td style="text-align:left;">
+<span class="math display">\[ \int_{0}^{s_{1}(s_{2}+s_{1}e^{w})^{-1}} \frac{x^{s_{2}-1}(1-x)^{s_{1}-1}}{B(s_{2}, s_{1})} \ dx \]</span>
+</td>
+<td style="text-align:left;">
+<span class="math display">\[ \frac{\delta (s_{1}/s_{2})^{s_{1}}e^{s_{1}w}}{\sigma x (1 + s_{1} e^{w}/s_{2})^{(s_{1} + s_{2})}B(s_{1}, s_{2})S(t)}\]</span>
+</td>
+<td style="text-align:left;">
+Decreasing, arc-shaped
+</td>
+<td style="text-align:left;">
+AFT
+</td>
+</tr>
 </tbody>
 </table>
 </div>
@@ -402,7 +434,7 @@ AFT
 <p>uses the flexsurv package to fit two exponential models (one to data for the intervention treatment and one to data for the reference treatment). The R code for the fitted models is as follows:</p>
 <p><code>flexsurvreg(formula = Surv(Time, Event)~1, data =</code> <em>data for intervention treatment </em><code>, dist = "exp")</code> <code>flexsurvreg(formula = Surv(Time, Event)~1, data =</code> <em>data for reference treatment </em><code>, dist = "exp")</code></p>
 <p>The estimated rate parameter from each of these models can be then used within the following Excel formula to estimate survival at different time points:</p>
-<p><code>EXP(-EXP(rate)*time)</code></p>
+<p><code>EXP(-rate*time)</code></p>
 <p>This is equivalent to running the following code in R:</p>
 <p><code>summary(</code> <em>flexsurvreg exponential model </em><code>, type="survival", B=0, t=time)</code></p>
 </div>
@@ -439,7 +471,7 @@ Rate parameter
 </tr></tbody>
 </table>
 <p>Survival can then be estimated in Excel using these two rate parameters, as for the separate models, with formula:</p>
-<p><code>EXP(-EXP(rate)*time)</code></p>
+<p><code>EXP(-rate*time)</code></p>
 <p>This is equivalent to running the following code in R:</p>
 <p><code>summary(</code> <em>flexsurvreg exponential model </em><code>, type="survival", B=0, t=time)</code></p>
 </div>
@@ -459,7 +491,7 @@ Rate parameter
 <p>uses the flexsurv package to fit two weibull models (one to data for the intervention treatment and one to data for the reference treatment). The R code for the fitted models is as follows:</p>
 <p><code>flexsurvreg(formula = Surv(Time, Event)~1, data =</code> <em>data for intervention treatment </em><code>, dist = "weibull")</code> <code>flexsurvreg(formula = Surv(Time, Event)~1, data =</code> <em>data for reference treatment </em><code>, dist = "weibull")</code></p>
 <p>Estimated shape and scale parameters from each of these models can be then used within the following Excel formula to estimate survival at different time points:</p>
-<p><code>1-WEIBULL(time,EXP(shape),EXP(scale),TRUE)</code></p>
+<p><code>1-WEIBULL(time,shape,scale,TRUE)</code></p>
 <p>This is equivalent to running the following code in R:</p>
 <p><code>summary(</code> <em>flexsurvreg weibull model </em><code>, type="survival", B=0, t=time)</code></p>
 </div>
@@ -515,7 +547,7 @@ Scale parameter
 </tbody>
 </table>
 <p>Survival can then be estimated in Excel using the shape and scale parameters specific to each treatment with formula:</p>
-<p><code>1-WEIBULL(time,EXP(shape),EXP(scale),TRUE)</code></p>
+<p><code>1-WEIBULL(time,shape,scale,TRUE)</code></p>
 <p>This is equivalent to running the following code in R:</p>
 <p><code>summary(</code> <em>flexsurvreg weibull model </em><code>, type="survival", B=0, t=time)</code></p>
 </div>
@@ -571,7 +603,7 @@ Scale parameter
 </tbody>
 </table>
 <p>Survival can then be estimated in Excel using the shape and scale parameters specific to each treatment with formula:</p>
-<p><code>1-WEIBULL(time,EXP(shape),EXP(scale),TRUE)</code></p>
+<p><code>1-WEIBULL(time,shape,scale,TRUE)</code></p>
 <p>This is equivalent to running the following code in R:</p>
 <p><code>summary(</code> <em>flexsurvreg weibull model </em><code>, type="survival", B=0, t=time)</code></p>
 </div>
@@ -590,7 +622,7 @@ Scale parameter
 <p>uses the flexsurv package to fit two gompertz models (one to data for the intervention treatment and one to data for the reference treatment). The R code for the fitted models is as follows:</p>
 <p><code>flexsurvreg(formula = Surv(Time, Event)~1, data =</code> <em>data for intervention treatment </em><code>, dist = "gompertz")</code> <code>flexsurvreg(formula = Surv(Time, Event)~1, data =</code> <em>data for reference treatment </em><code>, dist = "gompertz")</code></p>
 <p>Estimation of the rate and shape parameters from each of these models can be then used within the following Excel formula to estimate survival at different time points:</p>
-<p><code>EXP((-1/shape) * EXP(rate) * (EXP(shape*time)-1))</code></p>
+<p><code>EXP((-1/shape) * rate * (EXP(shape*time)-1))</code></p>
 <p>This is equivalent to running the following code in R:</p>
 <p><code>summary(</code> <em>flexsurvreg gompertz model </em><code>, type="survival", B=0, t=time)</code></p>
 </div>
@@ -646,7 +678,7 @@ Shape parameter
 </tbody>
 </table>
 <p>Survival can then be estimated in Excel using the rate and shape parameters specific to each treatment with formula:</p>
-<p><code>EXP((-1/shape) * EXP(rate) * (EXP(shape*time)-1))</code></p>
+<p><code>EXP((-1/shape) * rate * (EXP(shape*time)-1))</code></p>
 <p>This is equivalent to running the following code in R:</p>
 <p><code>summary(</code> <em>flexsurvreg gompertz model </em><code>, type="survival", B=0, t=time)</code></p>
 </div>
@@ -702,7 +734,7 @@ Shape parameter
 </tbody>
 </table>
 <p>Survival can then be estimated in Excel using the rate and shape parameters specific to each treatment with formula:</p>
-<p><code>EXP((-1/shape) * EXP(rate) * (EXP(shape*time)-1))</code></p>
+<p><code>EXP((-1/shape) * rate * (EXP(shape*time)-1))</code></p>
 <p>This is equivalent to running the following code in R:</p>
 <p><code>summary(</code> <em>flexsurvreg gompertz model </em><code>, type="survival", B=0, t=time)</code></p>
 </div>
@@ -721,7 +753,7 @@ Shape parameter
 <p>uses the flexsurv package to fit two log-logistic models (one to data for the intervention treatment and one to data for the reference treatment). The R code for the fitted models is as follows:</p>
 <p><code>flexsurvreg(formula = Surv(Time, Event)~1, data =</code> <em>data for intervention treatment </em><code>, dist = "llogis")</code> <code>flexsurvreg(formula = Surv(Time, Event)~1, data =</code> <em>data for reference treatment </em><code>, dist = "llogis")</code></p>
 <p>Estimation of the shape and scale parameters from each of these models can be then used within the following Excel formula to estimate survival at different time points:</p>
-<p><code>1 /(1+(((time * EXP(-1 * scale))^(1/EXP(-1 * shape)))))</code></p>
+<p><code>1 /(1+((time / scale)^shape))</code></p>
 <p>This is equivalent to running the following code in R:</p>
 <p><code>summary(</code> <em>flexsurvreg log-logistic model </em><code>, type="survival", B=0, t=time)</code></p>
 </div>
@@ -777,7 +809,7 @@ Scale parameter
 </tbody>
 </table>
 <p>Survival can then be estimated in Excel using the rate and shape parameters specific to each treatment with formula:</p>
-<p><code>1 /(1+(((time * EXP(-1 * scale))^(1/EXP(-1 * shape)))))</code></p>
+<p><code>1 /(1+((time / scale)^shape))</code></p>
 <p>This is equivalent to running the following code in R:</p>
 <p><code>summary(</code> <em>flexsurvreg log-logistic model </em><code>, type="survival", B=0, t=time)</code></p>
 </div>
@@ -833,7 +865,7 @@ Scale parameter
 </tbody>
 </table>
 <p>Survival can then be estimated in Excel using the rate and shape parameters specific to each treatment with formula:</p>
-<p><code>1 /(1+(((time * EXP(-1 * scale))^(1/EXP(-1 * shape)))))</code></p>
+<p><code>1 /(1+((time / scale)^shape))</code></p>
 <p>This is equivalent to running the following code in R:</p>
 <p><code>summary(</code> <em>flexsurvreg log-logistic model </em><code>, type="survival", B=0, t=time)</code></p>
 </div>
@@ -852,7 +884,7 @@ Scale parameter
 <p>uses the flexsurv package to fit two log-normal models (one to data for the intervention treatment and one to data for the reference treatment). The R code for the fitted models is as follows:</p>
 <p><code>flexsurvreg(formula = Surv(Time, Event)~1, data =</code> <em>data for intervention treatment </em><code>, dist = "lnorm")</code> <code>flexsurvreg(formula = Surv(Time, Event)~1, data =</code> <em>data for reference treatment </em><code>, dist = "lnorm")</code></p>
 <p>Estimation of the meanlog and sdlog parameters from each of these models can be then used within the following Excel formula to estimate survival at different time points:</p>
-<p><code>1-LOGNORMDIST(time,meanlog,1/EXP(-1*sdlog))</code></p>
+<p><code>1-LOGNORMDIST(time, meanlog, sdlog))</code></p>
 <p>This is equivalent to running the following code in R:</p>
 <p><code>summary(</code> <em>flexsurvreg log-normal model </em><code>, type="survival", B=0, t=time)</code></p>
 </div>
@@ -908,7 +940,7 @@ Sdlog parameter
 </tbody>
 </table>
 <p>Survival can then be estimated in Excel using the meanlog and sdlog parameters specific to each treatment with formula:</p>
-<p><code>1-LOGNORMDIST(time,meanlog,1/EXP(-1*sdlog))</code></p>
+<p><code>1-LOGNORMDIST(time, meanlog, sdlog))</code></p>
 <p>This is equivalent to running the following code in R:</p>
 <p><code>summary(</code> <em>flexsurvreg log-normal model </em><code>, type="survival", B=0, t=time)</code></p>
 </div>
@@ -964,7 +996,7 @@ Sdlog parameter
 </tbody>
 </table>
 <p>Survival can then be estimated in Excel using the meanlog and sdlog parameters specific to each treatment with formula:</p>
-<p><code>1-LOGNORMDIST(time,meanlog,1/EXP(-1*sdlog))</code></p>
+<p><code>1-LOGNORMDIST(time, meanlog, sdlog))</code></p>
 <p>This is equivalent to running the following code in R:</p>
 <p><code>summary(</code> <em>flexsurvreg log-normal model </em><code>, type="survival", B=0, t=time)</code></p>
 </div>
@@ -983,7 +1015,7 @@ Sdlog parameter
 <p>uses the flexsurv package to fit two gamma models (one to data for the intervention treatment and one to data for the reference treatment). The R code for the fitted models is as follows:</p>
 <p><code>flexsurvreg(formula = Surv(Time, Event)~1, data =</code> <em>data for intervention treatment </em><code>, dist = "gamma")</code> <code>flexsurvreg(formula = Surv(Time, Event)~1, data =</code> <em>data for reference treatment </em><code>, dist = "gamma")</code></p>
 <p>Estimation of the rate and shape parameters from each of these models can be then used within the following Excel formula to estimate survival at different time points:</p>
-<p><code>1-((EXP(GAMMALN(EXP(rate))) * GAMMA.DIST(EXP(shape) * time,EXP(rate),1,TRUE))/GAMMA(EXP(rate))</code></p>
+<p><code>1-((EXP(GAMMALN(rate)) * GAMMA.DIST(shape * time,rate,1,TRUE))/GAMMA(rate)</code></p>
 <p>This is equivalent to running the following code in R:</p>
 <p><code>summary(</code> <em>flexsurvreg gamma model </em><code>, type="survival", B=0, t=time)</code></p>
 </div>
@@ -1039,7 +1071,7 @@ Shape parameter
 </tbody>
 </table>
 <p>Survival can then be estimated in Excel using the rate and shape parameters specific to each treatment with formula:</p>
-<p><code>1-((EXP(GAMMALN(EXP(rate))) * GAMMA.DIST(EXP(shape) * time,EXP(rate),1,TRUE))/GAMMA(EXP(rate))</code></p>
+<p><code>1-((EXP(GAMMALN(rate)) * GAMMA.DIST(shape * time,rate,1,TRUE))/GAMMA(rate)</code></p>
 <p>This is equivalent to running the following code in R:</p>
 <p><code>summary(</code> <em>flexsurvreg gamma model </em><code>, type="survival", B=0, t=time)</code></p>
 </div>
@@ -1095,7 +1127,7 @@ Shape parameter
 </tbody>
 </table>
 <p>Survival can then be estimated in Excel using the rate and shape parameters specific to each treatment with formula:</p>
-<p><code>1-((EXP(GAMMALN(EXP(rate))) * GAMMA.DIST(EXP(shape) * time,EXP(rate),1,TRUE))/GAMMA(EXP(rate))</code></p>
+<p><code>1-((EXP(GAMMALN(rate)) * GAMMA.DIST(shape * time,rate,1,TRUE))/GAMMA(rate)</code></p>
 <p>This is equivalent to running the following code in R:</p>
 <p><code>summary(</code> <em>flexsurvreg gamma model </em><code>, type="survival", B=0, t=time)</code></p>
 </div>
@@ -1114,7 +1146,7 @@ Shape parameter
 <p>uses the flexsurv package to fit two generalized gamma models (one to data for the intervention treatment and one to data for the reference treatment). The R code for the fitted models is as follows:</p>
 <p><code>flexsurvreg(formula = Surv(Time, Event)~1, data =</code> <em>data for intervention treatment </em><code>, dist = "gengamma")</code> <code>flexsurvreg(formula = Surv(Time, Event)~1, data =</code> <em>data for reference treatment </em><code>, dist = "gengamma")</code></p>
 <p>Estimation of the mu, sigma and Q parameters from each of these models can be then used within the following Excel formula to estimate survival at different time points:</p>
-<p><code>IF(Q&lt;0,GAMMADIST((-Q^-2) * EXP(-Q* -((LN(time)-(mu))/EXP(sigma))),-Q^-2,1,1),1-GAMMADIST((-Q^-2) * EXP(-Q * -((LN(time)-(mu))/EXP(sigma))),-Q^-2,1,1))</code></p>
+<p><code>IF(Q&lt;0,GAMMADIST((-Q^-2) * EXP(-Q* -((LN(time)-(mu))/sigma)),-Q^-2,1,1),1-GAMMADIST((-Q^-2) * EXP(-Q * -((LN(time)-(mu))/sigma)),-Q^-2,1,1))</code></p>
 <p>This is equivalent to running the following code in R:</p>
 <p><code>summary(</code> <em>flexsurvreg Generalized Gamma model </em><code>, type="survival", B=0, t=time)</code></p>
 </div>
@@ -1181,7 +1213,7 @@ Q coefficient
 </tbody>
 </table>
 <p>Survival can then be estimated in Excel using the mu, sigma and Q parameters specific to each treatment with formula:</p>
-<p><code>IF(Q&lt;0,GAMMADIST((-Q^-2) * EXP(-Q* -((LN(time)-(mu))/EXP(sigma))),-Q^-2,1,1),1-GAMMADIST((-Q^-2) * EXP(-Q * -((LN(time)-(mu))/EXP(sigma))),-Q^-2,1,1))</code></p>
+<p><code>IF(Q&lt;0,GAMMADIST((-Q^-2) * EXP(-Q* -((LN(time)-(mu))/sigma)),-Q^-2,1,1),1-GAMMADIST((-Q^-2) * EXP(-Q * -((LN(time)-(mu))/sigma)),-Q^-2,1,1))</code></p>
 <p>This is equivalent to running the following code in R:</p>
 <p><code>summary(</code> <em>flexsurvreg Generalized Gamma model </em><code>, type="survival", B=0, t=time)</code></p>
 </div>
@@ -1248,9 +1280,199 @@ Q coefficient
 </tbody>
 </table>
 <p>Survival can then be estimated in Excel using the mu, sigma and Q parameters specific to each treatment with formula:</p>
-<p><code>IF(Q&lt;0,GAMMADIST((-Q^-2) * EXP(-Q* -((LN(time)-(mu))/EXP(sigma))),-Q^-2,1,1),1-GAMMADIST((-Q^-2) * EXP(-Q * -((LN(time)-(mu))/EXP(sigma))),-Q^-2,1,1))</code></p>
+<p><code>IF(Q&lt;0,GAMMADIST((-Q^-2) * EXP(-Q* -((LN(time)-(mu))/sigma)),-Q^-2,1,1),1-GAMMADIST((-Q^-2) * EXP(-Q * -((LN(time)-(mu))/sigma)),-Q^-2,1,1))</code></p>
 <p>This is equivalent to running the following code in R:</p>
 <p><code>summary(</code> <em>flexsurvreg Generalized Gamma model </em><code>, type="survival", B=0, t=time)</code></p>
+</div>
+</div>
+<div id="generalized-f" class="section level1">
+<h1 class="hasAnchor">
+<a href="#generalized-f" class="anchor"></a>Generalized F</h1>
+<div id="separate-models-7" class="section level2">
+<h2 class="hasAnchor">
+<a href="#separate-models-7" class="anchor"></a>Separate models</h2>
+<p>The <em>run_PSM</em> function in the <em>flexsurvPlus</em> package with the following arguments:</p>
+<ul>
+<li>model.type = “Separate”</li>
+<li>distr = “genf”</li>
+</ul>
+<p>uses the flexsurv package to fit two generalized F models (one to data for the intervention treatment and one to data for the reference treatment). The R code for the fitted models is as follows:</p>
+<p><code>flexsurvreg(formula = Surv(Time, Event)~1, data =</code> <em>data for intervention treatment </em><code>, dist = "genf")</code> <code>flexsurvreg(formula = Surv(Time, Event)~1, data =</code> <em>data for reference treatment </em><code>, dist = "genf")</code></p>
+<p>Estimation of the mu, sigma, Q and P parameters from each of these models can be then used within the following Excel formulas to estimate survival at different time points:</p>
+<p><code>BETA.DIST(h_m2/(h_m2 + h_m1*time^(h_d/sigma)/EXP(h_d/sigma*mu)),h_m2,h_m1,TRUE)</code></p>
+<ul>
+<li><code>h_m1 = 2/(Q*Q + 2*P + Q*SQRT(Q*Q + 2*P))</code></li>
+<li><code>h_m2 = 2/(Q*Q + 2*P - Q*SQRT(Q*Q + 2*P))</code></li>
+<li><code>h_d = SQRT(Q*Q + 2*P)</code></li>
+</ul>
+<p>This is equivalent to running the following code in R:</p>
+<p><code>summary(</code> <em>flexsurvreg Generalized F model </em><code>, type="survival", B=0, t=time)</code></p>
+</div>
+<div id="common-shape-models-7" class="section level2">
+<h2 class="hasAnchor">
+<a href="#common-shape-models-7" class="anchor"></a>Common shape models</h2>
+<p>The <em>run_PSM</em> function in the <em>flexsurvPlus</em> package with the following arguments:</p>
+<ul>
+<li>model.type = “Common shape”</li>
+<li>distr = “genf”</li>
+</ul>
+<p>uses the flexsurv package to fit one Generalized F model with a covariate for treatment. The R code for the fitted model is as follows:</p>
+<p><code>flexsurvreg(formula = Surv(Time, Event)~ARM, data =</code> <em>data with a treatment variable named “ARM” </em><code>, dist = "genf")</code></p>
+<p>This model outputs mu, sigma Q and P parameters and a treatment coefficient. Mu, sigma Q and P parameters for each treatment are estimated in <em>run_PSM</em> as follows:</p>
+<table class="table">
+<caption>
+Mu, sigma, Q and P parameters for intervention and reference treatments from a common shape model
+</caption>
+<thead><tr>
+<th style="text-align:left;">
+Parameter
+</th>
+<th style="text-align:left;">
+Intervention
+</th>
+<th style="text-align:left;">
+Reference
+</th>
+</tr></thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+mu
+</td>
+<td style="text-align:left;">
+mu coefficient + treatment coefficient
+</td>
+<td style="text-align:left;">
+mu coefficient
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Sigma
+</td>
+<td style="text-align:left;">
+sigma coefficient
+</td>
+<td style="text-align:left;">
+sigma coefficient
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Q
+</td>
+<td style="text-align:left;">
+Q coefficient
+</td>
+<td style="text-align:left;">
+Q coefficient
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+P
+</td>
+<td style="text-align:left;">
+P coefficient
+</td>
+<td style="text-align:left;">
+P coefficient
+</td>
+</tr>
+</tbody>
+</table>
+<p>Survival can then be estimated in Excel using the mu, sigma, Q and P parameters specific to each treatment with formula:</p>
+<p><code>BETA.DIST(h_m2/(h_m2 + h_m1*time^(h_d/sigma)/EXP(h_d/sigma*mu)),h_m2,h_m1,TRUE)</code></p>
+<ul>
+<li><code>h_m1 = 2/(Q*Q + 2*P + Q*SQRT(Q*Q + 2*P))</code></li>
+<li><code>h_m2 = 2/(Q*Q + 2*P - Q*SQRT(Q*Q + 2*P))</code></li>
+<li><code>h_d = SQRT(Q*Q + 2*P)</code></li>
+</ul>
+<p>This is equivalent to running the following code in R:</p>
+<p><code>summary(</code> <em>flexsurvreg Generalized f model </em><code>, type="survival", B=0, t=time)</code></p>
+</div>
+<div id="independent-shape-models-6" class="section level2">
+<h2 class="hasAnchor">
+<a href="#independent-shape-models-6" class="anchor"></a>Independent shape models</h2>
+<p>The <em>run_PSM</em> function in the <em>flexsurvPlus</em> package with the following arguments:</p>
+<ul>
+<li>model.type = “Independent shape”</li>
+<li>distr = “genf”</li>
+</ul>
+<p>uses the flexsurv package to fit one Generalized F model with a covariate for treatment on both the mu, sigma, Q and P parameters. The R code for the fitted model is as follows:</p>
+<p><code>flexsurvreg(formula = Surv(Time, Event) ~ ARM + sigma(ARM) + Q(ARM) + P(ARM), data =</code> <em>data with a treatment variable named “ARM” </em><code>, dist = "genf")</code></p>
+<p>This model outputs mu, sigma, Q and P parameters and a treatment coefficient for mu, sigma, Q and P. Parameters for each treatment are estimated in <em>run_PSM</em> as follows:</p>
+<table class="table">
+<caption>
+Mu, sigma, Q and P parameters for intervention and reference treatments from an independent shape model
+</caption>
+<thead><tr>
+<th style="text-align:left;">
+Parameter
+</th>
+<th style="text-align:left;">
+Intervention
+</th>
+<th style="text-align:left;">
+Reference
+</th>
+</tr></thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+mu
+</td>
+<td style="text-align:left;">
+mu coefficient + treatment coefficient for mu
+</td>
+<td style="text-align:left;">
+mu coefficient
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Scale
+</td>
+<td style="text-align:left;">
+sigma coefficient + treatment coefficient for sigma
+</td>
+<td style="text-align:left;">
+sigma coefficient
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Q
+</td>
+<td style="text-align:left;">
+Q coefficient + treatment coefficient for Q
+</td>
+<td style="text-align:left;">
+Q coefficient
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+P
+</td>
+<td style="text-align:left;">
+P coefficient + treatment coefficient for P
+</td>
+<td style="text-align:left;">
+P coefficient
+</td>
+</tr>
+</tbody>
+</table>
+<p>Survival can then be estimated in Excel using the mu, sigma, Q and P parameters specific to each treatment with formula:</p>
+<p><code>BETA.DIST(h_m2/(h_m2 + h_m1*time^(h_d/sigma)/EXP(h_d/sigma*mu)),h_m2,h_m1,TRUE)</code></p>
+<ul>
+<li><code>h_m1 = 2/(Q*Q + 2*P + Q*SQRT(Q*Q + 2*P))</code></li>
+<li><code>h_m2 = 2/(Q*Q + 2*P - Q*SQRT(Q*Q + 2*P))</code></li>
+<li><code>h_d = SQRT(Q*Q + 2*P)</code></li>
+</ul>
+<p>This is equivalent to running the following code in R:</p>
+<p><code>summary(</code> <em>flexsurvreg Generalized F model </em><code>, type="survival", B=0, t=time)</code></p>
 </div>
 </div>
 <div id="references" class="section level1 unnumbered">
@@ -1268,6 +1490,9 @@ Q coefficient
 </div>
 <div id="ref-RbloggersPSM">
 <p>[4] Incerti D. Parametric survival modeling n.d.</p>
+</div>
+<div id="ref-cox2008">
+<p>[5] Cox C. The generalized f distribution: An umbrella for parametric survival analysis. Statistics in Medicine 2008;27:4301–12.</p>
 </div>
 </div>
 </div>

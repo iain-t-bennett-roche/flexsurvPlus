@@ -81,7 +81,7 @@
       <h1 data-toc-skip>Fitting parametric survival models in R</h1>
                         <h4 class="author">Roche</h4>
             
-            <h4 class="date">2021-01-06</h4>
+            <h4 class="date">2021-03-30</h4>
       
       
       <div class="hidden name"><code>Fitting_models_in_R.Rmd</code></div>
@@ -91,24 +91,24 @@
     
     
 <style type="text/css">
-
-body{ /* Normal  */
+  
+  body{ /* Normal  */
       font-size: 14px;
   }
 td {  /* Table  */
-  font-size: 10px;
+    font-size: 10px;
 }
 h1.title {
   font-size: 38px;
 }
 h1 { /* Header 1 */
-  font-size: 28px;
-  }
+    font-size: 28px;
+}
 h2 { /* Header 2 */
     font-size: 22px;
 }
 h3 { /* Header 3 */
-  font-size: 18px;
+    font-size: 18px;
 }
 code.r{ /* Code block */
     font-size: 12px;
@@ -120,12 +120,13 @@ pre { /* Code block - determines code spacing between lines */
 <div id="introduction" class="section level1">
 <h1 class="hasAnchor">
 <a href="#introduction" class="anchor"></a>Introduction</h1>
-<p>Parametric survival models are often the preferred method of extrapolating survival data for use in economic models. The National Institute for Health and Care Excellence (NICE) Decision Support Unit (DSU) technical support document (TSD) 14 recommends that the Exponential, Weibull, Gompertz, log-logistic, log normal and Generalized Gamma parametric models should all be considered.<span class="citation">[1]</span> More recently, NICE also discusses more flexible models in NICE DSU TSD 21, however, more these models are not in the scope of this package.<span class="citation">[2]</span> The Canadian Agency for Drugs and Technologies in Health (CADTH) additionally specifies that the Gamma distribution must also be considered. This document therefore details the characteristics of each of these distributions and demonstrates how the parameters from each distribution, outputted using the flexsurvPlus package, can be implemented within an economic model.<span class="citation">[3]</span></p>
-<p>The flexsurvPlus package allows the inclusion of a treatment effect in the following three ways:</p>
+<p>Parametric survival models are often the preferred method of extrapolating survival data for use in economic models. The National Institute for Health and Care Excellence (NICE) Decision Support Unit (DSU) technical support document (TSD) 14 recommends that the Exponential, Weibull, Gompertz, log-logistic, log normal and Generalized Gamma parametric models should all be considered.<span class="citation">[1]</span> More recently, NICE also discusses more flexible models in NICE DSU TSD 21, however, more these models are not in the scope of this package.<span class="citation">[2]</span> The Canadian Agency for Drugs and Technologies in Health (CADTH) additionally specifies that the Gamma distribution must also be considered. This document therefore details the characteristics of each of these distributions and demonstrates how the parameters from each distribution, outputted using the flexsurvPlus package, can be implemented within an economic model.<span class="citation">[3]</span> The Generalized F distribution is not commonly used, however it has been included in this package in case it is required.</p>
+<p>The flexsurvPlus package allows the inclusion of a treatment effect in the following four ways:</p>
 <ul>
 <li><p>Separate models - Models fitted to each treatment arm separately</p></li>
-<li><p>Independent shape models - Models fitted to both/all treatment arms including a treatment covariate to model the effect of treatment on both the scale and shape parameter(s) of the distribution.</p></li>
+<li><p>Independent shape models - Models fitted to both/all treatment arms including a treatment covariate to model the effect of treatment on both the scale and shape parameter(s) of the distribution</p></li>
 <li><p>Common shape models - Models fitted to both/all treatment arms including a treatment covariate to model the effect of treatment on the scale parameter of the distribution. The shape parameter(s) of the distribution is common across treatments which reflects an assumption of proportional hazards or accelerated failure time between treatments depending on the distribution</p></li>
+<li><p>One arm models - Models fitted to the entire dataset (no treatment strata)</p></li>
 </ul>
 <p>This document details how to use the <tt>flexsurvPlus</tt> package to perform these models. A separate vignette; “Parametric survival analysis using the flexsurvPlus package: understanding the theory” details the theory behind the models.</p>
 </div>
@@ -136,44 +137,22 @@ pre { /* Code block - determines code spacing between lines */
 <h2 class="hasAnchor">
 <a href="#install-packages" class="anchor"></a>Install packages</h2>
 <p>The following packages are required to run this example:</p>
-<div class="sourceCode" id="cb1"><html><body><pre class="r"><span class="fu"><a href="https://rdrr.io/r/base/library.html">library</a></span>(<span class="no">flexsurvPlus</span>)
+<div class="sourceCode" id="cb1"><html><body><pre class="r"><span class="co"># Libraries</span>
+<span class="fu"><a href="https://rdrr.io/r/base/library.html">library</a></span>(<span class="no">flexsurvPlus</span>)
+<span class="fu"><a href="https://rdrr.io/r/base/library.html">library</a></span>(<span class="no">flexsurv</span>)
 <span class="fu"><a href="https://rdrr.io/r/base/library.html">library</a></span>(<span class="no">tibble</span>)
 <span class="fu"><a href="https://rdrr.io/r/base/library.html">library</a></span>(<span class="no">dplyr</span>)
-<span class="co">#&gt; </span>
-<span class="co">#&gt; Attaching package: 'dplyr'</span>
-<span class="co">#&gt; The following objects are masked from 'package:stats':</span>
-<span class="co">#&gt; </span>
-<span class="co">#&gt;     filter, lag</span>
-<span class="co">#&gt; The following objects are masked from 'package:base':</span>
-<span class="co">#&gt; </span>
-<span class="co">#&gt;     intersect, setdiff, setequal, union</span>
 <span class="fu"><a href="https://rdrr.io/r/base/library.html">library</a></span>(<span class="no">survival</span>)
-<span class="fu"><a href="https://rdrr.io/r/base/library.html">library</a></span>(<span class="no">survminer</span>)
-<span class="co">#&gt; Loading required package: ggplot2</span>
-<span class="co">#&gt; Loading required package: ggpubr</span>
 <span class="fu"><a href="https://rdrr.io/r/base/library.html">library</a></span>(<span class="no">tidyr</span>)
 <span class="fu"><a href="https://rdrr.io/r/base/library.html">library</a></span>(<span class="no">boot</span>)
-<span class="co">#&gt; </span>
-<span class="co">#&gt; Attaching package: 'boot'</span>
-<span class="co">#&gt; The following object is masked from 'package:survival':</span>
-<span class="co">#&gt; </span>
-<span class="co">#&gt;     aml</span>
 
+<span class="co"># Non-scientific notation</span>
+<span class="fu"><a href="https://rdrr.io/r/base/options.html">options</a></span>(<span class="kw">scipen</span><span class="kw">=</span><span class="fl">999</span>)
 
+<span class="co"># Colours for plots</span>
 <span class="no">blue</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/grDevices/rgb.html">rgb</a></span>(<span class="fl">69</span>, <span class="fl">185</span>, <span class="fl">209</span>, <span class="kw">max</span><span class="kw">=</span><span class="fl">255</span>)
-<span class="no">red</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/grDevices/rgb.html">rgb</a></span>(<span class="fl">225</span>, <span class="fl">55</span>, <span class="fl">60</span>, <span class="kw">max</span><span class="kw">=</span><span class="fl">255</span>)
-<span class="no">yellow</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/grDevices/rgb.html">rgb</a></span>(<span class="fl">238</span>, <span class="fl">224</span>, <span class="fl">30</span>, <span class="kw">max</span><span class="kw">=</span><span class="fl">255</span>)
 <span class="no">pink</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/grDevices/rgb.html">rgb</a></span>(<span class="fl">211</span>,<span class="fl">78</span>,<span class="fl">147</span>,<span class="kw">max</span><span class="kw">=</span><span class="fl">255</span>)
-<span class="no">Dblue</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/grDevices/rgb.html">rgb</a></span>(<span class="fl">0</span>,<span class="fl">45</span>,<span class="fl">92</span>,<span class="kw">max</span><span class="kw">=</span><span class="fl">255</span>)
 <span class="no">Dyellow</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/grDevices/rgb.html">rgb</a></span>(<span class="fl">214</span>, <span class="fl">200</span>, <span class="fl">16</span>, <span class="kw">max</span><span class="kw">=</span><span class="fl">255</span>)
-<span class="no">green</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/grDevices/rgb.html">rgb</a></span>(<span class="fl">0</span>,<span class="fl">1</span>,<span class="fl">0</span>)
-<span class="no">Dyellow</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/grDevices/rgb.html">rgb</a></span>(<span class="fl">214</span>, <span class="fl">200</span>, <span class="fl">16</span>, <span class="kw">max</span><span class="kw">=</span><span class="fl">255</span>)
-<span class="no">black</span><span class="kw">&lt;-</span><span class="fu"><a href="https://rdrr.io/r/grDevices/rgb.html">rgb</a></span>(<span class="fl">0</span>,<span class="fl">0</span>,<span class="fl">0</span>,<span class="kw">max</span><span class="kw">=</span><span class="fl">255</span>)
-<span class="no">grey1</span><span class="kw">&lt;-</span><span class="fu"><a href="https://rdrr.io/r/grDevices/rgb.html">rgb</a></span>(<span class="fl">0</span>,<span class="fl">0</span>,<span class="fl">0</span>,<span class="kw">max</span><span class="kw">=</span><span class="fl">30</span>)
-<span class="no">grey2</span><span class="kw">&lt;-</span><span class="fu"><a href="https://rdrr.io/r/grDevices/rgb.html">rgb</a></span>(<span class="fl">10</span>,<span class="fl">10</span>,<span class="fl">10</span>,<span class="kw">max</span><span class="kw">=</span><span class="fl">30</span>)
-<span class="no">grey3</span><span class="kw">&lt;-</span><span class="fu"><a href="https://rdrr.io/r/grDevices/rgb.html">rgb</a></span>(<span class="fl">20</span>,<span class="fl">20</span>,<span class="fl">20</span>,<span class="kw">max</span><span class="kw">=</span><span class="fl">30</span>)
-<span class="no">grey3_dup</span><span class="kw">&lt;-</span><span class="fu"><a href="https://rdrr.io/r/grDevices/rgb.html">rgb</a></span>(<span class="fl">19</span>,<span class="fl">20</span>,<span class="fl">20</span>,<span class="kw">max</span><span class="kw">=</span><span class="fl">30</span>)
-<span class="no">lightPink</span><span class="kw">&lt;-</span><span class="fu"><a href="https://rdrr.io/r/grDevices/rgb.html">rgb</a></span>(<span class="fl">229</span>,<span class="fl">151</span>,<span class="fl">192</span>,<span class="kw">max</span><span class="kw">=</span><span class="fl">255</span>)
 <span class="no">orange</span><span class="kw">&lt;-</span><span class="fu"><a href="https://rdrr.io/r/grDevices/rgb.html">rgb</a></span>(<span class="fl">247</span>,<span class="fl">139</span>,<span class="fl">21</span>,<span class="kw">max</span><span class="kw">=</span><span class="fl">255</span>)</pre></body></html></div>
 </div>
 <div id="read-in-the-data" class="section level2">
@@ -186,10 +165,23 @@ pre { /* Code block - determines code spacing between lines */
 <li>Event - a binary variable (event=1, censor=0)</li>
 <li>Treatment - a character variable with the name of the intervention treatment</li>
 </ul>
-<p>The data must be in “wide” format such that there is one row per patient and columns for each endpoint separately. In this example, we use progression-free survival (PFS).</p>
-<div class="sourceCode" id="cb2"><html><body><pre class="r">
-
-<span class="no">adtte</span> <span class="kw">&lt;-</span> <span class="fu"><a href="../reference/sim_adtte.html">sim_adtte</a></span>(<span class="kw">seed</span> <span class="kw">=</span> <span class="fl">2020</span>, <span class="kw">rho</span> <span class="kw">=</span> <span class="fl">0.6</span>)
+<p>The data must be in “wide” format such that there is one row per patient and columns for each endpoint separately. In this example, we analyze progression-free survival (PFS).</p>
+<div class="sourceCode" id="cb2"><html><body><pre class="r"><span class="no">adtte</span> <span class="kw">&lt;-</span> <span class="fu"><a href="../reference/sim_adtte.html">sim_adtte</a></span>(<span class="kw">seed</span> <span class="kw">=</span> <span class="fl">2020</span>, <span class="kw">rho</span> <span class="kw">=</span> <span class="fl">0.6</span>)
+<span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span>(<span class="no">adtte</span>)
+<span class="co">#&gt;   USUBJID ARMCD             ARM PARAMCD                     PARAM AVAL AVALU</span>
+<span class="co">#&gt; 1       1     A Reference Arm B     PFS Progression Free Survival  141  DAYS</span>
+<span class="co">#&gt; 2       2     A Reference Arm B     PFS Progression Free Survival  173  DAYS</span>
+<span class="co">#&gt; 3       3     A Reference Arm B     PFS Progression Free Survival  197  DAYS</span>
+<span class="co">#&gt; 4       4     A Reference Arm B     PFS Progression Free Survival  133  DAYS</span>
+<span class="co">#&gt; 5       5     A Reference Arm B     PFS Progression Free Survival  100  DAYS</span>
+<span class="co">#&gt; 6       6     A Reference Arm B     PFS Progression Free Survival  525  DAYS</span>
+<span class="co">#&gt;   CNSR</span>
+<span class="co">#&gt; 1    0</span>
+<span class="co">#&gt; 2    0</span>
+<span class="co">#&gt; 3    0</span>
+<span class="co">#&gt; 4    0</span>
+<span class="co">#&gt; 5    0</span>
+<span class="co">#&gt; 6    0</span>
 
 <span class="co"># subset PFS data and rename</span>
 <span class="no">PFS_data</span> <span class="kw">&lt;-</span> <span class="no">adtte</span> <span class="kw">%&gt;%</span>
@@ -198,28 +190,40 @@ pre { /* Code block - determines code spacing between lines */
             <span class="no">ARMCD</span>,
             <span class="kw">PFS_days</span> <span class="kw">=</span> <span class="no">AVAL</span>,
             <span class="kw">PFS_event</span> <span class="kw">=</span> <span class="fl">1</span>- <span class="no">CNSR</span>
-  )</pre></body></html></div>
+  )
+<span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span>(<span class="no">PFS_data</span>)
+<span class="co">#&gt;   USUBJID ARMCD PFS_days PFS_event</span>
+<span class="co">#&gt; 1       1     A      141         1</span>
+<span class="co">#&gt; 2       2     A      173         1</span>
+<span class="co">#&gt; 3       3     A      197         1</span>
+<span class="co">#&gt; 4       4     A      133         1</span>
+<span class="co">#&gt; 5       5     A      100         1</span>
+<span class="co">#&gt; 6       6     A      525         1</span></pre></body></html></div>
 </div>
 </div>
 <div id="exploratory-analysis" class="section level1">
 <h1 class="hasAnchor">
 <a href="#exploratory-analysis" class="anchor"></a>Exploratory analysis</h1>
-<p>Before performing any statistical analysis, it is important to explore the data.</p>
-<p>Most importantly is a Kaplan-Meier plot and code to do this using <tt>ggsurvplot</tt> is presented below.</p>
+<p>Before performing any statistical analysis, it is important to explore the data. Most importantly is a Kaplan-Meier plot. A simple Kaplan-Meier plot has been produced here:</p>
 <div class="sourceCode" id="cb3"><html><body><pre class="r">
-<span class="no">km.est.PFS</span> <span class="kw">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/survival/man/survfit.html">survfit</a></span>(<span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html">Surv</a></span>(<span class="no">PFS_days</span>, <span class="no">PFS_event</span>) ~ <span class="no">ARMCD</span> , <span class="kw">data</span> <span class="kw">=</span> <span class="no">PFS_data</span>, <span class="kw">conf.type</span> <span class="kw">=</span> <span class="st">'plain'</span>)
+<span class="co"># Create survfit object</span>
+<span class="no">km.est.PFS</span> <span class="kw">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/survival/man/survfit.html">survfit</a></span>(<span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html">Surv</a></span>(<span class="no">PFS_days</span>, <span class="no">PFS_event</span>) ~ <span class="no">ARMCD</span>,
+                      <span class="kw">data</span> <span class="kw">=</span> <span class="no">PFS_data</span>,
+                      <span class="kw">conf.type</span> <span class="kw">=</span> <span class="st">'plain'</span>)
 
-<span class="co">#KM_list &lt;- list(OS = km.est.OS, PFS = km.est.PFS)</span>
+<span class="co"># Plot Kaplan-Meier</span>
+<span class="fu"><a href="https://rdrr.io/r/graphics/plot.html">plot</a></span>(<span class="no">km.est.PFS</span>,
+     <span class="kw">col</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="no">blue</span>, <span class="no">pink</span>), <span class="co"># plot colours</span>
+     <span class="kw">lty</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="fl">1</span>:<span class="fl">2</span>), <span class="co"># line type</span>
+     <span class="kw">xlab</span> <span class="kw">=</span> <span class="st">"Time (Days)"</span>, <span class="co"># x-axis label</span>
+     <span class="kw">ylab</span> <span class="kw">=</span> <span class="st">"Progression-free survival"</span>, <span class="co"># y-axis label</span>
+     <span class="kw">xlim</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="fl">0</span>, <span class="fl">800</span>))
 
-<span class="no">KM_plot_PFS</span> <span class="kw">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/survminer/man/ggsurvplot.html">ggsurvplot</a></span>(<span class="no">km.est.PFS</span>, <span class="kw">risk.table</span> <span class="kw">=</span> <span class="fl">TRUE</span>, <span class="kw">data</span> <span class="kw">=</span> <span class="no">PFS_data</span>,
-           <span class="kw">break.time.by</span> <span class="kw">=</span> <span class="fl">200</span>,
-           <span class="kw">conf.int</span> <span class="kw">=</span> <span class="fl">FALSE</span>,
-           <span class="kw">censor</span><span class="kw">=</span><span class="fl">FALSE</span>,
-           <span class="kw">legend.title</span> <span class="kw">=</span> <span class="st">''</span>,
-           <span class="kw">xlab</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html">paste0</a></span>(<span class="st">'Progression-free survival (Days)'</span>),
-           <span class="kw">size</span> <span class="kw">=</span> <span class="fl">0.72</span>,
-           <span class="kw">xlim</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="fl">0</span>, <span class="fl">800</span>))
-<span class="no">KM_plot_PFS</span></pre></body></html></div>
+<span class="fu"><a href="https://rdrr.io/r/graphics/legend.html">legend</a></span>(<span class="kw">x</span> <span class="kw">=</span> <span class="fl">500</span>,
+       <span class="kw">y</span> <span class="kw">=</span> <span class="fl">.9</span>,
+       <span class="kw">legend</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">"Arm A"</span>, <span class="st">"Arm B"</span>),
+       <span class="kw">lty</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="fl">1</span>:<span class="fl">2</span>),
+       <span class="kw">col</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="no">blue</span>, <span class="no">pink</span>))</pre></body></html></div>
 <p><img src="Fitting_models_in_R_files/figure-html/unnamed-chunk-3-1.png" width="672"></p>
 </div>
 <div id="fitting-the-models" class="section level1">
@@ -228,17 +232,53 @@ pre { /* Code block - determines code spacing between lines */
 <p>The <tt>runPSM</tt> function fits parametric survival models for multiple distributions using the <tt>flexsurv</tt> package (using the <tt>flexsurvPlus</tt> function <tt>fit_models</tt>), manipulates the flexsurv objects to get the parameter estimates and AIC and BIC value (using the <tt>flexsurvPlus</tt> function <tt>get_params</tt>) and rearranges the parameter estimates such that they can easily be output to excel to calculate survival for both the intervention and reference treatment in an economic model.</p>
 <p>These functions can be used to estimate 3 types of model:</p>
 <ul>
-<li><p>Separate models - Models fitted to each treatment arm separately</p></li>
-<li><p>Independent shape models - Models fitted to both/all treatment arms including a treatment covariate to model the effect of treatment on both the scale and shape parameter(s) of the distribution.</p></li>
-<li><p>Common shape models - Models fitted to both/all treatment arms including a treatment covariate to model the effect of treatment on the scale parameter of the distribution. The shape parameter(s) of the distribution is common across treatments which reflects an assumption of proportional hazards or accelerated failure time between treatments depending on the distribution</p></li>
+<li>Separate models - Models fitted to each treatment arm separately
+<ul>
+<li>These models are fitted using the <tt>runPSM</tt> function using the <tt>model.type=“Separate”</tt> argument.</li>
 </ul>
-<p>Each type of model can be fitted with a multiple distributions. The distributions available for this package are: * Exponential (‘exp’) * Weibull (‘weibull’) * Gompertz (‘gompertz’) * Log-normal (‘lnorm’) * Log-logistic (‘llogis’) * Generalized gamma (‘gengamma’) * Gamma (‘gamma’)</p>
-<p>For more information on the different types of models, please see the survival analysis theory vignette included in the <tt>flexsurvPlus</tt> package.</p>
-<p>The inputs to the <tt>runPSM</tt> function are: <em><tt>data</tt> - A data frame containing individual patient data for the relevant time to event outcomes </em><tt>time_var</tt> - Name of time variable in ‘data’. Variable must be numerical and &gt;0. <em><tt>event_var</tt> - Name of event variable in ‘data’. Variable must be numerical and contain 1’s to indicate an event and 0 to indicate a censor. </em><tt>model.type</tt> - Character vector indicating the types of model formula provided. Permitted values are ‘Common shape’, ‘Independent shape’ or ‘Separate’ as per the models explained above. <em><tt>strata_var</tt> - Name of stratification variable in “data”. This is usually the treatment variable and must be categorical. </em><tt>int_name</tt> - Character to indicate the name of the treatment of interest, must be a level of the “strata_var” column in “data”, used for labelling the parameters. *<tt>ref_name </tt> - Character to indicate the name of the reference treatment, must be a level of the “strata_var” column in “data”, used for labelling the parameters.</p>
-<p>More information about each function can be used by running the code ?runPSM.</p>
-<p>Example code to fit all models is presented below.</p>
-<div class="sourceCode" id="cb4"><html><body><pre class="r">
-<span class="no">psm_PFS_all</span> <span class="kw">&lt;-</span> <span class="fu"><a href="../reference/runPSM.html">runPSM</a></span>(<span class="kw">data</span><span class="kw">=</span><span class="no">PFS_data</span>,
+</li>
+<li>Independent shape models - Models fitted to both/all treatment arms including a treatment covariate to model the effect of treatment on both the scale and shape parameter(s) of the distribution.
+<ul>
+<li>They have been fit using the <tt>runPSM</tt> function using the <tt>model.type=“Independent shape”</tt> argument.</li>
+</ul>
+</li>
+<li>Common shape models - Models fitted to both/all treatment arms including a treatment covariate to model the effect of treatment on the scale parameter of the distribution. The shape parameter(s) of the distribution is common across treatments which reflects an assumption of proportional hazards or accelerated failure time between treatments depending on the distribution
+<ul>
+<li>These models have been fit using the <tt>runPSM</tt> function using the <tt>model.type=“Common shape”</tt> argument.</li>
+</ul>
+</li>
+<li>One arm models - Models fitted to the entire dataset (no treatment strata)
+<ul>
+<li>These models are fitted using the <tt>runPSM</tt> function using the <tt>model.type=“One arm”</tt> argument.</li>
+</ul>
+</li>
+</ul>
+<p>The inputs to the <tt>runPSM</tt> function are:</p>
+<ul>
+<li><p><tt>data</tt> - A data frame containing individual patient data for the relevant time to event outcomes</p></li>
+<li><p><tt>time_var</tt> - Name of time variable in ‘data’. Variable must be numerical and &gt;0.</p></li>
+<li><p><tt>event_var</tt> - Name of event variable in ‘data’. Variable must be numerical and contain 1’s to indicate an event and 0 to indicate a censor.</p></li>
+<li><p><tt>model.type</tt> - Character vector indicating the types of model formula provided. Permitted values are ‘Common shape’, ‘Independent shape’ or ‘Separate’ as per the models explained above.</p></li>
+<li>
+<p><tt>distr</tt> - Each type of model can be fitted with multiple distributions. The distributions available for this package are:</p>
+<ul>
+<li><p>Exponential (‘exp’)</p></li>
+<li><p>Weibull (‘weibull’)</p></li>
+<li><p>Gompertz (‘gompertz’)</p></li>
+<li><p>Log-normal (‘lnorm’)</p></li>
+<li><p>Log-logistic (‘llogis’)</p></li>
+<li><p>Generalized gamma (‘gengamma’)</p></li>
+<li><p>Gamma (‘gamma’)</p></li>
+<li><p>Generalized F (‘genf’)</p></li>
+</ul>
+</li>
+<li><p><tt>strata_var</tt> - Name of stratification variable in “data”. This is usually the treatment variable and must be categorical. Not required when model.type=‘One arm’.</p></li>
+<li><p><tt>int_name</tt> - Character to indicate the name of the treatment of interest, must be a level of the “strata_var” column in “data”, used for labelling the parameters.</p></li>
+<li><p><tt>ref_name </tt> - Character to indicate the name of the reference treatment, must be a level of the “strata_var” column in “data”, used for labelling the parameters. Not required when model.type=‘One arm’.</p></li>
+</ul>
+<p>More information about each function can be used by running the code <tt>?runPSM</tt>.</p>
+<p>Example code to fit all two arm models is presented below.</p>
+<div class="sourceCode" id="cb4"><html><body><pre class="r"><span class="no">psm_PFS_all</span> <span class="kw">&lt;-</span> <span class="fu"><a href="../reference/runPSM.html">runPSM</a></span>(<span class="kw">data</span><span class="kw">=</span><span class="no">PFS_data</span>,
                      <span class="kw">time_var</span><span class="kw">=</span><span class="st">"PFS_days"</span>,
                      <span class="kw">event_var</span><span class="kw">=</span><span class="st">"PFS_event"</span>,
                      <span class="kw">model.type</span><span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">"Common shape"</span>,
@@ -250,7 +290,8 @@ pre { /* Code block - determines code spacing between lines */
                                <span class="st">'lnorm'</span>,
                                <span class="st">'llogis'</span>,
                                <span class="st">'gengamma'</span>,
-                               <span class="st">'gamma'</span>),
+                               <span class="st">'gamma'</span>,
+                               <span class="st">'genf'</span>),
                      <span class="kw">strata_var</span> <span class="kw">=</span> <span class="st">"ARMCD"</span>,
                      <span class="kw">int_name</span><span class="kw">=</span><span class="st">"A"</span>,
                      <span class="kw">ref_name</span> <span class="kw">=</span> <span class="st">"B"</span>)
@@ -396,6 +437,30 @@ pre { /* Code block - determines code spacing between lines */
 <span class="co">#&gt; AIC = 5546.203</span>
 <span class="co">#&gt; </span>
 <span class="co">#&gt; </span>
+<span class="co">#&gt; $models$comshp.genf</span>
+<span class="co">#&gt; Call:</span>
+<span class="co">#&gt; flexsurv::flexsurvreg(formula = model.formula, data = data, dist = dist)</span>
+<span class="co">#&gt; </span>
+<span class="co">#&gt; Estimates: </span>
+<span class="co">#&gt;         data mean  est      L95%     U95%     se       exp(est)  L95%   </span>
+<span class="co">#&gt; mu           NA     6.0061   5.8600   6.1523   0.0746       NA        NA</span>
+<span class="co">#&gt; sigma        NA     0.6487   0.5128   0.8206   0.0778       NA        NA</span>
+<span class="co">#&gt; Q            NA     0.7342   0.3803   1.0881   0.1806       NA        NA</span>
+<span class="co">#&gt; P            NA     0.9507   0.1978   4.5692   0.7615       NA        NA</span>
+<span class="co">#&gt; ARMInt   0.5000    -0.6866  -0.8313  -0.5420   0.0738   0.5033    0.4355</span>
+<span class="co">#&gt;         U95%   </span>
+<span class="co">#&gt; mu           NA</span>
+<span class="co">#&gt; sigma        NA</span>
+<span class="co">#&gt; Q            NA</span>
+<span class="co">#&gt; P            NA</span>
+<span class="co">#&gt; ARMInt   0.5816</span>
+<span class="co">#&gt; </span>
+<span class="co">#&gt; N = 500,  Events: 419,  Censored: 81</span>
+<span class="co">#&gt; Total time at risk: 131862</span>
+<span class="co">#&gt; Log-likelihood = -2768.32, df = 5</span>
+<span class="co">#&gt; AIC = 5546.64</span>
+<span class="co">#&gt; </span>
+<span class="co">#&gt; </span>
 <span class="co">#&gt; $models$sep.int.exp</span>
 <span class="co">#&gt; Call:</span>
 <span class="co">#&gt; flexsurv::flexsurvreg(formula = model.formula, data = data, dist = dist)</span>
@@ -501,6 +566,23 @@ pre { /* Code block - determines code spacing between lines */
 <span class="co">#&gt; AIC = 2990.152</span>
 <span class="co">#&gt; </span>
 <span class="co">#&gt; </span>
+<span class="co">#&gt; $models$sep.int.genf</span>
+<span class="co">#&gt; Call:</span>
+<span class="co">#&gt; flexsurv::flexsurvreg(formula = model.formula, data = data, dist = dist)</span>
+<span class="co">#&gt; </span>
+<span class="co">#&gt; Estimates: </span>
+<span class="co">#&gt;        est     L95%    U95%    se    </span>
+<span class="co">#&gt; mu     5.3121  5.1465  5.4777  0.0845</span>
+<span class="co">#&gt; sigma  0.6579  0.4870  0.8888  0.1010</span>
+<span class="co">#&gt; Q      0.7012  0.3001  1.1022  0.2046</span>
+<span class="co">#&gt; P      0.8038  0.0983  6.5742  0.8619</span>
+<span class="co">#&gt; </span>
+<span class="co">#&gt; N = 250,  Events: 238,  Censored: 12</span>
+<span class="co">#&gt; Total time at risk: 49975</span>
+<span class="co">#&gt; Log-likelihood = -1492.383, df = 4</span>
+<span class="co">#&gt; AIC = 2992.766</span>
+<span class="co">#&gt; </span>
+<span class="co">#&gt; </span>
 <span class="co">#&gt; $models$sep.ref.exp</span>
 <span class="co">#&gt; Call:</span>
 <span class="co">#&gt; flexsurv::flexsurvreg(formula = model.formula, data = data, dist = dist)</span>
@@ -604,6 +686,23 @@ pre { /* Code block - determines code spacing between lines */
 <span class="co">#&gt; Total time at risk: 81887</span>
 <span class="co">#&gt; Log-likelihood = -1276.884, df = 2</span>
 <span class="co">#&gt; AIC = 2557.768</span>
+<span class="co">#&gt; </span>
+<span class="co">#&gt; </span>
+<span class="co">#&gt; $models$sep.ref.genf</span>
+<span class="co">#&gt; Call:</span>
+<span class="co">#&gt; flexsurv::flexsurvreg(formula = model.formula, data = data, dist = dist)</span>
+<span class="co">#&gt; </span>
+<span class="co">#&gt; Estimates: </span>
+<span class="co">#&gt;        est     L95%    U95%    se    </span>
+<span class="co">#&gt; mu      5.965   5.654   6.275   0.158</span>
+<span class="co">#&gt; sigma   0.611   0.379   0.985   0.149</span>
+<span class="co">#&gt; Q       0.601  -0.364   1.566   0.492</span>
+<span class="co">#&gt; P       1.767   0.136  22.976   2.313</span>
+<span class="co">#&gt; </span>
+<span class="co">#&gt; N = 250,  Events: 181,  Censored: 69</span>
+<span class="co">#&gt; Total time at risk: 81887</span>
+<span class="co">#&gt; Log-likelihood = -1275.713, df = 4</span>
+<span class="co">#&gt; AIC = 2559.427</span>
 <span class="co">#&gt; </span>
 <span class="co">#&gt; </span>
 <span class="co">#&gt; $models$indshp.exp</span>
@@ -760,265 +859,289 @@ pre { /* Code block - determines code spacing between lines */
 <span class="co">#&gt; AIC = 5550.112</span>
 <span class="co">#&gt; </span>
 <span class="co">#&gt; </span>
+<span class="co">#&gt; $models$indshp.genf</span>
+<span class="co">#&gt; Call:</span>
+<span class="co">#&gt; flexsurv::flexsurvreg(formula = model.formula, data = data, dist = dist)</span>
+<span class="co">#&gt; </span>
+<span class="co">#&gt; Estimates: </span>
+<span class="co">#&gt;                data mean  est      L95%     U95%     se       exp(est)  L95%   </span>
+<span class="co">#&gt; mu                  NA     5.9638   5.6539   6.2738   0.1582       NA        NA</span>
+<span class="co">#&gt; sigma               NA     0.6104   0.3781   0.9853   0.1491       NA        NA</span>
+<span class="co">#&gt; Q                   NA     0.5991  -0.3641   1.5623   0.4914       NA        NA</span>
+<span class="co">#&gt; P                   NA     1.7770   0.1382  22.8488   2.3156       NA        NA</span>
+<span class="co">#&gt; ARMInt          0.5000    -0.6517  -1.0031  -0.3002   0.1793   0.5212    0.3667</span>
+<span class="co">#&gt; sigma(ARMInt)   0.5000     0.0753  -0.4902   0.6409   0.2886   1.0782    0.6125</span>
+<span class="co">#&gt; Q(ARMInt)       0.5000     0.1022  -0.9411   1.1456   0.5323   1.1076    0.3902</span>
+<span class="co">#&gt; P(ARMInt)       0.5000    -0.7957  -4.1067   2.5153   1.6893   0.4513    0.0165</span>
+<span class="co">#&gt;                U95%   </span>
+<span class="co">#&gt; mu                  NA</span>
+<span class="co">#&gt; sigma               NA</span>
+<span class="co">#&gt; Q                   NA</span>
+<span class="co">#&gt; P                   NA</span>
+<span class="co">#&gt; ARMInt          0.7407</span>
+<span class="co">#&gt; sigma(ARMInt)   1.8982</span>
+<span class="co">#&gt; Q(ARMInt)       3.1443</span>
+<span class="co">#&gt; P(ARMInt)      12.3708</span>
+<span class="co">#&gt; </span>
+<span class="co">#&gt; N = 500,  Events: 419,  Censored: 81</span>
+<span class="co">#&gt; Total time at risk: 131862</span>
+<span class="co">#&gt; Log-likelihood = -2768.096, df = 8</span>
+<span class="co">#&gt; AIC = 5552.193</span>
+<span class="co">#&gt; </span>
+<span class="co">#&gt; </span>
 <span class="co">#&gt; </span>
 <span class="co">#&gt; $model_summary</span>
-<span class="co">#&gt; # A tibble: 28 x 5</span>
-<span class="co">#&gt;    name             value      coef           AIC   BIC</span>
-<span class="co">#&gt;    &lt;chr&gt;            &lt;list&gt;     &lt;named list&gt; &lt;dbl&gt; &lt;dbl&gt;</span>
-<span class="co">#&gt;  1 comshp.exp       &lt;flxsrvrg&gt; &lt;dbl [2]&gt;    5601. 5609.</span>
-<span class="co">#&gt;  2 comshp.weibull   &lt;flxsrvrg&gt; &lt;dbl [3]&gt;    5545. 5558.</span>
-<span class="co">#&gt;  3 comshp.gompertz  &lt;flxsrvrg&gt; &lt;dbl [3]&gt;    5564. 5577.</span>
-<span class="co">#&gt;  4 comshp.lnorm     &lt;flxsrvrg&gt; &lt;dbl [3]&gt;    5606. 5619.</span>
-<span class="co">#&gt;  5 comshp.llogis    &lt;flxsrvrg&gt; &lt;dbl [3]&gt;    5567. 5579.</span>
-<span class="co">#&gt;  6 comshp.gengamma  &lt;flxsrvrg&gt; &lt;dbl [4]&gt;    5547. 5564.</span>
-<span class="co">#&gt;  7 comshp.gamma     &lt;flxsrvrg&gt; &lt;dbl [3]&gt;    5546. 5559.</span>
-<span class="co">#&gt;  8 sep.int.exp      &lt;flxsrvrg&gt; &lt;dbl [1]&gt;    3023. 3027.</span>
-<span class="co">#&gt;  9 sep.int.weibull  &lt;flxsrvrg&gt; &lt;dbl [2]&gt;    2991. 2998.</span>
-<span class="co">#&gt; 10 sep.int.gompertz &lt;flxsrvrg&gt; &lt;dbl [2]&gt;    3005. 3012.</span>
-<span class="co">#&gt; # … with 18 more rows</span>
-<span class="co">#&gt; </span>
-<span class="co">#&gt; $parameters</span>
-<span class="co">#&gt;   exp.rate.int exp.rate.ref exp.rate.TE weibull.scale.int weibull.scale.ref</span>
-<span class="co">#&gt; 1  0.004762381  0.002210363    0.767591          225.3719          437.0600</span>
-<span class="co">#&gt; 2  0.004762381  0.002210363          NA          225.2128          436.9567</span>
-<span class="co">#&gt; 3  0.004762381  0.002210363    0.767591          225.2128          436.9567</span>
-<span class="co">#&gt;   weibull.shape.int weibull.shape.ref weibull.scale.TE gompertz.rate.int</span>
-<span class="co">#&gt; 1           1.38807          1.388070       -0.6623183       0.003378992</span>
-<span class="co">#&gt; 2           1.38409          1.394392               NA       0.003345261</span>
-<span class="co">#&gt; 3           1.38409          1.394392       -0.6627884       0.003345363</span>
-<span class="co">#&gt;   gompertz.rate.ref gompertz.shape.int gompertz.shape.ref gompertz.rate.TE</span>
-<span class="co">#&gt; 1       0.001357741        0.002071791        0.002071791        0.9117552</span>
-<span class="co">#&gt; 2       0.001377019        0.002126025        0.002017723               NA</span>
-<span class="co">#&gt; 3       0.001377103        0.002125949        0.002017541        0.8875933</span>
-<span class="co">#&gt;   llogis.scale.int llogis.scale.ref llogis.shape.int llogis.shape.ref</span>
-<span class="co">#&gt; 1         160.9001         323.1928         1.906172         1.906172</span>
-<span class="co">#&gt; 2         161.2189         324.7112         2.016085         1.775194</span>
-<span class="co">#&gt; 3         161.2182         324.7128         2.016077         1.775211</span>
-<span class="co">#&gt;   llogis.scale.TE gamma.rate.int gamma.rate.ref gamma.shape.int gamma.shape.ref</span>
-<span class="co">#&gt; 1      -0.6974655    0.008024506    0.004045781        1.658113        1.658113</span>
-<span class="co">#&gt; 2              NA    0.008273127    0.003871635        1.708525        1.596692</span>
-<span class="co">#&gt; 3      -0.7001824    0.008272142    0.003871179        1.708385        1.596555</span>
-<span class="co">#&gt;   gamma.rate.TE lnorm.meanlog.int lnorm.meanlog.ref lnorm.sdlog.int</span>
-<span class="co">#&gt; 1     0.6848254          5.022173          5.734996       0.9862778</span>
-<span class="co">#&gt; 2            NA          5.020074          5.754086       0.9245221</span>
-<span class="co">#&gt; 3     0.7593344          5.020074          5.754082       0.9245219</span>
-<span class="co">#&gt;   lnorm.sdlog.ref lnorm.meanlog.TE gengamma.mu.int gengamma.mu.ref</span>
-<span class="co">#&gt; 1       0.9862778        -0.712823        5.387505        6.057406</span>
-<span class="co">#&gt; 2       1.0684160               NA        5.357216        6.101537</span>
-<span class="co">#&gt; 3       1.0684160        -0.734008        5.357237        6.101598</span>
-<span class="co">#&gt;   gengamma.sigma.int gengamma.sigma.ref gengamma.Q.int gengamma.Q.ref</span>
-<span class="co">#&gt; 1          0.7376519          0.7376519      0.9194986      0.9194986</span>
-<span class="co">#&gt; 2          0.7495726          0.6938119      0.8349065      1.0810414</span>
-<span class="co">#&gt; 3          0.7495580          0.6937829      0.8349304      1.0813996</span>
-<span class="co">#&gt;   gengamma.mu.TE             Model Intervention_name Reference_name</span>
-<span class="co">#&gt; 1     -0.6699007      Common shape                 A              B</span>
-<span class="co">#&gt; 2             NA          Seperate                 A              B</span>
-<span class="co">#&gt; 3     -0.7443610 Independent shape                 A              B</span>
-<span class="co">#&gt;   weibull.shape.TE gompertz.shape.TE llogis.shape.TE gamma.shape.TE</span>
-<span class="co">#&gt; 1               NA                NA              NA             NA</span>
-<span class="co">#&gt; 2               NA                NA              NA             NA</span>
-<span class="co">#&gt; 3     -0.007415373      0.0001084078        0.127234      0.0677004</span>
-<span class="co">#&gt;   lnorm.sdlog.TE gengamma.sigma.TE gengamma.Q.TE</span>
-<span class="co">#&gt; 1             NA                NA            NA</span>
-<span class="co">#&gt; 2             NA                NA            NA</span>
-<span class="co">#&gt; 3     -0.1446557        0.07732464    -0.2464692</span>
+<span class="co">#&gt;                Model             Dist Intervention_name Reference_name</span>
+<span class="co">#&gt; 1       Common shape       comshp.exp                 A              B</span>
+<span class="co">#&gt; 2       Common shape   comshp.weibull                 A              B</span>
+<span class="co">#&gt; 3       Common shape  comshp.gompertz                 A              B</span>
+<span class="co">#&gt; 4       Common shape     comshp.lnorm                 A              B</span>
+<span class="co">#&gt; 5       Common shape    comshp.llogis                 A              B</span>
+<span class="co">#&gt; 6       Common shape  comshp.gengamma                 A              B</span>
+<span class="co">#&gt; 7       Common shape     comshp.gamma                 A              B</span>
+<span class="co">#&gt; 8       Common shape      comshp.genf                 A              B</span>
+<span class="co">#&gt; 9           Seperate      sep.int.exp                 A              B</span>
+<span class="co">#&gt; 10          Seperate  sep.int.weibull                 A              B</span>
+<span class="co">#&gt; 11          Seperate sep.int.gompertz                 A              B</span>
+<span class="co">#&gt; 12          Seperate    sep.int.lnorm                 A              B</span>
+<span class="co">#&gt; 13          Seperate   sep.int.llogis                 A              B</span>
+<span class="co">#&gt; 14          Seperate sep.int.gengamma                 A              B</span>
+<span class="co">#&gt; 15          Seperate    sep.int.gamma                 A              B</span>
+<span class="co">#&gt; 16          Seperate     sep.int.genf                 A              B</span>
+<span class="co">#&gt; 17          Seperate      ref.int.exp                 A              B</span>
+<span class="co">#&gt; 18          Seperate  ref.int.weibull                 A              B</span>
+<span class="co">#&gt; 19          Seperate ref.int.gompertz                 A              B</span>
+<span class="co">#&gt; 20          Seperate    ref.int.lnorm                 A              B</span>
+<span class="co">#&gt; 21          Seperate   ref.int.llogis                 A              B</span>
+<span class="co">#&gt; 22          Seperate ref.int.gengamma                 A              B</span>
+<span class="co">#&gt; 23          Seperate    ref.int.gamma                 A              B</span>
+<span class="co">#&gt; 24          Seperate     ref.int.genf                 A              B</span>
+<span class="co">#&gt; 25 Independent shape       indshp.exp                 A              B</span>
+<span class="co">#&gt; 26 Independent shape   indshp.weibull                 A              B</span>
+<span class="co">#&gt; 27 Independent shape  indshp.gompertz                 A              B</span>
+<span class="co">#&gt; 28 Independent shape    indshp.llogis                 A              B</span>
+<span class="co">#&gt; 29 Independent shape     indshp.gamma                 A              B</span>
+<span class="co">#&gt; 30 Independent shape     indshp.lnorm                 A              B</span>
+<span class="co">#&gt; 31 Independent shape  indshp.gengamma                 A              B</span>
+<span class="co">#&gt; 32 Independent shape      indshp.genf                 A              B</span>
+<span class="co">#&gt;       Status      AIC      BIC</span>
+<span class="co">#&gt; 1  Converged 5600.660 5609.089</span>
+<span class="co">#&gt; 2  Converged 5545.222 5557.866</span>
+<span class="co">#&gt; 3  Converged 5564.003 5576.647</span>
+<span class="co">#&gt; 4  Converged 5606.451 5619.094</span>
+<span class="co">#&gt; 5  Converged 5566.512 5579.156</span>
+<span class="co">#&gt; 6  Converged 5546.841 5563.699</span>
+<span class="co">#&gt; 7  Converged 5546.203 5558.847</span>
+<span class="co">#&gt; 8  Converged 5546.640 5567.713</span>
+<span class="co">#&gt; 9  Converged 3023.176 3026.697</span>
+<span class="co">#&gt; 10 Converged 2990.943 2997.986</span>
+<span class="co">#&gt; 11 Converged 3005.220 3012.263</span>
+<span class="co">#&gt; 12 Converged 3021.443 3028.486</span>
+<span class="co">#&gt; 13 Converged 3002.733 3009.776</span>
+<span class="co">#&gt; 14 Converged 2991.950 3002.514</span>
+<span class="co">#&gt; 15 Converged 2990.152 2997.195</span>
+<span class="co">#&gt; 16 Converged 2992.766 3006.852</span>
+<span class="co">#&gt; 17 Converged 2577.485 2581.006</span>
+<span class="co">#&gt; 18 Converged 2556.271 2563.314</span>
+<span class="co">#&gt; 19 Converged 2560.755 2567.798</span>
+<span class="co">#&gt; 20 Converged 2582.939 2589.982</span>
+<span class="co">#&gt; 21 Converged 2563.469 2570.512</span>
+<span class="co">#&gt; 22 Converged 2558.162 2568.727</span>
+<span class="co">#&gt; 23 Converged 2557.768 2564.810</span>
+<span class="co">#&gt; 24 Converged 2559.427 2573.512</span>
+<span class="co">#&gt; 25 Converged 5600.660 5609.089</span>
+<span class="co">#&gt; 26 Converged 5547.214 5564.072</span>
+<span class="co">#&gt; 27 Converged 5565.974 5582.833</span>
+<span class="co">#&gt; 28 Converged 5566.202 5583.060</span>
+<span class="co">#&gt; 29 Converged 5547.919 5564.778</span>
+<span class="co">#&gt; 30 Converged 5604.382 5621.241</span>
+<span class="co">#&gt; 31 Converged 5550.112 5575.400</span>
+<span class="co">#&gt; 32 Converged 5552.193 5585.910</span>
 <span class="co">#&gt; </span>
 <span class="co">#&gt; $parameters_vector</span>
 <span class="co">#&gt;       comshp.exp.rate.int       comshp.exp.rate.ref        comshp.exp.rate.TE </span>
-<span class="co">#&gt;              4.762381e-03              2.210363e-03              7.675910e-01 </span>
+<span class="co">#&gt;              0.0047623812              0.0022103631              0.7675910101 </span>
 <span class="co">#&gt;  comshp.weibull.scale.int  comshp.weibull.scale.ref  comshp.weibull.shape.int </span>
-<span class="co">#&gt;              2.253719e+02              4.370600e+02              1.388070e+00 </span>
+<span class="co">#&gt;            225.3719486376            437.0599651237              1.3880696669 </span>
 <span class="co">#&gt;  comshp.weibull.shape.ref   comshp.weibull.scale.TE  comshp.gompertz.rate.int </span>
-<span class="co">#&gt;              1.388070e+00             -6.623183e-01              3.378992e-03 </span>
+<span class="co">#&gt;              1.3880696669             -0.6623182633              0.0033789924 </span>
 <span class="co">#&gt;  comshp.gompertz.rate.ref comshp.gompertz.shape.int comshp.gompertz.shape.ref </span>
-<span class="co">#&gt;              1.357741e-03              2.071791e-03              2.071791e-03 </span>
+<span class="co">#&gt;              0.0013577411              0.0020717908              0.0020717908 </span>
 <span class="co">#&gt;   comshp.gompertz.rate.TE   comshp.llogis.scale.int   comshp.llogis.scale.ref </span>
-<span class="co">#&gt;              9.117552e-01              1.609001e+02              3.231928e+02 </span>
+<span class="co">#&gt;              0.9117551704            160.9000992103            323.1928425421 </span>
 <span class="co">#&gt;   comshp.llogis.shape.int   comshp.llogis.shape.ref    comshp.llogis.scale.TE </span>
-<span class="co">#&gt;              1.906172e+00              1.906172e+00             -6.974655e-01 </span>
+<span class="co">#&gt;              1.9061724797              1.9061724797             -0.6974655102 </span>
 <span class="co">#&gt;     comshp.gamma.rate.int     comshp.gamma.rate.ref    comshp.gamma.shape.int </span>
-<span class="co">#&gt;              8.024506e-03              4.045781e-03              1.658113e+00 </span>
+<span class="co">#&gt;              0.0080245065              0.0040457815              1.6581134582 </span>
 <span class="co">#&gt;    comshp.gamma.shape.ref      comshp.gamma.rate.TE  comshp.lnorm.meanlog.int </span>
-<span class="co">#&gt;              1.658113e+00              6.848254e-01              5.022173e+00 </span>
+<span class="co">#&gt;              1.6581134582              0.6848254471              5.0221729357 </span>
 <span class="co">#&gt;  comshp.lnorm.meanlog.ref    comshp.lnorm.sdlog.int    comshp.lnorm.sdlog.ref </span>
-<span class="co">#&gt;              5.734996e+00              9.862778e-01              9.862778e-01 </span>
+<span class="co">#&gt;              5.7349959337              0.9862777518              0.9862777518 </span>
 <span class="co">#&gt;   comshp.lnorm.meanlog.TE    comshp.gengamma.mu.int    comshp.gengamma.mu.ref </span>
-<span class="co">#&gt;             -7.128230e-01              5.387505e+00              6.057406e+00 </span>
+<span class="co">#&gt;             -0.7128229980              5.3875051273              6.0574058623 </span>
 <span class="co">#&gt; comshp.gengamma.sigma.int comshp.gengamma.sigma.ref     comshp.gengamma.Q.int </span>
-<span class="co">#&gt;              7.376519e-01              7.376519e-01              9.194986e-01 </span>
-<span class="co">#&gt;     comshp.gengamma.Q.ref     comshp.gengamma.mu.TE          sep.exp.rate.int </span>
-<span class="co">#&gt;              9.194986e-01             -6.699007e-01              4.762381e-03 </span>
-<span class="co">#&gt;     sep.weibull.shape.int     sep.weibull.scale.int    sep.gompertz.shape.int </span>
-<span class="co">#&gt;              1.384090e+00              2.252128e+02              2.126025e-03 </span>
-<span class="co">#&gt;     sep.gompertz.rate.int     sep.lnorm.meanlog.int       sep.lnorm.sdlog.int </span>
-<span class="co">#&gt;              3.345261e-03              5.020074e+00              9.245221e-01 </span>
-<span class="co">#&gt;      sep.llogis.shape.int      sep.llogis.scale.int       sep.gengamma.mu.int </span>
-<span class="co">#&gt;              2.016085e+00              1.612189e+02              5.357216e+00 </span>
-<span class="co">#&gt;    sep.gengamma.sigma.int        sep.gengamma.Q.int       sep.gamma.shape.int </span>
-<span class="co">#&gt;              7.495726e-01              8.349065e-01              1.708525e+00 </span>
-<span class="co">#&gt;        sep.gamma.rate.int          sep.exp.rate.ref     sep.weibull.shape.ref </span>
-<span class="co">#&gt;              8.273127e-03              2.210363e-03              1.394392e+00 </span>
-<span class="co">#&gt;     sep.weibull.scale.ref    sep.gompertz.shape.ref     sep.gompertz.rate.ref </span>
-<span class="co">#&gt;              4.369567e+02              2.017723e-03              1.377019e-03 </span>
-<span class="co">#&gt;     sep.lnorm.meanlog.ref       sep.lnorm.sdlog.ref      sep.llogis.shape.ref </span>
-<span class="co">#&gt;              5.754086e+00              1.068416e+00              1.775194e+00 </span>
-<span class="co">#&gt;      sep.llogis.scale.ref       sep.gengamma.mu.ref    sep.gengamma.sigma.ref </span>
-<span class="co">#&gt;              3.247112e+02              6.101537e+00              6.938119e-01 </span>
-<span class="co">#&gt;        sep.gengamma.Q.ref       sep.gamma.shape.ref        sep.gamma.rate.ref </span>
-<span class="co">#&gt;              1.081041e+00              1.596692e+00              3.871635e-03 </span>
-<span class="co">#&gt;       indshp.exp.rate.int       indshp.exp.rate.ref        indshp.exp.rate.TE </span>
-<span class="co">#&gt;              4.762381e-03              2.210363e-03              7.675910e-01 </span>
-<span class="co">#&gt;  indshp.weibull.scale.int  indshp.weibull.scale.ref  indshp.weibull.shape.int </span>
-<span class="co">#&gt;              2.252128e+02              4.369567e+02              1.384090e+00 </span>
-<span class="co">#&gt;  indshp.weibull.shape.ref   indshp.weibull.scale.TE   indshp.weibull.shape.TE </span>
-<span class="co">#&gt;              1.394392e+00             -6.627884e-01             -7.415373e-03 </span>
-<span class="co">#&gt;  indshp.gompertz.rate.int  indshp.gompertz.rate.ref indshp.gompertz.shape.int </span>
-<span class="co">#&gt;              3.345363e-03              1.377103e-03              2.125949e-03 </span>
-<span class="co">#&gt; indshp.gompertz.shape.ref   indshp.gompertz.rate.TE  indshp.gompertz.shape.TE </span>
-<span class="co">#&gt;              2.017541e-03              8.875933e-01              1.084078e-04 </span>
-<span class="co">#&gt;   indshp.llogis.scale.int   indshp.llogis.scale.ref   indshp.llogis.shape.int </span>
-<span class="co">#&gt;              1.612182e+02              3.247128e+02              2.016077e+00 </span>
-<span class="co">#&gt;   indshp.llogis.shape.ref    indshp.llogis.scale.TE    indshp.llogis.shape.TE </span>
-<span class="co">#&gt;              1.775211e+00             -7.001824e-01              1.272340e-01 </span>
-<span class="co">#&gt;     indshp.gamma.rate.int     indshp.gamma.rate.ref    indshp.gamma.shape.int </span>
-<span class="co">#&gt;              8.272142e-03              3.871179e-03              1.708385e+00 </span>
-<span class="co">#&gt;    indshp.gamma.shape.ref      indshp.gamma.rate.TE     indshp.gamma.shape.TE </span>
-<span class="co">#&gt;              1.596555e+00              7.593344e-01              6.770040e-02 </span>
-<span class="co">#&gt;  indshp.lnorm.meanlog.int  indshp.lnorm.meanlog.ref    indshp.lnorm.sdlog.int </span>
-<span class="co">#&gt;              5.020074e+00              5.754082e+00              9.245219e-01 </span>
-<span class="co">#&gt;    indshp.lnorm.sdlog.ref   indshp.lnorm.meanlog.TE     indshp.lnorm.sdlog.TE </span>
-<span class="co">#&gt;              1.068416e+00             -7.340080e-01             -1.446557e-01 </span>
-<span class="co">#&gt;    indshp.gengamma.mu.int    indshp.gengamma.mu.ref indshp.gengamma.sigma.int </span>
-<span class="co">#&gt;              5.357237e+00              6.101598e+00              7.495580e-01 </span>
-<span class="co">#&gt; indshp.gengamma.sigma.ref     indshp.gengamma.Q.int     indshp.gengamma.Q.ref </span>
-<span class="co">#&gt;              6.937829e-01              8.349304e-01              1.081400e+00 </span>
-<span class="co">#&gt;     indshp.gengamma.mu.TE  indshp.gengamma.sigma.TE      indshp.gengamma.Q.TE </span>
-<span class="co">#&gt;             -7.443610e-01              7.732464e-02             -2.464692e-01</span></pre></body></html></div>
-<div id="separate-models-for-each-treatment" class="section level2">
-<h2 class="hasAnchor">
-<a href="#separate-models-for-each-treatment" class="anchor"></a>Separate models for each treatment</h2>
-<p>These models have been fit using the <tt>runPSM</tt> function using the model.type=“Separate” argument.</p>
-</div>
-<div id="independent-shape-models" class="section level2">
-<h2 class="hasAnchor">
-<a href="#independent-shape-models" class="anchor"></a>Independent shape models</h2>
-<p>These models are similar to the separate model for each treatment as they allow all parameters to vary by treatment, however it is performed using 1 model for 2 treatments, rather than 2 models as above. They have been fit using the <tt>runPSM</tt> function using the model.type=“Independent shape” argument.</p>
-</div>
-<div id="fit-common-shape-models" class="section level2">
-<h2 class="hasAnchor">
-<a href="#fit-common-shape-models" class="anchor"></a>Fit common shape models</h2>
-<p>These models have been fit using the <tt>runPSM</tt> function using the model.type=“Common shape” argument.</p>
-</div>
+<span class="co">#&gt;              0.7376518510              0.7376518510              0.9194986169 </span>
+<span class="co">#&gt;     comshp.gengamma.Q.ref     comshp.gengamma.mu.TE        comshp.genf.mu.int </span>
+<span class="co">#&gt;              0.9194986169             -0.6699007349              5.3195083034 </span>
+<span class="co">#&gt;        comshp.genf.mu.ref     comshp.genf.sigma.int     comshp.genf.sigma.ref </span>
+<span class="co">#&gt;              6.0061403615              0.6486737906              0.6486737906 </span>
+<span class="co">#&gt;         comshp.genf.Q.int         comshp.genf.Q.ref         comshp.genf.P.int </span>
+<span class="co">#&gt;              0.7342316252              0.7342316252              0.9507499700 </span>
+<span class="co">#&gt;         comshp.genf.P.ref         comshp.genf.mu.TE          sep.exp.rate.int </span>
+<span class="co">#&gt;              0.9507499700             -0.6866320581              0.0047623812 </span>
+<span class="co">#&gt;          sep.exp.rate.ref     sep.weibull.scale.int     sep.weibull.scale.ref </span>
+<span class="co">#&gt;              0.0022103631            225.2127835800            436.9566692923 </span>
+<span class="co">#&gt;     sep.weibull.shape.int     sep.weibull.shape.ref     sep.gompertz.rate.int </span>
+<span class="co">#&gt;              1.3840902659              1.3943919665              0.0033452613 </span>
+<span class="co">#&gt;     sep.gompertz.rate.ref    sep.gompertz.shape.int    sep.gompertz.shape.ref </span>
+<span class="co">#&gt;              0.0013770185              0.0021260249              0.0020177231 </span>
+<span class="co">#&gt;      sep.llogis.scale.int      sep.llogis.scale.ref      sep.llogis.shape.int </span>
+<span class="co">#&gt;            161.2189290723            324.7112201561              2.0160853126 </span>
+<span class="co">#&gt;      sep.llogis.shape.ref        sep.gamma.rate.int        sep.gamma.rate.ref </span>
+<span class="co">#&gt;              1.7751939048              0.0082731268              0.0038716353 </span>
+<span class="co">#&gt;       sep.gamma.shape.int       sep.gamma.shape.ref     sep.lnorm.meanlog.int </span>
+<span class="co">#&gt;              1.7085247925              1.5966917414              5.0200744483 </span>
+<span class="co">#&gt;     sep.lnorm.meanlog.ref       sep.lnorm.sdlog.int       sep.lnorm.sdlog.ref </span>
+<span class="co">#&gt;              5.7540864808              0.9245220837              1.0684159722 </span>
+<span class="co">#&gt;       sep.gengamma.mu.int       sep.gengamma.mu.ref    sep.gengamma.sigma.int </span>
+<span class="co">#&gt;              5.3572157739              6.1015374964              0.7495725809 </span>
+<span class="co">#&gt;    sep.gengamma.sigma.ref        sep.gengamma.Q.int        sep.gengamma.Q.ref </span>
+<span class="co">#&gt;              0.6938119258              0.8349064781              1.0810413968 </span>
+<span class="co">#&gt;           sep.genf.mu.int           sep.genf.mu.ref        sep.genf.sigma.int </span>
+<span class="co">#&gt;              5.3121167643              5.9645192695              0.6579307455 </span>
+<span class="co">#&gt;        sep.genf.sigma.ref            sep.genf.Q.int            sep.genf.Q.ref </span>
+<span class="co">#&gt;              0.6108374874              0.7011635404              0.6013766571 </span>
+<span class="co">#&gt;            sep.genf.P.int            sep.genf.P.ref       indshp.exp.rate.int </span>
+<span class="co">#&gt;              0.8037990819              1.7674326582              0.0047623812 </span>
+<span class="co">#&gt;       indshp.exp.rate.ref        indshp.exp.rate.TE  indshp.weibull.scale.int </span>
+<span class="co">#&gt;              0.0022103631              0.7675910101            225.2127807052 </span>
+<span class="co">#&gt;  indshp.weibull.scale.ref  indshp.weibull.shape.int  indshp.weibull.shape.ref </span>
+<span class="co">#&gt;            436.9566724857              1.3840902608              1.3943919552 </span>
+<span class="co">#&gt;   indshp.weibull.scale.TE   indshp.weibull.shape.TE  indshp.gompertz.rate.int </span>
+<span class="co">#&gt;             -0.6627883952             -0.0074153734              0.0033453627 </span>
+<span class="co">#&gt;  indshp.gompertz.rate.ref indshp.gompertz.shape.int indshp.gompertz.shape.ref </span>
+<span class="co">#&gt;              0.0013771028              0.0021259492              0.0020175414 </span>
+<span class="co">#&gt;   indshp.gompertz.rate.TE  indshp.gompertz.shape.TE   indshp.llogis.scale.int </span>
+<span class="co">#&gt;              0.8875932775              0.0001084078            161.2182070372 </span>
+<span class="co">#&gt;   indshp.llogis.scale.ref   indshp.llogis.shape.int   indshp.llogis.shape.ref </span>
+<span class="co">#&gt;            324.7128381498              2.0160768391              1.7752113169 </span>
+<span class="co">#&gt;    indshp.llogis.scale.TE    indshp.llogis.shape.TE     indshp.gamma.rate.int </span>
+<span class="co">#&gt;             -0.7001824462              0.1272339965              0.0082721418 </span>
+<span class="co">#&gt;     indshp.gamma.rate.ref    indshp.gamma.shape.int    indshp.gamma.shape.ref </span>
+<span class="co">#&gt;              0.0038711789              1.7083852182              1.5965550369 </span>
+<span class="co">#&gt;      indshp.gamma.rate.TE     indshp.gamma.shape.TE  indshp.lnorm.meanlog.int </span>
+<span class="co">#&gt;              0.7593343613              0.0677004015              5.0200744478 </span>
+<span class="co">#&gt;  indshp.lnorm.meanlog.ref    indshp.lnorm.sdlog.int    indshp.lnorm.sdlog.ref </span>
+<span class="co">#&gt;              5.7540824669              0.9245219161              1.0684159578 </span>
+<span class="co">#&gt;   indshp.lnorm.meanlog.TE     indshp.lnorm.sdlog.TE    indshp.gengamma.mu.int </span>
+<span class="co">#&gt;             -0.7340080191             -0.1446556608              5.3572365418 </span>
+<span class="co">#&gt;    indshp.gengamma.mu.ref indshp.gengamma.sigma.int indshp.gengamma.sigma.ref </span>
+<span class="co">#&gt;              6.1015975586              0.7495580016              0.6937828807 </span>
+<span class="co">#&gt;     indshp.gengamma.Q.int     indshp.gengamma.Q.ref     indshp.gengamma.mu.TE </span>
+<span class="co">#&gt;              0.8349304188              1.0813995751             -0.7443610168 </span>
+<span class="co">#&gt;  indshp.gengamma.sigma.TE        indshp.genf.mu.int        indshp.genf.mu.ref </span>
+<span class="co">#&gt;              0.0773246421              5.3121786256              5.9638342995 </span>
+<span class="co">#&gt;     indshp.genf.sigma.int     indshp.genf.sigma.ref         indshp.genf.Q.int </span>
+<span class="co">#&gt;              0.6581219654              0.6103736384              0.7013283752 </span>
+<span class="co">#&gt;         indshp.genf.Q.ref         indshp.genf.P.int         indshp.genf.P.ref </span>
+<span class="co">#&gt;              0.5991052605              0.8019159789              1.7770415367 </span>
+<span class="co">#&gt;         indshp.genf.mu.TE      indshp.genf.sigma.TE          indshp.genf.Q.TE </span>
+<span class="co">#&gt;             -0.6516556739              0.0753189804              0.1022231148 </span>
+<span class="co">#&gt;          indshp.genf.P.TE </span>
+<span class="co">#&gt;             -0.7957013646</span></pre></body></html></div>
 </div>
 <div id="estimate-survival-from-the-models-and-plot-the-curves" class="section level1">
 <h1 class="hasAnchor">
 <a href="#estimate-survival-from-the-models-and-plot-the-curves" class="anchor"></a>Estimate survival from the models and plot the curves</h1>
-<p>Survival at a given time can be estimated using the <tt>get_curvefits</tt> function as shown below for treatment-effect models.</p>
-<p>This can be used to cross check survival in excel models. The example is given below selects only a few models for clarity.</p>
+<p>Survival at a given time, t, is estimated as follows:</p>
+<p><span class="math display">\[ S(t) = P({T&gt;t}) = 1 - F(t) \]</span></p>
+<p>Where F(t) is the cumulative distribution function.</p>
+<p>To cross check survival estimates in Excel models, the following functions in R can be used to estimate the cumulative distribution function at given time points for each distribution explored in this package (the estimates from the cumulative distribution function can then be subtracted from 1 to estimate the survival probability):</p>
+<ul>
+<li><p>Exponential: <tt>pexp()</tt></p></li>
+<li><p>Weibull: <tt>pweibull()</tt></p></li>
+<li><p>Gompertz: <tt>pgompertz()</tt></p></li>
+<li><p>Log-normal: <tt>plnorm()</tt></p></li>
+<li><p>Log-logistic: <tt>pllogis()</tt></p></li>
+<li><p>Generalized gamma: <tt>pgengamma()</tt></p></li>
+<li><p>Gamma: <tt>pgamma()</tt></p></li>
+<li><p>Generalized F: <tt>pgenf()</tt></p></li>
+</ul>
+<p>The parameters outputted from each of the fitted models are used as inputs to these functions. The code below gives some examples.</p>
 <div class="sourceCode" id="cb5"><html><body><pre class="r"><span class="co"># Landmark survival</span>
 
-<span class="co"># for clarity just pick the 4 different weibull models. </span>
-<span class="no">selected_models</span> <span class="kw">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">"comshp.weibull"</span>,<span class="st">"indshp.weibull"</span>,<span class="st">"sepint.weibull"</span>, <span class="st">"sepref.weibull"</span>)
+<span class="co"># vector of times to estimate survival (days)</span>
+<span class="no">landmark_times</span> <span class="kw">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="fl">0</span>, <span class="fl">100</span>, <span class="fl">200</span>, <span class="fl">300</span>)
 
-<span class="no">curvefits_PFS_landmark</span> <span class="kw">&lt;-</span> <span class="fu"><a href="../reference/get_curvefits.html">get_curvefits</a></span>(<span class="kw">models</span> <span class="kw">=</span> <span class="no">psm_PFS_all</span>$<span class="no">models</span>[<span class="no">selected_models</span>],
-                                           <span class="kw">time</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="fl">0</span>, <span class="fl">100</span>, <span class="fl">200</span>, <span class="fl">300</span>))
-<span class="no">curvefits_df_PFS_landmark</span> <span class="kw">&lt;-</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/bind.html">bind_rows</a></span>(<span class="no">curvefits_PFS_landmark</span>$<span class="no">curvefits</span>, <span class="kw">.id</span> <span class="kw">=</span> <span class="st">"Dist"</span>)  <span class="kw">%&gt;%</span>
-  <span class="fu"><a href="https://tidyr.tidyverse.org/reference/pivot_wider.html">pivot_wider</a></span>(<span class="kw">names_from</span>  <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="no">Dist</span>, <span class="no">ARM</span>), <span class="kw">values_from</span>  <span class="kw">=</span> <span class="no">est</span>) <span class="kw">%&gt;%</span>
-  <span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html">as.data.frame</a></span>()
-<span class="no">curvefits_df_PFS_landmark</span>
-<span class="co">#&gt;   time Length Class Mode     1_Int     1_Ref     2_Int     2_Ref 3_NA 4_NA</span>
-<span class="co">#&gt; 1    0   &lt;NA&gt;  &lt;NA&gt; &lt;NA&gt; 1.0000000 1.0000000 1.0000000 1.0000000   NA   NA</span>
-<span class="co">#&gt; 2  100   &lt;NA&gt;  &lt;NA&gt; &lt;NA&gt; 0.7234631 0.8788970 0.7224754 0.8799136   NA   NA</span>
-<span class="co">#&gt; 3  200   &lt;NA&gt;  &lt;NA&gt; &lt;NA&gt; 0.4286008 0.7132961 0.4280730 0.7144061   NA   NA</span>
-<span class="co">#&gt; 4  300   &lt;NA&gt;  &lt;NA&gt; &lt;NA&gt; 0.2259593 0.5525858 0.2260132 0.5532573   NA   NA</span>
-<span class="co">#&gt; 5   NA      0  NULL NULL        NA        NA        NA        NA   NA   NA</span></pre></body></html></div>
-<p>The <tt>get_curvefits</tt> function can also be used to generate the data required to plot the survival curves, overlaid on top of the KM plot. The time argument should reflect how long you want to the extrapolate for and the unit of time is the same as the input data (in this example, days).</p>
-<p>The <tt>ggsurvplot</tt> function from the <tt>survminer</tt> package has been used to show how the survival curves can be plotted.</p>
+
+<span class="co"># Example 1: intervention arm, Weibull distribution, common shape model</span>
+<span class="no">surv_comshp_weibull_int</span> <span class="kw">&lt;-</span> <span class="fl">1</span> - <span class="fu"><a href="https://rdrr.io/r/stats/Weibull.html">pweibull</a></span>(<span class="no">landmark_times</span>,
+                                        <span class="kw">shape</span> <span class="kw">=</span> <span class="no">psm_PFS_all</span>$<span class="no">parameters_vector</span>[<span class="st">"comshp.weibull.shape.int"</span>],
+                                        <span class="kw">scale</span> <span class="kw">=</span> <span class="no">psm_PFS_all</span>$<span class="no">parameters_vector</span>[<span class="st">"comshp.weibull.scale.int"</span>])
+<span class="no">surv_comshp_weibull_int</span>
+<span class="co">#&gt; [1] 1.0000000 0.7234631 0.4286008 0.2259593</span>
+
+
+<span class="co"># Example 2: intervention arm, log-normal distribution, separate model</span>
+<span class="no">surv_sep_lnorm_int</span> <span class="kw">&lt;-</span> <span class="fl">1</span> - <span class="fu"><a href="https://rdrr.io/r/stats/Lognormal.html">plnorm</a></span>(<span class="no">landmark_times</span>,
+                                 <span class="kw">meanlog</span> <span class="kw">=</span> <span class="no">psm_PFS_all</span>$<span class="no">parameters_vector</span>[<span class="st">"sep.lnorm.meanlog.int"</span>],
+                                 <span class="kw">sdlog</span> <span class="kw">=</span> <span class="no">psm_PFS_all</span>$<span class="no">parameters_vector</span>[<span class="st">"sep.lnorm.sdlog.int"</span>])
+<span class="no">surv_sep_lnorm_int</span>
+<span class="co">#&gt; [1] 1.0000000 0.6732037 0.3817230 0.2297939</span>
+
+
+<span class="co"># Example 3: reference arm, Generalized Gamma distribution, independent shape model</span>
+<span class="no">surv_indshp_gengamma_ref</span> <span class="kw">&lt;-</span> <span class="fl">1</span> - <span class="fu"><a href="https://rdrr.io/pkg/flexsurv/man/GenGamma.html">pgengamma</a></span>(<span class="no">landmark_times</span>,
+                                          <span class="kw">mu</span> <span class="kw">=</span> <span class="no">psm_PFS_all</span>$<span class="no">parameters_vector</span>[<span class="st">"indshp.gengamma.mu.ref"</span>],
+                                          <span class="kw">sigma</span> <span class="kw">=</span> <span class="no">psm_PFS_all</span>$<span class="no">parameters_vector</span>[<span class="st">"indshp.gengamma.sigma.ref"</span>],
+                                          <span class="kw">Q</span> <span class="kw">=</span> <span class="no">psm_PFS_all</span>$<span class="no">parameters_vector</span>[<span class="st">"indshp.gengamma.Q.ref"</span>])
+<span class="no">surv_indshp_gengamma_ref</span>
+<span class="co">#&gt; [1] 1.0000000 0.8790137 0.7164446 0.5563410</span></pre></body></html></div>
+<p>The same functions can be used to generate the data required to plot the survival curves, overlaid on top of the KM plot. The time argument should reflect how long you want to the extrapolate for and the unit of time is the same as the input data (in this example, days).</p>
 <div class="sourceCode" id="cb6"><html><body><pre class="r">
-<span class="co"># for clarity just pick the 2 different weibull models and a Gamma. </span>
-<span class="no">selected_models</span> <span class="kw">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">"comshp.weibull"</span>,<span class="st">"comshp.gengamma"</span>,<span class="st">"indshp.gengamma"</span>)
+<span class="co"># Plot the common shape models (Weibull distribution) with the Kaplan-Meier</span>
 
-<span class="co"># Create data set for plots</span>
-<span class="no">curvefits_PFS</span> <span class="kw">&lt;-</span> <span class="fu"><a href="../reference/get_curvefits.html">get_curvefits</a></span>(<span class="kw">models</span> <span class="kw">=</span> <span class="no">psm_PFS_all</span>$<span class="no">models</span>[<span class="no">selected_models</span>],
-                                  <span class="kw">time</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html">seq</a></span>(<span class="kw">from</span><span class="kw">=</span><span class="fl">0</span>, <span class="kw">to</span> <span class="kw">=</span> <span class="fl">500</span>, <span class="kw">by</span> <span class="kw">=</span> <span class="fl">10</span>))
-
-<span class="co"># format data ready for the plot</span>
-<span class="no">curvefits_df_PFS</span> <span class="kw">&lt;-</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/bind.html">bind_rows</a></span>(<span class="no">curvefits_PFS</span>$<span class="no">curvefits</span>, <span class="kw">.id</span> <span class="kw">=</span> <span class="st">"Dist"</span>) <span class="kw">%&gt;%</span>
-  <span class="fu"><a href="https://tidyr.tidyverse.org/reference/pivot_wider.html">pivot_wider</a></span>(<span class="kw">names_from</span>  <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="no">ARM</span>), <span class="kw">values_from</span>  <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="no">est</span>))
-
-<span class="no">analysis_data_TrtA</span> <span class="kw">&lt;-</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html">filter</a></span>(<span class="no">PFS_data</span>, <span class="no">ARMCD</span><span class="kw">==</span><span class="st">"A"</span>)
-<span class="no">analysis_data_TrtB</span> <span class="kw">&lt;-</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html">filter</a></span>(<span class="no">PFS_data</span>, <span class="no">ARMCD</span><span class="kw">==</span><span class="st">"B"</span>)
-
-<span class="co"># Get KM estimates</span>
-<span class="no">km.est.PFS.TrtA</span> <span class="kw">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/survival/man/survfit.html">survfit</a></span>(<span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html">Surv</a></span>(<span class="no">PFS_days</span>, <span class="no">PFS_event</span>) ~ <span class="fl">1</span> , <span class="kw">data</span> <span class="kw">=</span> <span class="no">analysis_data_TrtA</span>, <span class="kw">conf.type</span> <span class="kw">=</span> <span class="st">'plain'</span>)
-<span class="no">km.est.PFS.TrtB</span> <span class="kw">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/survival/man/survfit.html">survfit</a></span>(<span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html">Surv</a></span>(<span class="no">PFS_days</span>, <span class="no">PFS_event</span>) ~ <span class="fl">1</span> , <span class="kw">data</span> <span class="kw">=</span> <span class="no">analysis_data_TrtB</span>, <span class="kw">conf.type</span> <span class="kw">=</span> <span class="st">'plain'</span>)
+<span class="co"># vector of times to estimate survival (days)</span>
+<span class="no">times</span> <span class="kw">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="fu"><a href="https://rdrr.io/r/base/seq.html">seq</a></span>(<span class="kw">from</span> <span class="kw">=</span> <span class="fl">0</span>, <span class="kw">to</span> <span class="kw">=</span> <span class="fl">1000</span>, <span class="kw">by</span> <span class="kw">=</span> <span class="fl">0.1</span>))
 
 
-<span class="co"># Plot survival curves for arm A</span>
-<span class="no">plot.PFS.A</span> <span class="kw">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/survminer/man/ggsurvplot.html">ggsurvplot</a></span>(<span class="no">km.est.PFS.TrtA</span>,
-                        <span class="kw">combine</span> <span class="kw">=</span> <span class="fl">TRUE</span>,
-                        <span class="kw">censor</span> <span class="kw">=</span> <span class="fl">FALSE</span>,
-                        <span class="kw">risk.table</span> <span class="kw">=</span> <span class="fl">TRUE</span>,
-                        <span class="kw">conf.int</span> <span class="kw">=</span> <span class="fl">FALSE</span>,
-                        <span class="kw">break.x.by</span> <span class="kw">=</span> <span class="fl">100</span>,
-                        <span class="kw">xlim</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="fl">0</span>, <span class="fl">500</span>),
-                        <span class="kw">xlab</span> <span class="kw">=</span> <span class="st">"Time (days)"</span>,
-                        <span class="kw">size</span> <span class="kw">=</span> <span class="fl">0.72</span>,
-                        <span class="kw">linetype</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="fl">6</span>,<span class="fl">6</span>,<span class="fl">6</span>,<span class="fl">6</span>, <span class="fl">1</span>, <span class="fl">6</span>, <span class="fl">6</span>,<span class="fl">6</span>,<span class="fl">6</span>),
-                        <span class="kw">title</span>  <span class="kw">=</span>  <span class="st">'Kaplan-Meier of OS with standard distribution overlays'</span>,
-                        <span class="kw">legend.title</span> <span class="kw">=</span> <span class="st">''</span>,
-                        <span class="kw">legend.labs</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">"KM"</span>),
-                        <span class="kw">surv.median.line</span> <span class="kw">=</span> <span class="st">'hv'</span>,
-                        <span class="kw">palette</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="fu"><a href="https://rdrr.io/r/grDevices/rgb.html">rgb</a></span>(<span class="fl">0</span>,<span class="fl">0</span>,<span class="fl">0</span>,<span class="kw">max</span><span class="kw">=</span><span class="fl">30</span>)),
-                        <span class="kw">risk.table.y.text.col</span> <span class="kw">=</span> <span class="no">F</span>
-)
+<span class="co"># Survival probabilities: intervention arm, Weibull distribution, common shape model</span>
+<span class="no">surv_comshp_weibull_int</span> <span class="kw">&lt;-</span> <span class="fl">1</span> - <span class="fu"><a href="https://rdrr.io/r/stats/Weibull.html">pweibull</a></span>(<span class="no">times</span>,
+                                  <span class="kw">shape</span> <span class="kw">=</span> <span class="no">psm_PFS_all</span>$<span class="no">parameters_vector</span>[<span class="st">"comshp.weibull.shape.int"</span>],
+                                  <span class="kw">scale</span> <span class="kw">=</span> <span class="no">psm_PFS_all</span>$<span class="no">parameters_vector</span>[<span class="st">"comshp.weibull.scale.int"</span>])
 
+<span class="co"># Survival probabilities: reference arm, Weibull distribution, common shape model</span>
+<span class="no">surv_comshp_weibull_ref</span> <span class="kw">&lt;-</span> <span class="fl">1</span> - <span class="fu"><a href="https://rdrr.io/r/stats/Weibull.html">pweibull</a></span>(<span class="no">times</span>,
+                                  <span class="kw">shape</span> <span class="kw">=</span> <span class="no">psm_PFS_all</span>$<span class="no">parameters_vector</span>[<span class="st">"comshp.weibull.shape.ref"</span>],
+                                  <span class="kw">scale</span> <span class="kw">=</span> <span class="no">psm_PFS_all</span>$<span class="no">parameters_vector</span>[<span class="st">"comshp.weibull.scale.ref"</span>])
 
-<span class="no">plot.PFS.A</span>$<span class="no">plot</span> <span class="kw">&lt;-</span> <span class="no">plot.PFS.A</span>$<span class="no">plot</span> +
-  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="kw">x</span> <span class="kw">=</span> <span class="no">time</span>, <span class="kw">y</span> <span class="kw">=</span> <span class="no">Int</span>,
-                <span class="kw">colour</span> <span class="kw">=</span> <span class="no">Dist</span>,
-                <span class="kw">linetype</span> <span class="kw">=</span> <span class="no">Dist</span>),
-            <span class="kw">size</span> <span class="kw">=</span> <span class="fl">0.72</span>,
-            <span class="kw">data</span> <span class="kw">=</span> <span class="no">curvefits_df_PFS</span>) +
-  <span class="fu">scale_color_manual</span>(<span class="kw">values</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="no">blue</span>, <span class="no">pink</span>, <span class="no">Dyellow</span>, <span class="no">orange</span>))
-<span class="co">#&gt; Scale for 'colour' is already present. Adding another scale for 'colour',</span>
-<span class="co">#&gt; which will replace the existing scale.</span>
+<span class="co"># Create two data frames that include the survival probablaities and times</span>
+<span class="no">surv_comshp_weibull_int_times</span> <span class="kw">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span>(<span class="kw">Time</span> <span class="kw">=</span> <span class="no">times</span>,
+                                            <span class="kw">Surv</span> <span class="kw">=</span> <span class="no">surv_comshp_weibull_int</span>,
+                                            <span class="kw">Trt</span> <span class="kw">=</span> <span class="st">"Intervention"</span>)
+<span class="no">surv_comshp_weibull_ref_times</span> <span class="kw">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span>(<span class="kw">Time</span> <span class="kw">=</span> <span class="no">times</span>,
+                                            <span class="kw">Surv</span> <span class="kw">=</span> <span class="no">surv_comshp_weibull_ref</span>,
+                                            <span class="kw">Trt</span> <span class="kw">=</span> <span class="st">"Reference"</span>)
 
-<span class="no">plot.PFS.A</span></pre></body></html></div>
+<span class="co"># Plot Kaplan-Meier</span>
+<span class="fu"><a href="https://rdrr.io/r/graphics/plot.html">plot</a></span>(<span class="no">km.est.PFS</span>,
+     <span class="kw">col</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="no">blue</span>, <span class="no">pink</span>), <span class="co"># plot colours</span>
+     <span class="kw">lty</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="fl">1</span>:<span class="fl">2</span>), <span class="co"># line type</span>
+     <span class="kw">xlab</span> <span class="kw">=</span> <span class="st">"Time (Days)"</span>, <span class="co"># x-axis label</span>
+     <span class="kw">ylab</span> <span class="kw">=</span> <span class="st">"Progression-free survival"</span>, <span class="co"># y-axis label</span>
+     <span class="kw">xlim</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="fl">0</span>, <span class="fl">1000</span>))
+
+<span class="co"># Add legend</span>
+<span class="fu"><a href="https://rdrr.io/r/graphics/legend.html">legend</a></span>(<span class="kw">x</span> <span class="kw">=</span> <span class="fl">500</span>,
+       <span class="kw">y</span> <span class="kw">=</span> <span class="fl">.9</span>,
+       <span class="kw">legend</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">"Arm A"</span>, <span class="st">"Arm B"</span>),
+       <span class="kw">lty</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="fl">1</span>:<span class="fl">2</span>),
+       <span class="kw">col</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="no">blue</span>, <span class="no">pink</span>))
+
+<span class="co"># Add model estimates</span>
+<span class="fu"><a href="https://rdrr.io/r/graphics/lines.html">lines</a></span>(<span class="kw">x</span> <span class="kw">=</span> <span class="no">surv_comshp_weibull_int_times</span>$<span class="no">Time</span>, <span class="kw">y</span> <span class="kw">=</span> <span class="no">surv_comshp_weibull_int_times</span>$<span class="no">Surv</span>, <span class="kw">col</span> <span class="kw">=</span> <span class="no">blue</span>)
+<span class="fu"><a href="https://rdrr.io/r/graphics/lines.html">lines</a></span>(<span class="kw">x</span> <span class="kw">=</span> <span class="no">surv_comshp_weibull_ref_times</span>$<span class="no">Time</span>, <span class="kw">y</span> <span class="kw">=</span> <span class="no">surv_comshp_weibull_ref_times</span>$<span class="no">Surv</span>, <span class="kw">col</span> <span class="kw">=</span> <span class="no">pink</span>)</pre></body></html></div>
 <p><img src="Fitting_models_in_R_files/figure-html/unnamed-chunk-6-1.png" width="672"></p>
-<div class="sourceCode" id="cb7"><html><body><pre class="r">
-<span class="co"># Plot survival curves for arm B</span>
-<span class="no">plot.PFS.B</span> <span class="kw">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/survminer/man/ggsurvplot.html">ggsurvplot</a></span>(<span class="no">km.est.PFS.TrtB</span>,
-                        <span class="kw">combine</span> <span class="kw">=</span> <span class="fl">TRUE</span>,
-                        <span class="kw">censor</span> <span class="kw">=</span> <span class="fl">FALSE</span>,
-                        <span class="kw">risk.table</span> <span class="kw">=</span> <span class="fl">TRUE</span>,
-                        <span class="kw">conf.int</span> <span class="kw">=</span> <span class="fl">FALSE</span>,
-                        <span class="kw">break.x.by</span> <span class="kw">=</span> <span class="fl">100</span>,
-                        <span class="kw">xlim</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="fl">0</span>, <span class="fl">500</span>),
-                        <span class="kw">xlab</span> <span class="kw">=</span> <span class="st">"Time (days)"</span>,
-                        <span class="kw">size</span> <span class="kw">=</span> <span class="fl">0.72</span>,
-                        <span class="kw">linetype</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="fl">6</span>,<span class="fl">6</span>,<span class="fl">6</span>,<span class="fl">6</span>, <span class="fl">1</span>, <span class="fl">6</span>, <span class="fl">6</span>,<span class="fl">6</span>,<span class="fl">6</span>),
-                        <span class="kw">title</span>  <span class="kw">=</span>  <span class="st">'Kaplan-Meier of OS with standard distribution overlays'</span>,
-                        <span class="kw">legend.title</span> <span class="kw">=</span> <span class="st">''</span>,
-                        <span class="kw">legend.labs</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">"KM"</span>),
-                        <span class="kw">surv.median.line</span> <span class="kw">=</span> <span class="st">'hv'</span>,
-                        <span class="kw">palette</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="fu"><a href="https://rdrr.io/r/grDevices/rgb.html">rgb</a></span>(<span class="fl">0</span>,<span class="fl">0</span>,<span class="fl">0</span>,<span class="kw">max</span><span class="kw">=</span><span class="fl">30</span>)),
-                        <span class="kw">risk.table.y.text.col</span> <span class="kw">=</span> <span class="no">F</span>
-)
-
-
-<span class="no">plot.PFS.B</span>$<span class="no">plot</span> <span class="kw">&lt;-</span> <span class="no">plot.PFS.B</span>$<span class="no">plot</span> +
-  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="kw">x</span> <span class="kw">=</span> <span class="no">time</span>, <span class="kw">y</span> <span class="kw">=</span> <span class="no">Ref</span>,
-                <span class="kw">colour</span> <span class="kw">=</span> <span class="no">Dist</span>,
-                <span class="kw">linetype</span> <span class="kw">=</span> <span class="no">Dist</span>),
-            <span class="kw">size</span> <span class="kw">=</span> <span class="fl">0.72</span>,
-            <span class="kw">data</span> <span class="kw">=</span> <span class="no">curvefits_df_PFS</span>) +
-  <span class="fu">scale_color_manual</span>(<span class="kw">values</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="no">blue</span>, <span class="no">pink</span>, <span class="no">Dyellow</span>, <span class="no">orange</span>))
-<span class="co">#&gt; Scale for 'colour' is already present. Adding another scale for 'colour',</span>
-<span class="co">#&gt; which will replace the existing scale.</span>
-
-<span class="no">plot.PFS.B</span></pre></body></html></div>
-<p><img src="Fitting_models_in_R_files/figure-html/unnamed-chunk-6-2.png" width="672"></p>
 </div>
 <div id="adressing-uncertainty---bootstrapping" class="section level1">
 <h1 class="hasAnchor">
@@ -1030,8 +1153,13 @@ pre { /* Code block - determines code spacing between lines */
 <li>Estimating all specified parametric survival models</li>
 </ol>
 <p>This procedure is repeated multiple times to obtain a distribution of parameters. For this example, bootstrap estimates of the parameters were calculated using the <tt>boot</tt> package. An argument for the <tt>boot</tt> function is <tt>statistic</tt> which is a function which when applied to data returns a vector containing the statistic(s) of interest. The <tt>bootPSM</tt> function in the <tt>flexsurvPlus</tt> package can be used for this purpose.</p>
-<p>The inputs for the <tt>bootPSM</tt> function are identical to the <tt>runPSM</tt> function, however there is one additional argument: *<tt>i</tt> - Index used to select a sample within <tt>boot</tt></p>
-<div class="sourceCode" id="cb8"><html><body><pre class="r"><span class="fu"><a href="https://rdrr.io/r/base/Random.html">set.seed</a></span>(<span class="fl">2358</span>)
+<p>The inputs for the <tt>bootPSM</tt> function are identical to the <tt>runPSM</tt> function, however there is one additional argument:</p>
+<ul>
+<li>
+<tt>i</tt> - Index used to select a sample within <tt>boot</tt>
+</li>
+</ul>
+<div class="sourceCode" id="cb7"><html><body><pre class="r"><span class="fu"><a href="https://rdrr.io/r/base/Random.html">set.seed</a></span>(<span class="fl">2358</span>)
 <span class="co"># for speed and illustration only 4 models are selected for bootstrapping - all could be included</span>
 <span class="no">n.sim</span> <span class="kw">&lt;-</span> <span class="fl">100</span>
 <span class="no">PSM_bootstraps_PFS</span> <span class="kw">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/boot/man/boot.html">boot</a></span>(
@@ -1047,17 +1175,17 @@ pre { /* Code block - determines code spacing between lines */
   <span class="kw">ref_name</span> <span class="kw">=</span> <span class="st">"A"</span>
 )</pre></body></html></div>
 <p>To simplify the post processing of the bootstrap samples a function  is provided that does some manipulations. This returns a tibble similar to the  one that is returned by . SampleID identified the bootstrap sample. SampleID of 0 are the parameters for the original data.</p>
-<div class="sourceCode" id="cb9"><html><body><pre class="r"><span class="no">PSM_bootstrap_PFS_data</span> <span class="kw">&lt;-</span> <span class="fu"><a href="../reference/bootPSMtidy.html">bootPSMtidy</a></span>(<span class="no">PSM_bootstraps_PFS</span>)
+<div class="sourceCode" id="cb8"><html><body><pre class="r"><span class="no">PSM_bootstrap_PFS_data</span> <span class="kw">&lt;-</span> <span class="fu"><a href="../reference/bootPSMtidy.html">bootPSMtidy</a></span>(<span class="no">PSM_bootstraps_PFS</span>)
 <span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span>(<span class="no">PSM_bootstrap_PFS_data</span>)
 <span class="co">#&gt; # A tibble: 6 x 14</span>
-<span class="co">#&gt;   SampleID Model Reference_name Intervention_na… weibull.scale.i…</span>
-<span class="co">#&gt;      &lt;int&gt; &lt;chr&gt; &lt;chr&gt;          &lt;chr&gt;                       &lt;dbl&gt;</span>
-<span class="co">#&gt; 1        0 Comm… A              B                            437.</span>
-<span class="co">#&gt; 2        0 Sepe… A              B                            437.</span>
-<span class="co">#&gt; 3        1 Comm… A              B                            454.</span>
-<span class="co">#&gt; 4        1 Sepe… A              B                            453.</span>
-<span class="co">#&gt; 5        2 Comm… A              B                            453.</span>
-<span class="co">#&gt; 6        2 Sepe… A              B                            455.</span>
+<span class="co">#&gt;   SampleID Model        Reference_name Intervention_name weibull.scale.int</span>
+<span class="co">#&gt;      &lt;int&gt; &lt;chr&gt;        &lt;chr&gt;          &lt;chr&gt;                         &lt;dbl&gt;</span>
+<span class="co">#&gt; 1        0 Common shape A              B                              437.</span>
+<span class="co">#&gt; 2        0 Seperate     A              B                              437.</span>
+<span class="co">#&gt; 3        1 Common shape A              B                              454.</span>
+<span class="co">#&gt; 4        1 Seperate     A              B                              453.</span>
+<span class="co">#&gt; 5        2 Common shape A              B                              453.</span>
+<span class="co">#&gt; 6        2 Seperate     A              B                              455.</span>
 <span class="co">#&gt; # … with 9 more variables: weibull.scale.ref &lt;dbl&gt;, weibull.shape.int &lt;dbl&gt;,</span>
 <span class="co">#&gt; #   weibull.shape.ref &lt;dbl&gt;, weibull.scale.TE &lt;dbl&gt;, gamma.rate.int &lt;dbl&gt;,</span>
 <span class="co">#&gt; #   gamma.rate.ref &lt;dbl&gt;, gamma.shape.int &lt;dbl&gt;, gamma.shape.ref &lt;dbl&gt;,</span>
@@ -1067,7 +1195,7 @@ pre { /* Code block - determines code spacing between lines */
 <h1 class="hasAnchor">
 <a href="#estimating-quantities-from-the-sample" class="anchor"></a>Estimating quantities from the sample</h1>
 <p>As the <tt>flexsurv</tt> parameterisations are used any quantity of interest can be simply calculated for all models and samples through use of the flexsurv functions such as the extrapolated means via flexsurv::mean_weibull.</p>
-<div class="sourceCode" id="cb10"><html><body><pre class="r"><span class="no">estimated_deltamean</span> <span class="kw">&lt;-</span> <span class="no">PSM_bootstrap_PFS_data</span> <span class="kw">%&gt;%</span>
+<div class="sourceCode" id="cb9"><html><body><pre class="r"><span class="no">estimated_deltamean</span> <span class="kw">&lt;-</span> <span class="no">PSM_bootstrap_PFS_data</span> <span class="kw">%&gt;%</span>
   <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html">transmute</a></span>(<span class="no">SampleID</span>, <span class="no">Model</span>,
             <span class="kw">Weibull.Mean.ref</span> <span class="kw">=</span> <span class="kw pkg">flexsurv</span><span class="kw ns">::</span><span class="fu"><a href="https://rdrr.io/pkg/flexsurv/man/means.html">mean_weibull</a></span>(<span class="kw">shape</span> <span class="kw">=</span> <span class="no">weibull.shape.ref</span>, <span class="kw">scale</span> <span class="kw">=</span> <span class="no">weibull.scale.ref</span>),
             <span class="kw">Weibull.Mean.int</span> <span class="kw">=</span> <span class="kw pkg">flexsurv</span><span class="kw ns">::</span><span class="fu"><a href="https://rdrr.io/pkg/flexsurv/man/means.html">mean_weibull</a></span>(<span class="kw">shape</span> <span class="kw">=</span> <span class="no">weibull.shape.int</span>, <span class="kw">scale</span> <span class="kw">=</span> <span class="no">weibull.scale.int</span>),
@@ -1084,10 +1212,15 @@ pre { /* Code block - determines code spacing between lines */
 <span class="co">#&gt; 5        2 Common shape             233.             419.               186.</span>
 <span class="co">#&gt; 6        2 Seperate                 233.             425.               192.</span>
 
-<span class="no">estimated_deltamean</span> <span class="kw">%&gt;%</span>
-  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="kw">x</span> <span class="kw">=</span> <span class="no">Weibull.Mean.delta</span>)) +
-  <span class="fu">geom_density</span>()</pre></body></html></div>
+<span class="no">density</span> <span class="kw">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/density.html">density</a></span>(<span class="no">estimated_deltamean</span>$<span class="no">Weibull.Mean.delta</span>)
+<span class="fu"><a href="https://rdrr.io/r/graphics/plot.html">plot</a></span>(<span class="no">density</span>,
+     <span class="kw">lwd</span> <span class="kw">=</span> <span class="fl">2</span>,
+     <span class="kw">main</span> <span class="kw">=</span> <span class="st">"Density"</span>)</pre></body></html></div>
 <p><img src="Fitting_models_in_R_files/figure-html/unnamed-chunk-9-1.png" width="672"></p>
+<div class="sourceCode" id="cb10"><html><body><pre class="r">
+# estimated_deltamean %&gt;%
+#   ggplot(aes(x = Weibull.Mean.delta)) + 
+#   geom_density()</pre></body></html></div>
 </div>
 <div id="outputing-parameters-to-excel" class="section level1">
 <h1 class="hasAnchor">

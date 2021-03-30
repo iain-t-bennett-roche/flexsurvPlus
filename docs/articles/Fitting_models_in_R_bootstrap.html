@@ -81,7 +81,7 @@
       <h1 data-toc-skip>PSA and correlated endpoints (bootstrap approch)</h1>
                         <h4 class="author">Roche</h4>
             
-            <h4 class="date">2021-01-06</h4>
+            <h4 class="date">2021-03-30</h4>
       
       
       <div class="hidden name"><code>Fitting_models_in_R_bootstrap.Rmd</code></div>
@@ -120,7 +120,7 @@ pre { /* Code block - determines code spacing between lines */
 <div id="introduction" class="section level1">
 <h1 class="hasAnchor">
 <a href="#introduction" class="anchor"></a>Introduction</h1>
-<p>Parametric survival models are often the preferred method of extrapolating survival data for use in economic models. The National Institute for Health and Care Excellence (NICE) Decision Support Unit (DSU) technical support document (TSD) 14 recommends that the Exponential, Weibull, Gompertz, log-logistic, log normal and Generalized Gamma parametric models should all be considered.<span class="citation">[1]</span> More recently, NICE also discusses more flexible models in NICE DSU TSD 21, however, more these models are not in the scope of this package.<span class="citation">[2]</span> The Canadian Agency for Drugs and Technologies in Health (CADTH) additionally specifies that the Gamma distribution must also be considered. This document therefore details the characteristics of each of these distributions and demonstrates how the parameters from each distribution, outputted using the flexsurvPlus package, can be implemented within an economic model.<span class="citation">[3]</span></p>
+<p>Parametric survival models are often the preferred method of extrapolating survival data for use in economic models. The National Institute for Health and Care Excellence (NICE) Decision Support Unit (DSU) technical support document (TSD) 14 recommends that the Exponential, Weibull, Gompertz, log-logistic, log normal and Generalized Gamma parametric models should all be considered.<span class="citation">[1]</span> More recently, NICE also discusses more flexible models in NICE DSU TSD 21, however, more these models are not in the scope of this package.<span class="citation">[2]</span> The Canadian Agency for Drugs and Technologies in Health (CADTH) additionally specifies that the Gamma distribution must also be considered. This document therefore details the characteristics of each of these distributions and demonstrates how the parameters from each distribution, outputted using the flexsurvPlus package, can be implemented within an economic model.<span class="citation">[3]</span> The Generalized F distribution is not commonly used, however it has been included in this package in case it is required.</p>
 </div>
 <div id="handling-uncertainty" class="section level1">
 <h1 class="hasAnchor">
@@ -312,14 +312,14 @@ pre { /* Code block - determines code spacing between lines */
 
 <span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span>(<span class="no">mean_durations</span>)
 <span class="co">#&gt; # A tibble: 6 x 8</span>
-<span class="co">#&gt;   SampleID Bootstrap pfs_mean_time_r… pfs_mean_time_i… pfs_mean_delta</span>
-<span class="co">#&gt;      &lt;int&gt; &lt;chr&gt;                &lt;dbl&gt;            &lt;dbl&gt;          &lt;dbl&gt;</span>
-<span class="co">#&gt; 1        0 Uncorrel…             206.             399.           193.</span>
-<span class="co">#&gt; 2        1 Uncorrel…             210.             414.           204.</span>
-<span class="co">#&gt; 3        2 Uncorrel…             233.             419.           186.</span>
-<span class="co">#&gt; 4        3 Uncorrel…             204.             387.           183.</span>
-<span class="co">#&gt; 5        4 Uncorrel…             212.             346.           134.</span>
-<span class="co">#&gt; 6        5 Uncorrel…             219.             420.           201.</span>
+<span class="co">#&gt;   SampleID Bootstrap    pfs_mean_time_ref pfs_mean_time_int pfs_mean_delta</span>
+<span class="co">#&gt;      &lt;int&gt; &lt;chr&gt;                    &lt;dbl&gt;             &lt;dbl&gt;          &lt;dbl&gt;</span>
+<span class="co">#&gt; 1        0 Uncorrelated              206.              399.           193.</span>
+<span class="co">#&gt; 2        1 Uncorrelated              210.              414.           204.</span>
+<span class="co">#&gt; 3        2 Uncorrelated              233.              419.           186.</span>
+<span class="co">#&gt; 4        3 Uncorrelated              204.              387.           183.</span>
+<span class="co">#&gt; 5        4 Uncorrelated              212.              346.           134.</span>
+<span class="co">#&gt; 6        5 Uncorrelated              219.              420.           201.</span>
 <span class="co">#&gt; # … with 3 more variables: os_mean_time_ref &lt;dbl&gt;, os_mean_time_int &lt;dbl&gt;,</span>
 <span class="co">#&gt; #   os_mean_delta &lt;dbl&gt;</span></pre></body></html></div>
 <p>We can now plot this dataset and as expected the correlated bootstrap approach leads to mean estimates for PFS and OS that preserve the correlations in the underlying data. Here we use all bootstrap samples but in the context of an excel economic we would perform PSA by randomly sampling SampleIDs and using the same SampleID for both PFS and OS in a single PSA run.</p>
@@ -334,7 +334,10 @@ pre { /* Code block - determines code spacing between lines */
   <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html">ylab</a></span>(<span class="st">"Difference in mean (gamma) OS (B vs A)"</span>) +
   <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html">ggtitle</a></span>(<span class="st">"Each point is a bootstrap sample"</span>)</pre></body></html></div>
 <p><img src="Fitting_models_in_R_bootstrap_files/figure-html/unnamed-chunk-8-1.png" width="672"></p>
-<p>#References</p>
+</div>
+<div id="references" class="section level2 unnumbered">
+<h2 class="hasAnchor">
+<a href="#references" class="anchor"></a>References</h2>
 <div id="refs" class="references">
 <div id="ref-latimer2011nice">
 <p>[1] Latimer N. NICE dsu technical support document 14: Survival analysis for economic evaluations alongside clinical trials-extrapolation with patient-level data. Sheffield: Report by the Decision Support Unit 2011;2013.</p>

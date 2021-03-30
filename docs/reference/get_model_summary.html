@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Function reference • flexsurvPlus</title>
+<title>Get model summary from <code><a href='fit_models.html'>fit_models</a></code> objects — get_model_summary • flexsurvPlus</title>
 
 
 <!-- jquery -->
@@ -39,7 +39,8 @@
 
 
 
-<meta property="og:title" content="Function reference" />
+<meta property="og:title" content="Get model summary from <code><a href='fit_models.html'>fit_models</a></code> objects — get_model_summary" />
+<meta property="og:description" content="Manipulates fit_models objects to get a model summary of AIC and BIC and status of whether the model converged or produced an error or warning." />
 
 
 
@@ -58,7 +59,7 @@
   </head>
 
   <body data-spy="scroll" data-target="#toc">
-    <div class="container template-reference-index">
+    <div class="container template-reference-topic">
       <header>
       <div class="navbar navbar-default navbar-fixed-top" role="navigation">
   <div class="container">
@@ -118,102 +119,37 @@
       </header>
 
 <div class="row">
-  <div class="contents col-md-9">
+  <div class="col-md-9 contents">
     <div class="page-header">
-      <h1>Reference</h1>
+    <h1>Get model summary from <code><a href='fit_models.html'>fit_models</a></code> objects</h1>
+    
+    <div class="hidden name"><code>get_model_summary.Rd</code></div>
     </div>
 
-    <table class="ref-index">
+    <div class="ref-description">
+    <p>Manipulates <code><a href='fit_models.html'>fit_models</a></code> objects to get a model summary of AIC and BIC and status of whether the model converged or produced an error or warning.</p>
+    </div>
 
-    <colgroup>
-      
-      <col class="alias" />
-      <col class="title" />
-    </colgroup>
+    <pre class="usage"><span class='fu'>get_model_summary</span>(<span class='no'>models</span>)</pre>
 
-    <tbody>
-      <tr>
-        <th colspan="2">
-          <h2 id="section-all-functions" class="hasAnchor"><a href="#section-all-functions" class="anchor"></a>All functions</h2>
-          <p class="section-desc"></p>
-        </th>
-      </tr>
-      
-      
-    </tbody><tbody>
-      
-      
-      <tr>
-        
-        <td>
-          <p><code><a href="bootPSM.html">bootPSM()</a></code> </p>
-        </td>
-        <td><p>Run a complete parametric survival analysis</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="bootPSMtidy.html">bootPSMtidy()</a></code> </p>
-        </td>
-        <td><p>Process bootstrap samples</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="fit_models.html">fit_models()</a></code> </p>
-        </td>
-        <td><p>Fit flexsurv models</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="flexsurvPlus.html">flexsurvPlus</a></code> </p>
-        </td>
-        <td><p>flexsurvPlus: A package for performing survival analyses.</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="get_model_summary.html">get_model_summary()</a></code> </p>
-        </td>
-        <td><p>Get model summary from <code>fit_models</code> objects</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="runPSM.html">runPSM()</a></code> </p>
-        </td>
-        <td><p>Run a complete parametric survival analysis for one model with multiple distributions</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="run_common_shape.html">run_common_shape()</a></code> </p>
-        </td>
-        <td><p>Run a complete parametric survival analysis for a common shape model</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="run_independent_shape.html">run_independent_shape()</a></code> </p>
-        </td>
-        <td><p>Run a complete parametric survival analysis for an independent shape model</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="run_one_arm.html">run_one_arm()</a></code> </p>
-        </td>
-        <td><p>Run a complete parametric survival analysis for one-arm</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="run_separate.html">run_separate()</a></code> </p>
-        </td>
-        <td><p>Run a complete parametric survival analysis for a separate model</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="sim_adtte.html">sim_adtte()</a></code> </p>
-        </td>
-        <td><p>A function to simulate Survival data</p></td>
-      </tr>
-    </tbody>
+    <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
+    <table class="ref-arguments">
+    <colgroup><col class="name" /><col class="desc" /></colgroup>
+    <tr>
+      <th>models</th>
+      <td><p>Object from <code><a href='fit_models.html'>fit_models</a></code></p></td>
+    </tr>
     </table>
-  </div>
 
+    <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
+
+    <p>A data frame containing the <code><a href='https://rdrr.io/r/stats/AIC.html'>AIC</a></code>, <code><a href='https://rdrr.io/r/stats/AIC.html'>BIC</a></code>
+from flexsurv objects and a status column of whether the model converged or produced an error or warning.</p>
+    <h2 class="hasAnchor" id="see-also"><a class="anchor" href="#see-also"></a>See also</h2>
+
+    <div class='dont-index'><p><code><a href='fit_models.html'>fit_models</a></code> <code>flexsurvreg</code></p></div>
+
+  </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
     <nav id="toc" data-toggle="toc" class="sticky-top">
       <h2 data-toc-skip>Contents</h2>

@@ -136,7 +136,8 @@ containing a covariate for treatment on shape and scale parameter.</p>
   <span class='no'>data</span>,
   <span class='no'>time_var</span>,
   <span class='no'>event_var</span>,
-  <span class='kw'>distr</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>"exp"</span>, <span class='st'>"weibull"</span>, <span class='st'>"gompertz"</span>, <span class='st'>"lnorm"</span>, <span class='st'>"llogis"</span>, <span class='st'>"gengamma"</span>, <span class='st'>"gamma"</span>),
+  <span class='kw'>distr</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>"exp"</span>, <span class='st'>"weibull"</span>, <span class='st'>"gompertz"</span>, <span class='st'>"lnorm"</span>, <span class='st'>"llogis"</span>, <span class='st'>"gengamma"</span>, <span class='st'>"gamma"</span>,
+    <span class='st'>"genf"</span>),
   <span class='no'>strata_var</span>,
   <span class='no'>int_name</span>,
   <span class='no'>ref_name</span>
@@ -164,7 +165,7 @@ numerical and contain 1's to indicate an event and 0 to indicate a censor.</p></
       <th>distr</th>
       <td><p>A vector string of distributions, see dist argument in
 <code>flexsurvreg</code>. This is passed to the <code>distr</code> argument of
-the <code><a href='fit_models.html'>fit_models</a></code> function</p></td>
+the <code><a href='fit_models.html'>fit_models</a></code> function. Default is all available distributions (see below).</p></td>
     </tr>
     <tr>
       <th>strata_var</th>
@@ -184,7 +185,7 @@ the parameters.</p></td>
 
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
-    <p>A list containing 'models' (output from <code><a href='fit_models.html'>fit_models</a></code>), 'model_summary' (output from<code><a href='get_params.html'>get_params</a></code>) and
+    <p>A list containing 'models' (output from <code><a href='fit_models.html'>fit_models</a></code>), 'model_summary' (output from<code><a href='get_model_summary.html'>get_model_summary</a></code>) and
 'parameters', a data frame containing the coefficients of each flexsurv model.</p><ul>
 <li><p>'models' is a list of flexsurv objects for each distribution specified</p></li>
 <li><p>'model_summary' is a tibble object containing the fitted model objects, the parameter
@@ -207,6 +208,7 @@ of the generalised gamma distribution for the reference treatment. Columns with 
 <li><p>Log-logistic ('llogis')</p></li>
 <li><p>Generalized gamma ('gengamma')</p></li>
 <li><p>Gamma ('gamma')</p></li>
+<li><p>Generalised F ('genf')</p></li>
 </ul>
 
 <p>The model fit is in the form Surv(Time, Event==1) ~ ARM + shape(ARM). The

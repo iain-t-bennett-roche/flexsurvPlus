@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Function reference • flexsurvPlus</title>
+<title>Run a complete parametric survival analysis for one-arm — run_one_arm • flexsurvPlus</title>
 
 
 <!-- jquery -->
@@ -39,7 +39,8 @@
 
 
 
-<meta property="og:title" content="Function reference" />
+<meta property="og:title" content="Run a complete parametric survival analysis for one-arm — run_one_arm" />
+<meta property="og:description" content="Fits a single flexsurv models using flexsurvreg." />
 
 
 
@@ -58,7 +59,7 @@
   </head>
 
   <body data-spy="scroll" data-target="#toc">
-    <div class="container template-reference-index">
+    <div class="container template-reference-topic">
       <header>
       <div class="navbar navbar-default navbar-fixed-top" role="navigation">
   <div class="container">
@@ -118,102 +119,89 @@
       </header>
 
 <div class="row">
-  <div class="contents col-md-9">
+  <div class="col-md-9 contents">
     <div class="page-header">
-      <h1>Reference</h1>
+    <h1>Run a complete parametric survival analysis for one-arm</h1>
+    
+    <div class="hidden name"><code>run_one_arm.Rd</code></div>
     </div>
 
-    <table class="ref-index">
+    <div class="ref-description">
+    <p>Fits a single <code>flexsurv</code> models using <code>flexsurvreg</code>.</p>
+    </div>
 
-    <colgroup>
-      
-      <col class="alias" />
-      <col class="title" />
-    </colgroup>
+    <pre class="usage"><span class='fu'>run_one_arm</span>(
+  <span class='no'>data</span>,
+  <span class='no'>time_var</span>,
+  <span class='no'>event_var</span>,
+  <span class='kw'>distr</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>"exp"</span>, <span class='st'>"weibull"</span>, <span class='st'>"gompertz"</span>, <span class='st'>"lnorm"</span>, <span class='st'>"llogis"</span>, <span class='st'>"gengamma"</span>, <span class='st'>"gamma"</span>,
+    <span class='st'>"genf"</span>),
+  <span class='no'>int_name</span>
+)</pre>
 
-    <tbody>
-      <tr>
-        <th colspan="2">
-          <h2 id="section-all-functions" class="hasAnchor"><a href="#section-all-functions" class="anchor"></a>All functions</h2>
-          <p class="section-desc"></p>
-        </th>
-      </tr>
-      
-      
-    </tbody><tbody>
-      
-      
-      <tr>
-        
-        <td>
-          <p><code><a href="bootPSM.html">bootPSM()</a></code> </p>
-        </td>
-        <td><p>Run a complete parametric survival analysis</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="bootPSMtidy.html">bootPSMtidy()</a></code> </p>
-        </td>
-        <td><p>Process bootstrap samples</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="fit_models.html">fit_models()</a></code> </p>
-        </td>
-        <td><p>Fit flexsurv models</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="flexsurvPlus.html">flexsurvPlus</a></code> </p>
-        </td>
-        <td><p>flexsurvPlus: A package for performing survival analyses.</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="get_model_summary.html">get_model_summary()</a></code> </p>
-        </td>
-        <td><p>Get model summary from <code>fit_models</code> objects</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="runPSM.html">runPSM()</a></code> </p>
-        </td>
-        <td><p>Run a complete parametric survival analysis for one model with multiple distributions</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="run_common_shape.html">run_common_shape()</a></code> </p>
-        </td>
-        <td><p>Run a complete parametric survival analysis for a common shape model</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="run_independent_shape.html">run_independent_shape()</a></code> </p>
-        </td>
-        <td><p>Run a complete parametric survival analysis for an independent shape model</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="run_one_arm.html">run_one_arm()</a></code> </p>
-        </td>
-        <td><p>Run a complete parametric survival analysis for one-arm</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="run_separate.html">run_separate()</a></code> </p>
-        </td>
-        <td><p>Run a complete parametric survival analysis for a separate model</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="sim_adtte.html">sim_adtte()</a></code> </p>
-        </td>
-        <td><p>A function to simulate Survival data</p></td>
-      </tr>
-    </tbody>
+    <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
+    <table class="ref-arguments">
+    <colgroup><col class="name" /><col class="desc" /></colgroup>
+    <tr>
+      <th>data</th>
+      <td><p>A data frame containing individual patient data for the relevant
+time to event outcomes. This is passed to the <code>data</code> argument of the
+<code><a href='fit_models.html'>fit_models</a></code> function</p></td>
+    </tr>
+    <tr>
+      <th>time_var</th>
+      <td><p>Name of time variable in 'data'. Variable must be numerical and &gt;0.</p></td>
+    </tr>
+    <tr>
+      <th>event_var</th>
+      <td><p>Name of event variable in 'data'. Variable must be
+numerical and contain 1's to indicate an event and 0 to indicate a censor.</p></td>
+    </tr>
+    <tr>
+      <th>distr</th>
+      <td><p>A vector string of distributions, see dist argument in
+<code>flexsurvreg</code>. This is passed to the <code>distr</code> argument of
+the <code><a href='fit_models.html'>fit_models</a></code> function. Default is all available distributions (see below).</p></td>
+    </tr>
+    <tr>
+      <th>int_name</th>
+      <td><p>Character to indicate the name of the treatment of interest,
+must be a level of the "strata_var" column in "data", used for labeling
+the parameters.</p></td>
+    </tr>
     </table>
-  </div>
 
+    <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
+
+    <p>A list containing 'models' (output from <code><a href='fit_models.html'>fit_models</a></code>), 'model_summary' (output from<code><a href='get_model_summary.html'>get_model_summary</a></code>) and
+'parameters', a data frame containing the coefficients of each flexsurv model.</p><ul>
+<li><p>'models' is a list of flexsurv objects for each distribution specified</p></li>
+<li><p>'model_summary' is a tibble object containing the fitted model objects, the parameter
+estimates (<code><a href='https://rdrr.io/r/stats/coef.html'>coef</a></code>),  <code><a href='https://rdrr.io/r/stats/AIC.html'>AIC</a></code> and <code><a href='https://rdrr.io/r/stats/AIC.html'>BIC</a></code>
+from flexsurv objects.</p></li>
+<li><p>'parameters' is a data frame with with one row which contains the coefficients for all of the flexsurv models specified.
+The column names are in the format 'distribution.parameter.TreatmentName', for example, weibull.shape.Intervention refers to the shape parameter
+of the weibull distribution for the intervention treatment.</p></li>
+</ul>
+
+    <h2 class="hasAnchor" id="details"><a class="anchor" href="#details"></a>Details</h2>
+
+    <p>Possible distributions include:</p><ul>
+<li><p>Exponential ('exp')</p></li>
+<li><p>Weibull ('weibull')</p></li>
+<li><p>Gompertz ('gompertz')</p></li>
+<li><p>Log-normal ('lnorm')</p></li>
+<li><p>Log-logistic ('llogis')</p></li>
+<li><p>Generalized gamma ('gengamma')</p></li>
+<li><p>Gamma ('gamma')</p></li>
+<li><p>Generalised F ('genf')</p></li>
+</ul>
+
+<p>The model fit is in the form Surv(Time, Event==1) ~ 1 and is fit to the entire data (no strata). The parameters for each
+treatment, are derived directly from the model (no additional manipulation
+is required).</p>
+
+  </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
     <nav id="toc" data-toggle="toc" class="sticky-top">
       <h2 data-toc-skip>Contents</h2>
