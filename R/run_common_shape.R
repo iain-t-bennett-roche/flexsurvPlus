@@ -1,52 +1,53 @@
-#' Run a complete parametric survival analysis for a common shape model
-#'
-#' Fits \code{\link{flexsurv}} models using \code{\link{flexsurvreg}} containing a covariate for treatment on scale parameter only.
-#'
-#' @param data A data frame containing individual patient data for the relevant
-#'   time to event outcomes. This is passed to the \code{data} argument of the
-#'   \code{\link{fit_models}} function
-#' @param time_var Name of time variable in 'data'. Variable must be numerical and >0.
-#' @param  event_var Name of event variable in 'data'. Variable must be
-#'   numerical and contain 1's to indicate an event and 0 to indicate a censor.
-#' @param  strata_var Name of stratification variable in "data". This is usually
-#'   the treatment variable and must be categorical.
-#' @param int_name Character to indicate the name of the treatment of interest,
-#'   must be a level of the "strata_var" column in "data", used for labeling
-#'   the parameters.
-#'  @param ref_name Character to indicate the name of the reference treatment,
-#'    must be a level of the "strata_var" column in "data", used for labeling
-#'    the parameters.
-#' @param distr A vector string of distributions, see dist argument in
-#'   \code{\link{flexsurvreg}}. This is passed to the \code{distr} argument of
-#'   the \code{\link{fit_models}} function. Default is all available distributions (see below).
-#' @details Possible distributions include:
-#' \itemize{
-#'   \item Exponential ('exp')
-#'   \item Weibull ('weibull')
-#'   \item Gompertz ('gompertz')
-#'   \item Log-normal ('lnorm')
-#'   \item Log-logistic ('llogis')
-#'   \item Generalized gamma ('gengamma')
-#'   \item Gamma ('gamma')
-#'   \item Generalised F ('genf')
-#'   }
-#'   The model fit is in the form Surv(Time, Event==1) ~ ARM.
-#'   The shape parameter is the same for each treatment, and derived directly from the model (no additional manipulation is required).
-#'   The scale parameter is derived directly from the model for the reference category, however for the intervention arm, this is calculated as reference shape + treatment effect (shape).
-#' @return A list containing 'models' (output from \code{\link{fit_models}}), 'model_summary' (output from\code{\link{get_model_summary}}) and
-#'   'parameters', a data frame containing the coefficients of each flexsurv model.
-#' \itemize{
-#'   \item 'models' is a list of flexsurv objects for each distribution specified
-#'   \item 'model_summary' is a tibble object containing the fitted model objects, the parameter
-#'   estimates (\code{\link{coef}}),  \code{\link{AIC}} and \code{\link{BIC}}
-#'   from flexsurv objects.
-#'   \item 'parameters' is a data frame with with one row which contains the coefficients for all of the flexsurv models specified.
-#'    The column names are in the format 'distribution.parameter.TreatmentName', for example, weibull.shape.Intervention refers to the shape parameter
-#'     of the weibull distribution for the intervention treatment and 'gengamma.mu.Reference' refers to the mu parameter
-#'     of the generalised gamma distribution for the reference treatment. Columns with 'TE' at the end are the treatment effect coefficients
-#'      (applicable to the scale parameter only for the common shape model).
-#'   }
-#' @export
+# NOT EXPORTED - called by runPSM
+# Run a complete parametric survival analysis for a common shape model
+#
+# Fits \code{\link{flexsurv}} models using \code{\link{flexsurvreg}} containing a covariate for treatment on scale parameter only.
+#
+# @param data A data frame containing individual patient data for the relevant
+#   time to event outcomes. This is passed to the \code{data} argument of the
+#   \code{\link{fit_models}} function
+# @param time_var Name of time variable in 'data'. Variable must be numerical and >0.
+# @param  event_var Name of event variable in 'data'. Variable must be
+#   numerical and contain 1's to indicate an event and 0 to indicate a censor.
+# @param  strata_var Name of stratification variable in "data". This is usually
+#   the treatment variable and must be categorical.
+# @param int_name Character to indicate the name of the treatment of interest,
+#   must be a level of the "strata_var" column in "data", used for labeling
+#   the parameters.
+#  @param ref_name Character to indicate the name of the reference treatment,
+#    must be a level of the "strata_var" column in "data", used for labeling
+#    the parameters.
+# @param distr A vector string of distributions, see dist argument in
+#   \code{\link{flexsurvreg}}. This is passed to the \code{distr} argument of
+#   the \code{\link{fit_models}} function. Default is all available distributions (see below).
+# @details Possible distributions include:
+# \itemize{
+#   \item Exponential ('exp')
+#   \item Weibull ('weibull')
+#   \item Gompertz ('gompertz')
+#   \item Log-normal ('lnorm')
+#   \item Log-logistic ('llogis')
+#   \item Generalized gamma ('gengamma')
+#   \item Gamma ('gamma')
+#   \item Generalised F ('genf')
+#   }
+#   The model fit is in the form Surv(Time, Event==1) ~ ARM.
+#   The shape parameter is the same for each treatment, and derived directly from the model (no additional manipulation is required).
+#   The scale parameter is derived directly from the model for the reference category, however for the intervention arm, this is calculated as reference shape + treatment effect (shape).
+# @return A list containing 'models' (output from \code{\link{fit_models}}), 'model_summary' (output from\code{\link{get_model_summary}}) and
+#   'parameters', a data frame containing the coefficients of each flexsurv model.
+# \itemize{
+#   \item 'models' is a list of flexsurv objects for each distribution specified
+#   \item 'model_summary' is a tibble object containing the fitted model objects, the parameter
+#   estimates (\code{\link{coef}}),  \code{\link{AIC}} and \code{\link{BIC}}
+#   from flexsurv objects.
+#   \item 'parameters' is a data frame with with one row which contains the coefficients for all of the flexsurv models specified.
+#    The column names are in the format 'distribution.parameter.TreatmentName', for example, weibull.shape.Intervention refers to the shape parameter
+#     of the weibull distribution for the intervention treatment and 'gengamma.mu.Reference' refers to the mu parameter
+#     of the generalised gamma distribution for the reference treatment. Columns with 'TE' at the end are the treatment effect coefficients
+#      (applicable to the scale parameter only for the common shape model).
+#   }
+# @export
 run_common_shape <- function(data,
                              time_var, event_var,
                              distr = c('exp',

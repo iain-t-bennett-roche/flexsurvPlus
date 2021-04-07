@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Run a complete parametric survival analysis for one model with multiple distributions — runPSM • flexsurvPlus</title>
+<title>Run complete parametric survival analysis for multiple models with multiple distributions — runPSM • flexsurvPlus</title>
 
 
 <!-- jquery -->
@@ -39,8 +39,8 @@
 
 
 
-<meta property="og:title" content="Run a complete parametric survival analysis for one model with multiple distributions — runPSM" />
-<meta property="og:description" content="Run a complete parametric survival analysis for one model with multiple distributions" />
+<meta property="og:title" content="Run complete parametric survival analysis for multiple models with multiple distributions — runPSM" />
+<meta property="og:description" content="Run complete parametric survival analysis for multiple models with multiple distributions" />
 
 
 
@@ -72,7 +72,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">flexsurvPlus</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.2</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">1.0</span>
       </span>
     </div>
 
@@ -98,7 +98,7 @@
       <a href="../articles/Fitting_models_in_R.html">Fitting parametric survival models in R</a>
     </li>
     <li>
-      <a href="../articles/Fitting_models_in_R_bootstrap.html">PSA and correlated endpoints (bootstrap approch)</a>
+      <a href="../articles/Fitting_models_in_R_bootstrap.html">PSA and correlated endpoints (bootstrap approach)</a>
     </li>
     <li>
       <a href="../articles/Survival_analysis_theory.html">Parametric survival analysis using the flexsurvPlus package: understanding the theory</a>
@@ -121,13 +121,13 @@
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Run a complete parametric survival analysis for one model with multiple distributions</h1>
+    <h1>Run complete parametric survival analysis for multiple models with multiple distributions</h1>
     
     <div class="hidden name"><code>runPSM.Rd</code></div>
     </div>
 
     <div class="ref-description">
-    <p>Run a complete parametric survival analysis for one model with multiple distributions</p>
+    <p>Run complete parametric survival analysis for multiple models with multiple distributions</p>
     </div>
 
     <pre class="usage"><span class='fu'>runPSM</span>(
@@ -165,13 +165,30 @@ numerical and contain 1's to indicate an event and 0 to indicate a censor.</p></
       <td><p>Character vector indicating the types of model formula
 provided. Permitted values are</p><ul>
 <li><p>'Common shape' a model with a single covariate for the effect of
-treatment on the scale parameter of the model</p></li>
+treatment on the scale parameter of the model.
+The model fit is in the form Surv(Time, Event==1) ~ ARM.
+The shape parameter is the same for each treatment, and derived directly from
+the model (no additional manipulation is required).
+The scale parameter is derived directly from the model for the reference category, however,
+for the intervention arm, this is calculated as reference shape + treatment effect (shape).</p></li>
 <li><p>'Independent shape' a model with a single covariate for treatment
-that affects both the scale and shape parameters of the model</p></li>
-<li><p>'Separate' a model with no covariates typically fitted separately to
-data from each treatment group in a study</p></li>
-<li><p>'One arm' a model with no covariates typically fitted to the entire data
-set without a strata variable</p></li>
+that affects both the scale and shape parameters of the model.
+The model fit is in the form Surv(Time, Event==1) ~ ARM + shape(ARM).
+The scale parameter is derived directly from the model for the reference
+category, however, for the intervention arm, this is calculated as reference
+scale + treatment effect (scale).
+The shape parameter is derived directly from the model for the reference category,
+however, for the intervention arm, this is calculated as reference shape + treatment effect (shape).</p></li>
+<li><p>'Separate' a model with no covariates fitted separately to
+data from each treatment group in a study.
+The model fit is in the form Surv(Time, Event==1) ~ 1 and is fit twice (one separate
+model for each of the two treatments). The parameters for each treatment, are derived
+directly from the model (no additional manipulation is required).</p></li>
+<li><p>'One arm' a model with no covariates is fitted to the entire data
+set without a strata variable.
+The model fit is in the form Surv(Time, Event==1) ~ 1 and is fit to the entire data (no strata).
+The parameters for each treatment, are derived directly from the model (no additional manipulation
+is required).</p></li>
 </ul><p>Default is c("Separate", "Common shape", "Independent shape").</p></td>
     </tr>
     <tr>
@@ -200,18 +217,12 @@ the parameters. Not required when model.type='One arm'.</p></td>
 
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
-    <p>A list containing 'models' (output from <code><a href='fit_models.html'>fit_models</a></code>), 'model_summary' (output from <code>get_params</code>) and
+    <p>A list containing 'models' (output from <code><a href='fit_models.html'>fit_models</a></code>), 'model_summary' (output from <code><a href='get_model_summary.html'>get_model_summary</a></code>) and
 'parameters', a data frame containing the coefficients of each flexsurv model.</p><ul>
 <li><p>'models' is a list of flexsurv objects for each distribution specified</p></li>
 <li><p>'model_summary' is a tibble object containing the fitted model objects, the parameter
 estimates (<code><a href='https://rdrr.io/r/stats/coef.html'>coef</a></code>),  <code><a href='https://rdrr.io/r/stats/AIC.html'>AIC</a></code> and <code><a href='https://rdrr.io/r/stats/AIC.html'>BIC</a></code>
 from flexsurv objects.</p></li>
-<li><p>'parameters' is a data frame with with one row per model.type called which contains the coefficients for all of the flexsurv models specified.
-The column names are in the format 'distribution.parameter.TreatmentName', for example, weibull.shape.Intervention refers to the shape parameter
-of the weibull distribution for the intervention treatment and 'gengamma.mu.Reference' refers to the mu parameter
-of the generalised gamma distribution for the reference treatment. Columns with 'TE' at the end are the treatment effect coefficients
-(applicable to the scale and shape parameters for independent shape models, applicable to the scale parameter only for the common shape
-model and not applicable for the separate or one-arm model).</p></li>
 <li><p>'parameters_vector' is a vector which contains the coefficients for all of the flexsurv models specified.
 The column names are in the format 'modeltype.distribution.parameter.TreatmentName', for example, comshp.weibull.shape.Int refers to the shape parameter
 of the common shape weibull distribution for the intervention treatment and 'indshp.gengamma.mu.ref' refers to the mu parameter
@@ -231,6 +242,12 @@ model and not applicable for the separate or one-arm model).</p></li>
 <li><p>Generalized gamma ('gengamma')</p></li>
 <li><p>Gamma ('gamma')</p></li>
 <li><p>Generalised F ('genf')</p></li>
+</ul>
+
+<p>For more details and examples see the package vignettes:</p><ul>
+<li><p><code><a href='../articles/Fitting_models_in_R.html'>vignette("Fitting_models_in_R", package = "flexsurvPlus")</a></code></p></li>
+<li><p><code><a href='../articles/Fitting_models_in_R_bootstrap.html'>vignette("Fitting_models_in_R_bootstrap", package = "flexsurvPlus")</a></code></p></li>
+<li><p><code><a href='../articles/Survival_analysis_theory.html'>vignette("Survival_analysis_theory", package = "flexsurvPlus")</a></code></p></li>
 </ul>
 
 

@@ -436,8 +436,10 @@ The inputs for the <tt>bootPSM</tt> function are identical to the
 
 ```{r}
 set.seed(2358)
-# for speed and illustration only 4 models are selected for bootstrapping - all could be included
-n.sim <- 100
+# For speed and illustration only 4 models are selected for bootstrapping - all could be included. 
+# To minimize vignette computation time only 100 bootstrap samples are taken. In general more samples should be used.
+n.sim <- 100 
+
 PSM_bootstraps_PFS <- boot(
   statistic = bootPSM, # bootstrap function
   R=n.sim, # number of bootstrap samples
@@ -453,16 +455,17 @@ PSM_bootstraps_PFS <- boot(
 
 ```
 
-To simplify the post processing of the bootstrap samples a function
-\code{\link{bootPSMtidy}} is provided that does some manipulations. This returns
-a tibble similar to the \code{Parameters} one that is returned by
-\code{\link{bootPSMtidy}}. SampleID identified the bootstrap sample. SampleID of
-0 are the parameters for the original data.
+To use the result of these samples it is helpful to do some post processing to make the resulting samples easier to interpret.
 
 
 ```{r}
-PSM_bootstrap_PFS_data <- bootPSMtidy(PSM_bootstraps_PFS)
-head(PSM_bootstrap_PFS_data)
+# first extract the bootstrapped parameters into a tibble
+PFS_bootsamples <- as_tibble(PSM_bootstraps_PFS$t)
+# then add column names so can identify model and parameter more easily
+colnames(PFS_bootsamples) <- names(PSM_bootstraps_PFS$t0)
+
+# show the first 3 samples
+PFS_bootsamples[1:3,]
 
 ```
 
@@ -470,25 +473,30 @@ head(PSM_bootstrap_PFS_data)
 
 As the <tt>flexsurv</tt> parameterisations are used any quantity of interest can
 be simply calculated for all models and samples through use of the flexsurv
-functions such as the extrapolated means via flexsurv::mean_weibull.
+functions such as the extrapolated means via flexsurv::mean_weibull. For this example we assume 
+we have decided that separate models for reference and intervention are most appropriate and that
+for the reference arm a gamma model is preferred while for the intervention arm a weibull model is best.
 
 ```{r}
-estimated_deltamean <- PSM_bootstrap_PFS_data %>%
-  transmute(SampleID, Model,
-            Weibull.Mean.ref = flexsurv::mean_weibull(shape = weibull.shape.ref, scale = weibull.scale.ref),
-            Weibull.Mean.int = flexsurv::mean_weibull(shape = weibull.shape.int, scale = weibull.scale.int),
-            Weibull.Mean.delta = Weibull.Mean.int - Weibull.Mean.ref)
+# we can now calculate the mean PFS for the selected models for each bootstrap sample
+# using weibull for the reference
+PFS_ref_mean <- with(PFS_bootsamples, flexsurv::mean_gamma(shape = sep.gamma.shape.ref, rate = sep.gamma.rate.ref))
+# using gamma for the intervention
+PFS_int_mean <- with(PFS_bootsamples, flexsurv::mean_weibull(shape = sep.weibull.shape.int, scale = sep.weibull.scale.int))
 
-head(estimated_deltamean)
+# we can then calculate the incremental mean PFS from these
+PFS_delta = PFS_int_mean - PFS_ref_mean 
 
-density <- density(estimated_deltamean$Weibull.Mean.delta)
+# if we are interested we can then estimate quantiles from this
+quantile(PFS_delta, probs = c(0.025,0.975))
+
+# or plot the density of this derived quantity
+
+density <- density(PFS_delta)
 plot(density, 
      lwd = 2, 
      main = "Density")
 
-# estimated_deltamean %>%
-#   ggplot(aes(x = Weibull.Mean.delta)) + 
-#   geom_density()
 
 ```
 
@@ -500,19 +508,33 @@ The primary use of the bootstrap samples is to be used in probabilistic
 sensitivity analyses in economic models.
 
 Once all the models have been fit and bootstrap samples estimated they can be
-output to excel. By selecting SampleID = 0 the estimates for the original data
+output to excel. By selecting the "Main Estimates" the estimates for the original data
 are returned. To run PSA in excel only a random number between 1 and the number
-of samples needs to be generated.
+of samples needs to be generated and the associated Bootstrap sample selected.
 
 ```{r}
 
-# Add meta data to include details of analysis
-parameters_PFS <- PSM_bootstrap_PFS_data %>%
-  mutate(Study_name = "Study ABC",
-         Datacut = "Final",
-         Population = "ITT",
-         Endpoint = "PFS")
+# combine the estimates from the main analysis with the bootstrap samples
+# and add meta data to include details of analysis
 
+# first we can get combine the main estimates for the models with those that were bootstrapped
+parameters_PFS <- rbind(PSM_bootstraps_PFS$t0, as_tibble(PSM_bootstraps_PFS$t))
+
+# we can now add names
+colnames(parameters_PFS) <- names(PSM_bootstraps_PFS$t0)
+
+# we can then label the samples and add some metadata
+metadata_PFS <- tibble(Estimate = c("Main Estimates", paste("Bootstrap Sample",1:n.sim)),
+                       Study_name = "Study ABC",
+                        Datacut = "Final",
+                        Population = "ITT",
+                        Endpoint = "PFS",
+                        RefArmName = PSM_bootstraps_PFS$call$ref_name,
+                        IntArmName = PSM_bootstraps_PFS$call$int_name)
+
+pfs_for_export <- cbind(metadata_PFS, parameters_PFS)
+
+# not run
 #write.csv(parameters_PFS, "params_for_model.csv")
 
 ```

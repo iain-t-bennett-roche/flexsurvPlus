@@ -31,7 +31,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">flexsurvPlus</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.2</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">1.0</span>
       </span>
     </div>
 
@@ -57,7 +57,7 @@
       <a href="../articles/Fitting_models_in_R.html">Fitting parametric survival models in R</a>
     </li>
     <li>
-      <a href="../articles/Fitting_models_in_R_bootstrap.html">PSA and correlated endpoints (bootstrap approch)</a>
+      <a href="../articles/Fitting_models_in_R_bootstrap.html">PSA and correlated endpoints (bootstrap approach)</a>
     </li>
     <li>
       <a href="../articles/Survival_analysis_theory.html">Parametric survival analysis using the flexsurvPlus package: understanding the theory</a>
@@ -81,7 +81,7 @@
       <h1 data-toc-skip>Fitting parametric survival models in R</h1>
                         <h4 class="author">Roche</h4>
             
-            <h4 class="date">2021-03-30</h4>
+            <h4 class="date">2021-04-07</h4>
       
       
       <div class="hidden name"><code>Fitting_models_in_R.Rmd</code></div>
@@ -1160,8 +1160,10 @@ pre { /* Code block - determines code spacing between lines */
 </li>
 </ul>
 <div class="sourceCode" id="cb7"><html><body><pre class="r"><span class="fu"><a href="https://rdrr.io/r/base/Random.html">set.seed</a></span>(<span class="fl">2358</span>)
-<span class="co"># for speed and illustration only 4 models are selected for bootstrapping - all could be included</span>
+<span class="co"># For speed and illustration only 4 models are selected for bootstrapping - all could be included. </span>
+<span class="co"># To minimize vignette computation time only 100 bootstrap samples are taken. In general more samples should be used.</span>
 <span class="no">n.sim</span> <span class="kw">&lt;-</span> <span class="fl">100</span>
+
 <span class="no">PSM_bootstraps_PFS</span> <span class="kw">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/boot/man/boot.html">boot</a></span>(
   <span class="kw">statistic</span> <span class="kw">=</span> <span class="no">bootPSM</span>, <span class="co"># bootstrap function</span>
   <span class="kw">R</span><span class="kw">=</span><span class="no">n.sim</span>, <span class="co"># number of bootstrap samples</span>
@@ -1174,67 +1176,84 @@ pre { /* Code block - determines code spacing between lines */
   <span class="kw">int_name</span> <span class="kw">=</span> <span class="st">"B"</span>,
   <span class="kw">ref_name</span> <span class="kw">=</span> <span class="st">"A"</span>
 )</pre></body></html></div>
-<p>To simplify the post processing of the bootstrap samples a function  is provided that does some manipulations. This returns a tibble similar to the  one that is returned by . SampleID identified the bootstrap sample. SampleID of 0 are the parameters for the original data.</p>
-<div class="sourceCode" id="cb8"><html><body><pre class="r"><span class="no">PSM_bootstrap_PFS_data</span> <span class="kw">&lt;-</span> <span class="fu"><a href="../reference/bootPSMtidy.html">bootPSMtidy</a></span>(<span class="no">PSM_bootstraps_PFS</span>)
-<span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span>(<span class="no">PSM_bootstrap_PFS_data</span>)
-<span class="co">#&gt; # A tibble: 6 x 14</span>
-<span class="co">#&gt;   SampleID Model        Reference_name Intervention_name weibull.scale.int</span>
-<span class="co">#&gt;      &lt;int&gt; &lt;chr&gt;        &lt;chr&gt;          &lt;chr&gt;                         &lt;dbl&gt;</span>
-<span class="co">#&gt; 1        0 Common shape A              B                              437.</span>
-<span class="co">#&gt; 2        0 Seperate     A              B                              437.</span>
-<span class="co">#&gt; 3        1 Common shape A              B                              454.</span>
-<span class="co">#&gt; 4        1 Seperate     A              B                              453.</span>
-<span class="co">#&gt; 5        2 Common shape A              B                              453.</span>
-<span class="co">#&gt; 6        2 Seperate     A              B                              455.</span>
-<span class="co">#&gt; # … with 9 more variables: weibull.scale.ref &lt;dbl&gt;, weibull.shape.int &lt;dbl&gt;,</span>
-<span class="co">#&gt; #   weibull.shape.ref &lt;dbl&gt;, weibull.scale.TE &lt;dbl&gt;, gamma.rate.int &lt;dbl&gt;,</span>
-<span class="co">#&gt; #   gamma.rate.ref &lt;dbl&gt;, gamma.shape.int &lt;dbl&gt;, gamma.shape.ref &lt;dbl&gt;,</span>
-<span class="co">#&gt; #   gamma.rate.TE &lt;dbl&gt;</span></pre></body></html></div>
+<p>To use the result of these samples it is helpful to do some post processing to make the resulting samples easier to interpret.</p>
+<div class="sourceCode" id="cb8"><html><body><pre class="r"><span class="co"># first extract the bootstrapped parameters into a tibble</span>
+<span class="no">PFS_bootsamples</span> <span class="kw">&lt;-</span> <span class="fu"><a href="https://tibble.tidyverse.org/reference/as_tibble.html">as_tibble</a></span>(<span class="no">PSM_bootstraps_PFS</span>$<span class="no">t</span>)
+<span class="co">#&gt; Warning: The `x` argument of `as_tibble.matrix()` must have unique column names if `.name_repair` is omitted as of tibble 2.0.0.</span>
+<span class="co">#&gt; Using compatibility `.name_repair`.</span>
+<span class="co"># then add column names so can identify model and parameter more easily</span>
+<span class="fu"><a href="https://rdrr.io/r/base/colnames.html">colnames</a></span>(<span class="no">PFS_bootsamples</span>) <span class="kw">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html">names</a></span>(<span class="no">PSM_bootstraps_PFS</span>$<span class="no">t0</span>)
+
+<span class="co"># show the first 3 samples</span>
+<span class="no">PFS_bootsamples</span>[<span class="fl">1</span>:<span class="fl">3</span>,]
+<span class="co">#&gt; # A tibble: 3 x 18</span>
+<span class="co">#&gt;   comshp.weibull.sca… comshp.weibull.sca… comshp.weibull.sha… comshp.weibull.sh…</span>
+<span class="co">#&gt;                 &lt;dbl&gt;               &lt;dbl&gt;               &lt;dbl&gt;              &lt;dbl&gt;</span>
+<span class="co">#&gt; 1                454.                230.                1.41               1.41</span>
+<span class="co">#&gt; 2                453.                252.                1.29               1.29</span>
+<span class="co">#&gt; 3                425.                224.                1.42               1.42</span>
+<span class="co">#&gt; # … with 14 more variables: comshp.weibull.scale.TE &lt;dbl&gt;,</span>
+<span class="co">#&gt; #   comshp.gamma.rate.int &lt;dbl&gt;, comshp.gamma.rate.ref &lt;dbl&gt;,</span>
+<span class="co">#&gt; #   comshp.gamma.shape.int &lt;dbl&gt;, comshp.gamma.shape.ref &lt;dbl&gt;,</span>
+<span class="co">#&gt; #   comshp.gamma.rate.TE &lt;dbl&gt;, sep.weibull.scale.int &lt;dbl&gt;,</span>
+<span class="co">#&gt; #   sep.weibull.scale.ref &lt;dbl&gt;, sep.weibull.shape.int &lt;dbl&gt;,</span>
+<span class="co">#&gt; #   sep.weibull.shape.ref &lt;dbl&gt;, sep.gamma.rate.int &lt;dbl&gt;,</span>
+<span class="co">#&gt; #   sep.gamma.rate.ref &lt;dbl&gt;, sep.gamma.shape.int &lt;dbl&gt;,</span>
+<span class="co">#&gt; #   sep.gamma.shape.ref &lt;dbl&gt;</span></pre></body></html></div>
 </div>
 <div id="estimating-quantities-from-the-sample" class="section level1">
 <h1 class="hasAnchor">
 <a href="#estimating-quantities-from-the-sample" class="anchor"></a>Estimating quantities from the sample</h1>
-<p>As the <tt>flexsurv</tt> parameterisations are used any quantity of interest can be simply calculated for all models and samples through use of the flexsurv functions such as the extrapolated means via flexsurv::mean_weibull.</p>
-<div class="sourceCode" id="cb9"><html><body><pre class="r"><span class="no">estimated_deltamean</span> <span class="kw">&lt;-</span> <span class="no">PSM_bootstrap_PFS_data</span> <span class="kw">%&gt;%</span>
-  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html">transmute</a></span>(<span class="no">SampleID</span>, <span class="no">Model</span>,
-            <span class="kw">Weibull.Mean.ref</span> <span class="kw">=</span> <span class="kw pkg">flexsurv</span><span class="kw ns">::</span><span class="fu"><a href="https://rdrr.io/pkg/flexsurv/man/means.html">mean_weibull</a></span>(<span class="kw">shape</span> <span class="kw">=</span> <span class="no">weibull.shape.ref</span>, <span class="kw">scale</span> <span class="kw">=</span> <span class="no">weibull.scale.ref</span>),
-            <span class="kw">Weibull.Mean.int</span> <span class="kw">=</span> <span class="kw pkg">flexsurv</span><span class="kw ns">::</span><span class="fu"><a href="https://rdrr.io/pkg/flexsurv/man/means.html">mean_weibull</a></span>(<span class="kw">shape</span> <span class="kw">=</span> <span class="no">weibull.shape.int</span>, <span class="kw">scale</span> <span class="kw">=</span> <span class="no">weibull.scale.int</span>),
-            <span class="kw">Weibull.Mean.delta</span> <span class="kw">=</span> <span class="no">Weibull.Mean.int</span> - <span class="no">Weibull.Mean.ref</span>)
+<p>As the <tt>flexsurv</tt> parameterisations are used any quantity of interest can be simply calculated for all models and samples through use of the flexsurv functions such as the extrapolated means via flexsurv::mean_weibull. For this example we assume we have decided that separate models for reference and intervention are most appropriate and that for the reference arm a gamma model is preferred while for the intervention arm a weibull model is best.</p>
+<div class="sourceCode" id="cb9"><html><body><pre class="r"><span class="co"># we can now calculate the mean PFS for the selected models for each bootstrap sample</span>
+<span class="co"># using weibull for the reference</span>
+<span class="no">PFS_ref_mean</span> <span class="kw">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/with.html">with</a></span>(<span class="no">PFS_bootsamples</span>, <span class="kw pkg">flexsurv</span><span class="kw ns">::</span><span class="fu"><a href="https://rdrr.io/pkg/flexsurv/man/means.html">mean_gamma</a></span>(<span class="kw">shape</span> <span class="kw">=</span> <span class="no">sep.gamma.shape.ref</span>, <span class="kw">rate</span> <span class="kw">=</span> <span class="no">sep.gamma.rate.ref</span>))
+<span class="co"># using gamma for the intervention</span>
+<span class="no">PFS_int_mean</span> <span class="kw">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/with.html">with</a></span>(<span class="no">PFS_bootsamples</span>, <span class="kw pkg">flexsurv</span><span class="kw ns">::</span><span class="fu"><a href="https://rdrr.io/pkg/flexsurv/man/means.html">mean_weibull</a></span>(<span class="kw">shape</span> <span class="kw">=</span> <span class="no">sep.weibull.shape.int</span>, <span class="kw">scale</span> <span class="kw">=</span> <span class="no">sep.weibull.scale.int</span>))
 
-<span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span>(<span class="no">estimated_deltamean</span>)
-<span class="co">#&gt; # A tibble: 6 x 5</span>
-<span class="co">#&gt;   SampleID Model        Weibull.Mean.ref Weibull.Mean.int Weibull.Mean.delta</span>
-<span class="co">#&gt;      &lt;int&gt; &lt;chr&gt;                   &lt;dbl&gt;            &lt;dbl&gt;              &lt;dbl&gt;</span>
-<span class="co">#&gt; 1        0 Common shape             206.             399.               193.</span>
-<span class="co">#&gt; 2        0 Seperate                 206.             399.               193.</span>
-<span class="co">#&gt; 3        1 Common shape             210.             414.               204.</span>
-<span class="co">#&gt; 4        1 Seperate                 209.             409.               200.</span>
-<span class="co">#&gt; 5        2 Common shape             233.             419.               186.</span>
-<span class="co">#&gt; 6        2 Seperate                 233.             425.               192.</span>
+<span class="co"># we can then calculate the incremental mean PFS from these</span>
+<span class="no">PFS_delta</span> <span class="kw">=</span> <span class="no">PFS_int_mean</span> - <span class="no">PFS_ref_mean</span>
 
-<span class="no">density</span> <span class="kw">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/density.html">density</a></span>(<span class="no">estimated_deltamean</span>$<span class="no">Weibull.Mean.delta</span>)
+<span class="co"># if we are interested we can then estimate quantiles from this</span>
+<span class="fu"><a href="https://rdrr.io/r/stats/quantile.html">quantile</a></span>(<span class="no">PFS_delta</span>, <span class="kw">probs</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="fl">0.025</span>,<span class="fl">0.975</span>))
+<span class="co">#&gt;     2.5%    97.5% </span>
+<span class="co">#&gt; 149.4424 236.3659</span>
+
+<span class="co"># or plot the density of this derived quantity</span>
+
+<span class="no">density</span> <span class="kw">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/density.html">density</a></span>(<span class="no">PFS_delta</span>)
 <span class="fu"><a href="https://rdrr.io/r/graphics/plot.html">plot</a></span>(<span class="no">density</span>,
      <span class="kw">lwd</span> <span class="kw">=</span> <span class="fl">2</span>,
      <span class="kw">main</span> <span class="kw">=</span> <span class="st">"Density"</span>)</pre></body></html></div>
 <p><img src="Fitting_models_in_R_files/figure-html/unnamed-chunk-9-1.png" width="672"></p>
-<div class="sourceCode" id="cb10"><html><body><pre class="r">
-# estimated_deltamean %&gt;%
-#   ggplot(aes(x = Weibull.Mean.delta)) + 
-#   geom_density()</pre></body></html></div>
 </div>
 <div id="outputing-parameters-to-excel" class="section level1">
 <h1 class="hasAnchor">
 <a href="#outputing-parameters-to-excel" class="anchor"></a>Outputing parameters to excel</h1>
 <p>The primary use of the bootstrap samples is to be used in probabilistic sensitivity analyses in economic models.</p>
-<p>Once all the models have been fit and bootstrap samples estimated they can be output to excel. By selecting SampleID = 0 the estimates for the original data are returned. To run PSA in excel only a random number between 1 and the number of samples needs to be generated.</p>
-<div class="sourceCode" id="cb11"><html><body><pre class="r">
-<span class="co"># Add meta data to include details of analysis</span>
-<span class="no">parameters_PFS</span> <span class="kw">&lt;-</span> <span class="no">PSM_bootstrap_PFS_data</span> <span class="kw">%&gt;%</span>
-  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html">mutate</a></span>(<span class="kw">Study_name</span> <span class="kw">=</span> <span class="st">"Study ABC"</span>,
-         <span class="kw">Datacut</span> <span class="kw">=</span> <span class="st">"Final"</span>,
-         <span class="kw">Population</span> <span class="kw">=</span> <span class="st">"ITT"</span>,
-         <span class="kw">Endpoint</span> <span class="kw">=</span> <span class="st">"PFS"</span>)
+<p>Once all the models have been fit and bootstrap samples estimated they can be output to excel. By selecting the “Main Estimates” the estimates for the original data are returned. To run PSA in excel only a random number between 1 and the number of samples needs to be generated and the associated Bootstrap sample selected.</p>
+<div class="sourceCode" id="cb10"><html><body><pre class="r">
+<span class="co"># combine the estimates from the main analysis with the bootstrap samples</span>
+<span class="co"># and add meta data to include details of analysis</span>
 
+<span class="co"># first we can get combine the main estimates for the models with those that were bootstrapped</span>
+<span class="no">parameters_PFS</span> <span class="kw">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html">rbind</a></span>(<span class="no">PSM_bootstraps_PFS</span>$<span class="no">t0</span>, <span class="fu"><a href="https://tibble.tidyverse.org/reference/as_tibble.html">as_tibble</a></span>(<span class="no">PSM_bootstraps_PFS</span>$<span class="no">t</span>))
+
+<span class="co"># we can now add names</span>
+<span class="fu"><a href="https://rdrr.io/r/base/colnames.html">colnames</a></span>(<span class="no">parameters_PFS</span>) <span class="kw">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html">names</a></span>(<span class="no">PSM_bootstraps_PFS</span>$<span class="no">t0</span>)
+
+<span class="co"># we can then label the samples and add some metadata</span>
+<span class="no">metadata_PFS</span> <span class="kw">&lt;-</span> <span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html">tibble</a></span>(<span class="kw">Estimate</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">"Main Estimates"</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html">paste</a></span>(<span class="st">"Bootstrap Sample"</span>,<span class="fl">1</span>:<span class="no">n.sim</span>)),
+                       <span class="kw">Study_name</span> <span class="kw">=</span> <span class="st">"Study ABC"</span>,
+                        <span class="kw">Datacut</span> <span class="kw">=</span> <span class="st">"Final"</span>,
+                        <span class="kw">Population</span> <span class="kw">=</span> <span class="st">"ITT"</span>,
+                        <span class="kw">Endpoint</span> <span class="kw">=</span> <span class="st">"PFS"</span>,
+                        <span class="kw">RefArmName</span> <span class="kw">=</span> <span class="no">PSM_bootstraps_PFS</span>$<span class="no">call</span>$<span class="no">ref_name</span>,
+                        <span class="kw">IntArmName</span> <span class="kw">=</span> <span class="no">PSM_bootstraps_PFS</span>$<span class="no">call</span>$<span class="no">int_name</span>)
+
+<span class="no">pfs_for_export</span> <span class="kw">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html">cbind</a></span>(<span class="no">metadata_PFS</span>, <span class="no">parameters_PFS</span>)
+
+<span class="co"># not run</span>
 <span class="co">#write.csv(parameters_PFS, "params_for_model.csv")</span></pre></body></html></div>
 </div>
 <div id="references" class="section level1 unnumbered">

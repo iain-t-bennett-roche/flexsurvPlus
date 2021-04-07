@@ -74,7 +74,7 @@ By re-using random seeds for each bootstrap sample it is possible to maintain co
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">flexsurvPlus</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.2</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">1.0</span>
       </span>
     </div>
 
@@ -100,7 +100,7 @@ By re-using random seeds for each bootstrap sample it is possible to maintain co
       <a href="../articles/Fitting_models_in_R.html">Fitting parametric survival models in R</a>
     </li>
     <li>
-      <a href="../articles/Fitting_models_in_R_bootstrap.html">PSA and correlated endpoints (bootstrap approch)</a>
+      <a href="../articles/Fitting_models_in_R_bootstrap.html">PSA and correlated endpoints (bootstrap approach)</a>
     </li>
     <li>
       <a href="../articles/Survival_analysis_theory.html">Parametric survival analysis using the flexsurvPlus package: understanding the theory</a>
@@ -166,7 +166,13 @@ of the independent shape generalised gamma distribution for the reference treatm
 model and not applicable for the separate model).</p>
     <h2 class="hasAnchor" id="details"><a class="anchor" href="#details"></a>Details</h2>
 
-    <p>This function is intended to be used in conjunction with the
+    <p>For more details and examples see the package vignettes:</p><ul>
+<li><p><code><a href='../articles/Fitting_models_in_R.html'>vignette("Fitting_models_in_R", package = "flexsurvPlus")</a></code></p></li>
+<li><p><code><a href='../articles/Fitting_models_in_R_bootstrap.html'>vignette("Fitting_models_in_R_bootstrap", package = "flexsurvPlus")</a></code></p></li>
+<li><p><code><a href='../articles/Survival_analysis_theory.html'>vignette("Survival_analysis_theory", package = "flexsurvPlus")</a></code></p></li>
+</ul>
+
+<p>This function is intended to be used in conjunction with the
 <code>boot</code> function to return the statistic to be
 bootstrapped. In this case by performing parametric survival modelling using
 flexsurv and returning the parameters of the survival distributions.

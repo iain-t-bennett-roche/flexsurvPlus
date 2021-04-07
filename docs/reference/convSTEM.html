@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Fit flexsurv models — fit_models • flexsurvPlus</title>
+<title>Convert survival parameters — convSTEM • flexsurvPlus</title>
 
 
 <!-- jquery -->
@@ -39,8 +39,8 @@
 
 
 
-<meta property="og:title" content="Fit flexsurv models — fit_models" />
-<meta property="og:description" content="Fits single or multiple flexsurv models using flexsurvreg." />
+<meta property="og:title" content="Convert survival parameters — convSTEM" />
+<meta property="og:description" content="Convert survival parameters" />
 
 
 
@@ -72,7 +72,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">flexsurvPlus</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">1.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.2</span>
       </span>
     </div>
 
@@ -98,7 +98,7 @@
       <a href="../articles/Fitting_models_in_R.html">Fitting parametric survival models in R</a>
     </li>
     <li>
-      <a href="../articles/Fitting_models_in_R_bootstrap.html">PSA and correlated endpoints (bootstrap approach)</a>
+      <a href="../articles/Fitting_models_in_R_bootstrap.html">PSA and correlated endpoints (bootstrap approch)</a>
     </li>
     <li>
       <a href="../articles/Survival_analysis_theory.html">Parametric survival analysis using the flexsurvPlus package: understanding the theory</a>
@@ -121,54 +121,34 @@
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Fit flexsurv models</h1>
+    <h1>Convert survival parameters</h1>
     
-    <div class="hidden name"><code>fit_models.Rd</code></div>
+    <div class="hidden name"><code>convSTEM.Rd</code></div>
     </div>
 
     <div class="ref-description">
-    <p>Fits single or multiple <code>flexsurv</code> models using <code>flexsurvreg</code>.</p>
+    <p>Convert survival parameters</p>
     </div>
 
-    <pre class="usage"><span class='fu'>fit_models</span>(
-  <span class='no'>model.formula</span>,
-  <span class='kw'>distr</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>"exp"</span>, <span class='st'>"weibull"</span>, <span class='st'>"gompertz"</span>, <span class='st'>"lnorm"</span>, <span class='st'>"llogis"</span>, <span class='st'>"gengamma"</span>, <span class='st'>"gamma"</span>,
-    <span class='st'>"genf"</span>),
-  <span class='no'>data</span>
-)</pre>
+    <pre class="usage"><span class='fu'>convSTEM</span>(<span class='no'>parameters_vector</span>)</pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
-      <th>model.formula</th>
-      <td><p>A survival model formula in the general form shown
-below. Note that variable names must match the corresponding columns in the
-data. This is passed to the <code>formula</code> argument of the
-<code>fit_models</code> function</p><ul>
-<li><p>Surv(Time, Event==1) ~ ARM is a model with a single covariate for the
-effect of treatment</p></li>
-<li><p>Surv(Time, Event==1) ~ 1 is a model with no covariates typically
-fitted to data from a single treatment group</p></li>
-</ul></td>
-    </tr>
-    <tr>
-      <th>data</th>
-      <td><p>A data frame containing individual patient data for the relevant
-time to event outcomes. This is passed to the <code>data</code> argument of the
-<code>fit_models</code> function</p></td>
-    </tr>
-    <tr>
-      <th>dist</th>
-      <td><p>A vector string of distributions, see dist argument in
-<code>flexsurvreg</code>. This is passed to the <code>distr</code> argument of
-the <code>fit_models</code> function</p></td>
+      <th>parameters</th>
+      <td><p>A vector containing parameters estimated using <code>run_PSM</code> or <code>boot_PSM</code></p></td>
     </tr>
     </table>
 
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
-    <p>A list containing flexsurv objects.</p>
+    <p>A vector which contains the coefficients for all of the flexsurv models specified. Converted to be similar to parameters returned by PROC LIFEREG in SAS.
+The column names are in the format 'modeltype.distribution.parameter.TreatmentName', for example, comshp.weibull.shape.Int refers to the shape parameter
+of the common shape weibull distribution for the intervention treatment and 'indshp.gengamma.mu.ref' refers to the mu parameter
+of the independent shape generalised gamma distribution for the reference treatment. Columns with 'TE' at the end are the treatment effect coefficients
+(applicable to the scale and shape parameters for independent shape models, applicable to the scale parameter only for the common shape
+model and not applicable for the separate or one-arm model).</p>
     <h2 class="hasAnchor" id="details"><a class="anchor" href="#details"></a>Details</h2>
 
     <p>Possible distributions include:</p><ul>
@@ -179,16 +159,8 @@ the <code>fit_models</code> function</p></td>
 <li><p>Log-logistic ('llogis')</p></li>
 <li><p>Generalized gamma ('gengamma')</p></li>
 <li><p>Gamma ('gamma')</p></li>
-<li><p>Generalised F ('genf')</p></li>
-</ul><p>For more details and examples see the package vignettes:</p><ul>
-<li><p><code><a href='../articles/Fitting_models_in_R.html'>vignette("Fitting_models_in_R", package = "flexsurvPlus")</a></code></p></li>
-<li><p><code><a href='../articles/Fitting_models_in_R_bootstrap.html'>vignette("Fitting_models_in_R_bootstrap", package = "flexsurvPlus")</a></code></p></li>
-<li><p><code><a href='../articles/Survival_analysis_theory.html'>vignette("Survival_analysis_theory", package = "flexsurvPlus")</a></code></p></li>
 </ul>
 
-    <h2 class="hasAnchor" id="see-also"><a class="anchor" href="#see-also"></a>See also</h2>
-
-    <div class='dont-index'><p><code>flexsurvreg</code></p></div>
 
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
