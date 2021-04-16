@@ -82,13 +82,16 @@ run_one_arm <- function(data,
   
   #Extract parameter estimates
   coef <- lapply(models.flexsurv, coef)
-  param_out <- t(unlist(coef)) %>% as.data.frame()
   
-
+  if(length(converged_models)>0){
+  param_out <- t(unlist(coef)) %>% as.data.frame()
   # Rename the parameter from the
   # exponential model to be consistent with output from other models
   suppressWarnings(colnames(param_out)[colnames(param_out) == 'exp'] <- "exp.rate")
   suppressWarnings(colnames(param_out) <- paste0(colnames(param_out),".int"))
+  } else
+  {param_out <- tibble()}
+  
   
   # rename for output
   names(models) <- paste0("onearm.int.", names(models))
@@ -97,9 +100,6 @@ run_one_arm <- function(data,
   
   model_summary$Dist <-  paste0("onearm.int.", model_summary$Dist)
 
-  
-  param_out <- cbind(param_out)  %>%
-    as.data.frame() 
   
   #######################################################
   # prepare parameter outputs

@@ -98,21 +98,26 @@ run_separate <- function(data,
   
   #Extract parameter estimates
   coef.int <- lapply(models.flexsurv.int, coef)
-  param_out.int <- t(unlist(coef.int)) %>% as.data.frame()
-  
   coef.ref <- lapply(models.flexsurv.ref, coef)
-  param_out.ref <- t(unlist(coef.ref)) %>% as.data.frame()
-  
-  
+
+  if(length(converged_models.int)>0){
+  param_out.int <- t(unlist(coef.int)) %>% as.data.frame()
   # If this is a separate model fitted to each treatment group, rename the parameter from the
-  # exponential model to be consistent with output from Common shape models
-  suppressWarnings(colnames(param_out.int)[colnames(param_out.int) == 'exp'] <- "exp.rate")
+  # exponential model to be consistent with output from Common shape models  suppressWarnings(colnames(param_out.int)[colnames(param_out.int) == 'exp'] <- "exp.rate")
   suppressWarnings(colnames(param_out.int) <- paste0(colnames(param_out.int),".int"))
+  } else
+  {param_out.int <- tibble()}
   
-  suppressWarnings(colnames(param_out.ref)[colnames(param_out.ref) == 'exp'] <- "exp.rate")
+  
+  if(length(converged_models.ref)>0){
+  param_out.ref <- t(unlist(coef.ref)) %>% as.data.frame()
+  # If this is a separate model fitted to each treatment group, rename the parameter from the
+  # exponential model to be consistent with output from Common shape models  suppressWarnings(colnames(param_out.ref)[colnames(param_out.ref) == 'exp'] <- "exp.rate")
   suppressWarnings(colnames(param_out.ref) <- paste0(colnames(param_out.ref),".ref"))
-  
-  
+  } else
+  {param_out.ref <- tibble()}
+
+
   
   # rename for output
   names(models.int) <- paste0("sep.int.", names(models.int))
@@ -125,8 +130,12 @@ run_separate <- function(data,
   
   model_summary <- dplyr::bind_rows(model_summary.int, model_summary.ref)
   
-  param_out <- cbind(param_out.int, param_out.ref)  %>%
+  if(length(converged_models.int)+length(converged_models.ref)>0){
+      param_out <- cbind(param_out.int, param_out.ref)  %>%
     as.data.frame() 
+  } else {
+    param_out <- aram_out.ref <- tibble()
+      }
   
   #######################################################
   # prepare parameter outputs

@@ -103,11 +103,19 @@ run_independent_shape <- function(data,
         exp.rate.ref = exp.rate,
         exp.rate.TE = exp.ARMInt) %>%
       dplyr::select(-exp.rate, -exp.ARMInt)
-    
+      param_out.exp <- post_process_param_out(param_out.exp) 
+    }
+    else {
+      param_out.exp <-data.frame(
+        exp.rate.int = NA,
+        exp.rate.ref = NA,
+        exp.rate.TE = NA
+      )
+    }
     # append this model to output 
     models$indshp.exp <- models.exp$exp
     params_out <- dplyr::bind_cols(params_out, param_out.exp)
-    }
+    
   }
   
   if('weibull' %in% distr){
@@ -126,11 +134,22 @@ run_independent_shape <- function(data,
         weibull.scale.TE = weibull.ARMInt,
         weibull.shape.TE = `weibull.shape(ARMInt)`) %>%
       select(-weibull.scale, -weibull.shape, -weibull.ARMInt, -`weibull.shape(ARMInt)`)
-    
+      param_out.weib <- post_process_param_out(param_out.weib) 
+    }
+    else {
+      param_out.weib <-data.frame(
+        weibull.scale.int = NA,
+        weibull.scale.ref = NA,
+        weibull.shape.int = NA,
+        weibull.shape.ref = NA,
+        weibull.scale.TE = NA,
+        weibull.shape.TE = NA
+      )
+    }
     # append this model to output 
     models$indshp.weibull <- models.weib$weibull
     params_out <- dplyr::bind_cols(params_out, param_out.weib)
-    }
+    
   }
   
   if('gompertz' %in% distr){
@@ -149,12 +168,24 @@ run_independent_shape <- function(data,
         gompertz.rate.TE = gompertz.ARMInt,
         gompertz.shape.TE = `gompertz.shape(ARMInt)`) %>%
       select(-gompertz.rate, -gompertz.shape, -gompertz.ARMInt,-`gompertz.shape(ARMInt)`)
-    
+      param_out.gomp <- post_process_param_out(param_out.gomp) 
+    }
+    else {
+      param_out.gomp <-data.frame(
+        gompertz.rate.int = NA,
+        gompertz.rate.ref = NA,
+        gompertz.shape.int = NA,
+        gompertz.shape.ref = NA,
+        gompertz.rate.TE = NA,
+        gompertz.shape.TE = NA
+      )
+    }
     # append this model to output 
     models$indshp.gompertz <- models.gomp$gompertz
     params_out <- dplyr::bind_cols(params_out, param_out.gomp)
+  
   }
-  }
+  
   if('llogis' %in% distr){
     models.llogis <- fit_models(model.formula=model.formula.shape, distr = "llogis", data=data_standard)
     model_summary.llogis <- get_model_summary(models=models.llogis)
@@ -171,11 +202,22 @@ run_independent_shape <- function(data,
         llogis.scale.TE = llogis.ARMInt,
         llogis.shape.TE = `llogis.shape(ARMInt)`) %>%
       select(-llogis.scale, -llogis.shape, -llogis.ARMInt, -`llogis.shape(ARMInt)`)
-    
+      param_out.llogis <- post_process_param_out(param_out.llogis) 
+    }
+    else {
+      param_out.llogis <-data.frame(
+        llogis.scale.int = NA,
+        llogis.scale.ref = NA,
+        llogis.shape.int = NA,
+        llogis.shape.ref = NA,
+        llogis.scale.TE = NA,
+        llogis.shape.TE = NA
+      )
+    }
     # append this model to output 
     models$indshp.llogis <- models.llogis$llogis
     params_out <- dplyr::bind_cols(params_out, param_out.llogis)
-    }
+    
   }
   
   if('gamma' %in% distr){
@@ -194,11 +236,22 @@ run_independent_shape <- function(data,
         gamma.rate.TE = gamma.ARMInt,
         gamma.shape.TE = `gamma.shape(ARMInt)`) %>%
       select(-gamma.rate, -gamma.shape, -gamma.ARMInt, -`gamma.shape(ARMInt)`)
-    
+      param_out.gamma <- post_process_param_out(param_out.gamma) 
+    }
+    else {
+      param_out.gamma <-data.frame(
+        gamma.rate.int = NA,
+        gamma.rate.ref = NA,
+        gamma.shape.int = NA,
+        gamma.shape.ref = NA,
+        gamma.rate.TE = NA,
+        gamma.shape.TE = NA
+        ) 
+    }
     # append this model to output 
     models$indshp.gamma <- models.gamma$gamma
     params_out <- dplyr::bind_cols(params_out, param_out.gamma)
-    }
+    
   }
   
   if('lnorm' %in% distr){
@@ -217,11 +270,22 @@ run_independent_shape <- function(data,
         lnorm.meanlog.TE = lnorm.ARMInt,
         lnorm.sdlog.TE = `lnorm.sdlog(ARMInt)`) %>%
       select(-lnorm.meanlog, -lnorm.sdlog, -lnorm.ARMInt, -`lnorm.sdlog(ARMInt)`)
-    
+      param_out.lnorm <- post_process_param_out(param_out.lnorm) 
+    }
+    else {
+      param_out.lnorm <-data.frame(
+        lnorm.meanlog.int = NA,
+        lnorm.meanlog.ref = NA,
+        lnorm.sdlog.int = NA,
+        lnorm.sdlog.ref = NA,
+        lnorm.meanlog.TE = NA,
+        lnorm.sdlog.TE = NA
+      )
+    } 
     # append this model to output 
     models$indshp.lnorm <- models.lnorm$lnorm
     params_out <- dplyr::bind_cols(params_out, param_out.lnorm)
-    }
+    
   }
   
   if('gengamma' %in% distr){
@@ -243,11 +307,25 @@ if(class(models.gengamma$gengamma)=="flexsurvreg"){
         gengamma.sigma.TE = `gengamma.sigma(ARMInt)`,
         gengamma.Q.TE = `gengamma.Q(ARMInt)`) %>%
       select(-gengamma.mu, -gengamma.sigma, -gengamma.Q, -gengamma.ARMInt, -`gengamma.sigma(ARMInt)`, -`gengamma.Q(ARMInt)`)
-    
-    # append this model to output 
+      param_out.gengamma <- post_process_param_out(param_out.gengamma) 
+}
+    else {
+      param_out.gengamma <-data.frame(
+        gengamma.mu.int = NA,
+        gengamma.mu.ref = NA,
+        gengamma.sigma.int = NA,
+        gengamma.sigma.ref = NA,
+        gengamma.Q.int = NA,
+        gengamma.Q.ref = NA,
+        gengamma.mu.TE = NA,
+        gengamma.sigma.TE = NA,
+        gengamma.Q.TE = NA
+      )
+    }
+      # append this model to output 
     models$indshp.gengamma <- models.gengamma$gengamma
     params_out <- dplyr::bind_cols(params_out, param_out.gengamma)
-  }
+ 
   }
     
   if('genf' %in% distr){
@@ -272,18 +350,36 @@ if(class(models.gengamma$gengamma)=="flexsurvreg"){
         genf.Q.TE = `genf.Q(ARMInt)`,
         genf.P.TE = `genf.P(ARMInt)`) %>%
       select(-genf.mu, -genf.sigma, -genf.Q, -genf.P, -genf.ARMInt, -`genf.sigma(ARMInt)`, -`genf.Q(ARMInt)`, -`genf.P(ARMInt)`)
-    
+      param_out.genf <- post_process_param_out(param_out.genf) 
+  }
+    else {
+      param_out.genf <-data.frame(
+        genf.mu.int = NA,
+        genf.mu.ref = NA,
+        genf.sigma.int =NA,
+        genf.sigma.ref = NA,
+        genf.Q.int = NA,
+        genf.Q.ref = NA,
+        genf.P.int = NA,
+        genf.P.ref = NA,
+        genf.mu.TE = NA,
+        genf.sigma.TE = NA,
+        genf.Q.TE = NA,
+        genf.P.TE = NA
+        )
+    }
     # append this model to output 
     models$indshp.genf <- models.genf$genf
     params_out <- dplyr::bind_cols(params_out, param_out.genf)
-  }
+ 
   }
   #######################################################
   # prepare parameter outputs
   # this function exponentiates values that coef returns on the log scale
   # e.g. weibull shape and scale
   # this further simplifies other function use
-  param_final <- post_process_param_out(params_out)
+ 
+  # param_final <- post_process_param_out(params_out)
   
   model_summary.out <- model_summary %>%
     dplyr::mutate(Model="Independent shape", Intervention_name=int_name, Reference_name=ref_name) %>%
@@ -300,9 +396,9 @@ if(class(models.gengamma$gengamma)=="flexsurvreg"){
                  "genf.mu.int", "genf.mu.ref", "genf.sigma.int", "genf.sigma.ref", "genf.Q.int", "genf.Q.ref", "genf.P.int", "genf.P.ref", "genf.mu.TE", "genf.sigma.TE", "genf.Q.TE" , "genf.P.TE")
   
   
-  col_names_final <- col_names[col_names %in%  names(param_final) ]
+  col_names_final <- col_names[col_names %in%  names(params_out) ]
   
-  param_final <- param_final %>%
+  param_final <- params_out %>%
     select(col_names_final)
   
   # as a vector version with just numerics - needed for bootstrapping

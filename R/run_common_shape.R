@@ -89,7 +89,11 @@ run_common_shape <- function(data,
   
   #Extract parameter estimates
   coef <- lapply(models.flexsurv, coef)
+  if(length(converged_models)>0){
   param_out <- t(unlist(coef)) %>% as.data.frame()
+  } else
+  {param_out <- tibble()}
+  
   
   if('exp' %in% converged_models){
     param_out <- param_out %>%
